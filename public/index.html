@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CrawlPay — Autonomous Technical SEO & Competitor Intelligence on Celo</title>
+  <meta name="description" content="On-demand technical SEO audits and competitor gap analysis paid micro-cent by micro-cent over HTTP 402 on Celo Mainnet. Built with buy.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="glow-orb orb-1"></div>
+  <div class="glow-orb orb-2"></div>
+  <div class="glow-orb orb-3"></div>
+
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">CrawlPay</span>
+          <span class="brand-badge">Agent v1.0</span>
+        </div>
+      </div>
+
+      <div class="network-status-bar">
+        <div class="status-pill live-net">
+          <span class="status-dot"></span>
+          <span>Celo Mainnet (42220)</span>
+        </div>
+        <div class="status-pill tag-pill" title="Official Hackathon Attribution Tag">
+          <span class="tag-label">TAG:</span>
+          <span class="tag-code">celo_757c2ac3b70c</span>
+        </div>
+        <div class="status-pill wallet-pill" title="CrawlPay Agent Wallet">
+          <span class="wallet-icon">💳</span>
+          <span class="wallet-addr">0xf06c...6b39</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-badge">Autonomous HTTP 402 Pay-Per-Crawl Gateway</div>
+      <h1 class="hero-title">Technical SEO & Competitor Intelligence.<br><span class="gradient-text">Zero SaaS Subscriptions.</span></h1>
+      <p class="hero-subtitle">
+        CrawlPay hires isolated headless browsers and social API endpoints call-by-call on Celo Mainnet.
+        Tailored site-archetype detection, keyword intent rewrites, and copy-paste code patches.
+      </p>
+    </section>
+
+    <!-- Audit Input Control Card -->
+    <section class="control-panel-section">
+      <div class="glass-card control-card">
+        <div class="mode-selector">
+          <button type="button" class="mode-btn active" id="btn-mode-single">
+            <svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24"/><path d="m14.83 9.17 4.24-4.24"/><path d="m14.83 14.83 4.24 4.24"/><path d="m9.17 14.83-4.24 4.24"/></svg>
+            Single Site In-Depth Audit
+          </button>
+          <button type="button" class="mode-btn" id="btn-mode-compare">
+            <svg class="mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 2 2 4-4"/></svg>
+            ⚔️ Head-to-Head Competitor Battle
+          </button>
+        </div>
+
+        <form id="audit-form" class="audit-form">
+          <div class="input-group-row">
+            <div class="input-wrapper primary-input">
+              <label for="input-target-url" class="input-label">Target Website URL</label>
+              <div class="input-box">
+                <span class="input-icon">🌐</span>
+                <input type="url" id="input-target-url" placeholder="https://example.com" required value="https://celo.org">
+              </div>
+            </div>
+
+            <div class="input-wrapper competitor-input" id="wrapper-competitor-url" style="display: none;">
+              <label for="input-competitor-url" class="input-label">Competitor Website URL</label>
+              <div class="input-box">
+                <span class="input-icon">⚔️</span>
+                <input type="url" id="input-competitor-url" placeholder="https://competitor.com">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <div class="fee-preview">
+              <span class="fee-icon">⚡</span>
+              <span>Settlement: <strong>$0.25 USD₮</strong> via Celo x402 · Gas: <strong>&lt; $0.001</strong></span>
+            </div>
+            <button type="submit" id="btn-submit-audit" class="btn-primary">
+              <span class="btn-text">Run Autonomous Audit</span>
+              <span class="btn-spinner" style="display: none;"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Live Execution Terminal Log -->
+    <section id="terminal-section" class="terminal-section" style="display: none;">
+      <div class="terminal-card glass-card">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+          </div>
+          <div class="terminal-title">CrawlPay Autonomous Pipeline Execution</div>
+          <div class="terminal-network">Connected to Celo (42220)</div>
+        </div>
+        <div id="terminal-log" class="terminal-body">
+          <!-- Live log lines injected via app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results-section" class="results-section" style="display: none;">
+      <!-- Hero Scorecard Card -->
+      <div class="glass-card hero-scorecard">
+        <div class="scorecard-left">
+          <div class="score-circle-wrapper">
+            <svg class="score-ring" viewBox="0 0 120 120">
+              <circle class="score-ring-bg" cx="60" cy="60" r="52"></circle>
+              <circle id="score-ring-val" class="score-ring-progress" cx="60" cy="60" r="52"></circle>
+            </svg>
+            <div class="score-circle-inner">
+              <span id="score-overall-num" class="score-num">--</span>
+              <span class="score-label">OVERALL</span>
+            </div>
+          </div>
+          <div class="site-meta">
+            <div id="badge-archetype" class="archetype-badge">
+              <span class="archetype-icon">⚡</span>
+              <span id="badge-archetype-text">B2B / SaaS Product</span>
+            </div>
+            <h2 id="result-target-domain" class="result-domain">example.com</h2>
+            <p id="result-target-focus" class="result-focus">Audit Focus: Foundational Technical Health</p>
+          </div>
+        </div>
+
+        <div class="scorecard-metrics">
+          <div class="metric-box">
+            <span class="metric-title">Technical Health</span>
+            <div class="metric-bar-bg"><div id="bar-technical" class="metric-bar-fill" style="width: 0%;"></div></div>
+            <span id="score-technical" class="metric-score">0 / 100</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Content & Semantics</span>
+            <div class="metric-bar-bg"><div id="bar-content" class="metric-bar-fill" style="width: 0%;"></div></div>
+            <span id="score-content" class="metric-score">0 / 100</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Core Web Vitals</span>
+            <div class="metric-bar-bg"><div id="bar-performance" class="metric-bar-fill" style="width: 0%;"></div></div>
+            <span id="score-performance" class="metric-score">0 / 100</span>
+          </div>
+          <div class="metric-box">
+            <span class="metric-title">Social / Rich Cards</span>
+            <div class="metric-bar-bg"><div id="bar-social" class="metric-bar-fill" style="width: 0%;"></div></div>
+            <span id="score-social" class="metric-score">0 / 100</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top 3 Needle Movers Section -->
+      <div class="needle-movers-section">
+        <h3 class="section-title">🔥 Top 3 High-Impact Fixes This Week</h3>
+        <p class="section-subtitle">Prioritized actions that will drive the largest organic search lift for this specific site.</p>
+        <div id="needle-movers-grid" class="needle-movers-grid">
+          <!-- Injected via app.js -->
+        </div>
+      </div>
+
+      <!-- Deep Dive Tabs -->
+      <div class="results-tab-container glass-card">
+        <div class="tab-nav">
+          <button type="button" class="tab-nav-btn active" data-tab="tab-semantic">Semantic & H1 Review</button>
+          <button type="button" class="tab-nav-btn" data-tab="tab-technical">Technical Checklist</button>
+          <button type="button" class="tab-nav-btn" data-tab="tab-patches">Copy-Paste Code Patches</button>
+          <button type="button" class="tab-nav-btn" data-tab="tab-comparison" id="btn-tab-comparison" style="display: none;">⚔️ Competitor Battle</button>
+          <button type="button" class="tab-nav-btn highlight-tab" data-tab="tab-receipt">🧾 Onchain Proof Receipt</button>
+        </div>
+
+        <div class="tab-content-wrapper">
+          <!-- Tab 1: Semantic & H1 Review -->
+          <div id="tab-semantic" class="tab-pane active">
+            <div class="semantic-audit-box">
+              <div class="audit-row">
+                <span class="audit-label">Current Heading (H1):</span>
+                <span id="semantic-current-h1" class="audit-val-badge">--</span>
+              </div>
+              <div class="audit-row highlight-row">
+                <span class="audit-label">CrawlPay Recommended H1:</span>
+                <span id="semantic-recommended-h1" class="audit-val-badge recommended">--</span>
+              </div>
+              <div class="audit-row">
+                <span class="audit-label">Detected Intent & Topic:</span>
+                <span id="semantic-intent" class="audit-val-badge">--</span>
+              </div>
+              <div class="editorial-box">
+                <h4>Editorial Verdict:</h4>
+                <p id="semantic-editorial">Analyzing...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: Technical Checklist -->
+          <div id="tab-technical" class="tab-pane">
+            <div id="technical-checklist-grid" class="checklist-grid">
+              <!-- Injected via app.js -->
+            </div>
+          </div>
+
+          <!-- Tab 3: Copy-Paste Code Patches -->
+          <div id="tab-patches" class="tab-pane">
+            <div class="patch-header-row">
+              <p>Ready-to-deploy metadata & schema generated specifically for this website.</p>
+              <div class="framework-pills">
+                <button type="button" class="fw-pill active" data-patch="nextjs">Next.js</button>
+                <button type="button" class="fw-pill" data-patch="shopify">Shopify</button>
+                <button type="button" class="fw-pill" data-patch="html">HTML5</button>
+                <button type="button" class="fw-pill" data-patch="schema">Schema JSON-LD</button>
+              </div>
+            </div>
+            <div class="code-editor-box">
+              <div class="code-editor-bar">
+                <span id="code-lang-label">TypeScript (Next.js 14/15)</span>
+                <button type="button" id="btn-copy-code" class="btn-copy">Copy Code</button>
+              </div>
+              <pre><code id="code-patch-content">// Generating patch...</code></pre>
+            </div>
+          </div>
+
+          <!-- Tab 4: Competitor Battle (optional) -->
+          <div id="tab-comparison" class="tab-pane">
+            <div id="comparison-content" class="comparison-view">
+              <!-- Injected dynamically on comparison runs -->
+            </div>
+          </div>
+
+          <!-- Tab 5: Onchain Proof Receipt -->
+          <div id="tab-receipt" class="tab-pane">
+            <div class="receipt-card">
+              <div class="receipt-header">
+                <div class="receipt-title-box">
+                  <span class="receipt-badge">VERIFIED ON-CHAIN SETTLEMENT</span>
+                  <h3>Celo Mainnet Micro-Commerce Receipt</h3>
+                </div>
+                <div class="receipt-id" id="receipt-exec-id">ID: exec_xxxxxx</div>
+              </div>
+
+              <div class="receipt-table">
+                <div class="r-row">
+                  <span>Client Payment (Received)</span>
+                  <strong id="receipt-client-paid" class="text-green">$0.2500 USD₮</strong>
+                </div>
+                <div class="r-row">
+                  <span>Upstream Browser Rental (Paid via buy)</span>
+                  <div class="r-val-box">
+                    <span id="receipt-browser-cost" class="text-orange">$0.0450 USD₮</span>
+                    <a id="receipt-browser-link" href="#" target="_blank" class="celoscan-link">View Tx on Celoscan ↗</a>
+                  </div>
+                </div>
+                <div class="r-row">
+                  <span>Social & Web Data Endpoint (Paid via buy)</span>
+                  <div class="r-val-box">
+                    <span id="receipt-social-cost" class="text-orange">$0.0200 USD₮</span>
+                    <a id="receipt-social-link" href="#" target="_blank" class="celoscan-link">View Tx on Celoscan ↗</a>
+                  </div>
+                </div>
+                <div class="r-row separator"></div>
+                <div class="r-row">
+                  <span>ERC-8021 Attribution Tag</span>
+                  <strong class="text-cyan">celo_757c2ac3b70c</strong>
+                </div>
+                <div class="r-row">
+                  <span>Agent Autonomous Margin</span>
+                  <strong id="receipt-margin" class="text-emerald">+$0.1850 USD₮</strong>
+                </div>
+                <div class="r-row">
+                  <span>Agent Identity Registry</span>
+                  <span class="text-muted">ERC-8004 (0x8004...a432)</span>
+                </div>
+              </div>
+
+              <div class="receipt-footer">
+                <p>This transaction log proves genuine programmatic demand generated for upstream x402 services on Celo Mainnet without human intervention.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <span>CrawlPay · Built for the <strong>Agents on Open Rails Hackathon</strong></span>
+        <span class="footer-sep">·</span>
+        <span>Celo Mainnet Attribution: <code>celo_757c2ac3b70c</code></span>
+      </div>
+      <div class="footer-right">
+        <a href="https://github.com/Michaelolawale/Crawlpay" target="_blank" rel="noopener noreferrer">GitHub Repository ↗</a>
+        <a href="https://www.loops.house/agents-on-open-rails" target="_blank" rel="noopener noreferrer">Loops House ↗</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

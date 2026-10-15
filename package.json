@@ -1,0 +1,36 @@
+{
+  "name": "crawlpay",
+  "version": "1.0.0",
+  "description": "Autonomous on-demand technical SEO and competitor intelligence audit agent on Celo mainnet",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/server.ts",
+    "dev": "ts-node src/server.ts"
+  },
+  "keywords": [
+    "celo",
+    "x402",
+    "seo",
+    "agent",
+    "crawler",
+    "micropayments"
+  ],
+  "author": "Michael Olawale",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@celo/attribution-tags": "^0.5.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "viem": "^2.23.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}
