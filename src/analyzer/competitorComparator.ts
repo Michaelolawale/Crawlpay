@@ -1,4 +1,4 @@
-import { FullAuditReport } from '../server';
+import { FullAuditReport } from '../types/audit';
 
 export interface CompetitorComparison {
   target: {

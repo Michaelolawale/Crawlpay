@@ -1,50 +1,16 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
-import path from 'path';
 import * as cheerio from 'cheerio';
-import { CONFIG } from './config';
-import { getAgentStatus } from './agent/wallet';
-import { buyCoordinator, CrawlExecutionLog } from './services/buyClient';
-import { detectSiteArchetype, ArchetypeProfile } from './analyzer/archetypeDetector';
-import { parseTechnicalSeo, SeoTechnicalData } from './analyzer/seoParser';
-import { auditSemantics, SemanticAnalysis } from './analyzer/semanticAuditor';
-import { auditSpeedVitals, PerformanceVitals } from './analyzer/speedVitals';
-import { generateCodePatches, CodePatches } from './analyzer/fixGenerator';
-import { compareCompetitors, CompetitorComparison } from './analyzer/competitorComparator';
-
-export interface FullAuditReport {
-  targetUrl: string;
-  auditTimestamp: string;
-  scores: {
-    overall: number;
-    technical: number;
-    content: number;
-    performance: number;
-    social: number;
-  };
-  archetype: ArchetypeProfile;
-  topNeedleMovers: Array<{
-    priority: 'Critical' | 'High' | 'Quick Win';
-    title: string;
-    description: string;
-    action: string;
-  }>;
-  technical: SeoTechnicalData;
-  semantics: SemanticAnalysis;
-  performance: PerformanceVitals;
-  codePatches: CodePatches;
-  onchainReceipt: CrawlExecutionLog;
-}
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
+import { buyCoordinator } from './buyClient';
+import { detectSiteArchetype } from '../analyzer/archetypeDetector';
+import { parseTechnicalSeo } from '../analyzer/seoParser';
+import { auditSemantics } from '../analyzer/semanticAuditor';
+import { auditSpeedVitals } from '../analyzer/speedVitals';
+import { generateCodePatches } from '../analyzer/fixGenerator';
+import { FullAuditReport } from '../types/audit';
 
 /**
  * Helper to fetch HTML from URL or provide realistic fallback for testing
  */
-async function fetchPageHtml(targetUrl: string): Promise<string> {
+export async function fetchPageHtml(targetUrl: string): Promise<string> {
   let normalizedUrl = targetUrl.trim();
   if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
     normalizedUrl = 'https://' + normalizedUrl;
@@ -65,7 +31,7 @@ async function fetchPageHtml(targetUrl: string): Promise<string> {
       return await res.text();
     }
   } catch (err) {
-    // If external site blocks or times out, provide a realistic contextual representation based on domain
+    // If external site blocks or times out, provide a realistic contextual representation
   }
 
   // Graceful realistic fallback
@@ -98,7 +64,7 @@ async function fetchPageHtml(targetUrl: string): Promise<string> {
 /**
  * Execute a complete, non-generic technical audit on a target URL
  */
-async function runAuditPipeline(targetUrl: string): Promise<FullAuditReport> {
+export async function runAuditPipeline(targetUrl: string): Promise<FullAuditReport> {
   let normalizedUrl = targetUrl.trim();
   if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
     normalizedUrl = 'https://' + normalizedUrl;
@@ -216,87 +182,3 @@ async function runAuditPipeline(targetUrl: string): Promise<FullAuditReport> {
     onchainReceipt,
   };
 }
-
-// Routes
-app.post('/api/audit', async (req: Request, res: Response) => {
-  const { url } = req.body;
-  if (!url) {
-    return res.status(400).json({ error: 'Missing target URL' });
-  }
-
-  try {
-    const report = await runAuditPipeline(url);
-    res.json(report);
-  } catch (err: any) {
-    res.status(500).json({ error: 'Audit execution failed', details: err?.message });
-  }
-});
-
-app.post('/api/compare', async (req: Request, res: Response) => {
-  const { targetUrl, competitorUrl } = req.body;
-  if (!targetUrl || !competitorUrl) {
-    return res.status(400).json({ error: 'Both targetUrl and competitorUrl are required' });
-  }
-
-  try {
-    const [targetReport, competitorReport] = await Promise.all([
-      runAuditPipeline(targetUrl),
-      runAuditPipeline(competitorUrl),
-    ]);
-    const comparison = compareCompetitors(targetReport, competitorReport);
-    res.json({
-      targetReport,
-      competitorReport,
-      comparison,
-    });
-  } catch (err: any) {
-    res.status(500).json({ error: 'Comparison execution failed', details: err?.message });
-  }
-});
-
-app.get('/api/status', (_req: Request, res: Response) => {
-  res.json({
-    project: 'CrawlPay',
-    version: '1.0.0',
-    description: 'Autonomous On-Demand SEO & Competitor Intelligence Agent on Celo',
-    agent: getAgentStatus(),
-    endpoints: {
-      audit: 'POST /api/audit',
-      compare: 'POST /api/compare',
-      bazaar: 'GET /api/x402-bazaar',
-    },
-  });
-});
-
-// x402 Bazaar Extension Discovery
-app.get('/api/x402-bazaar', (_req: Request, res: Response) => {
-  res.status(402).json({
-    status: 402,
-    message: 'Payment Required',
-    currency: 'USDC / USD₮',
-    network: 'celo-mainnet',
-    chainId: 42220,
-    price: CONFIG.DEFAULT_AUDIT_PRICE_USD,
-    payTo: CONFIG.AGENT_WALLET_ADDRESS,
-    attributionTag: CONFIG.ATTRIBUTION_TAG,
-    bazaar: {
-      name: 'CrawlPay SEO & Intelligence Agent',
-      version: '1.0.0',
-      description: 'On-demand technical SEO, Core Web Vitals, and competitor analysis paid per call over x402',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          url: { type: 'string', format: 'uri', description: 'Target website URL to audit' },
-          competitorUrl: { type: 'string', format: 'uri', description: 'Optional competitor URL for head-to-head comparison' },
-        },
-        required: ['url'],
-      },
-    },
-  });
-});
-
-app.listen(CONFIG.PORT, () => {
-  console.log(`[CrawlPay] Agent server listening on http://localhost:${CONFIG.PORT}`);
-  console.log(`[CrawlPay] Attribution Tag: ${CONFIG.ATTRIBUTION_TAG}`);
-  console.log(`[CrawlPay] Agent Wallet: ${CONFIG.AGENT_WALLET_ADDRESS}`);
-});
