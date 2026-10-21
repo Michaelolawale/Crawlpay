@@ -31,8 +31,10 @@ export const publicClient = createPublicClient({
  * All sendTransaction and writeContract calls carry celo_757c2ac3b70c.
  */
 export function createAttributedAgentWallet(privateKey?: `0x${string}`) {
-  // If no private key is provided, generate a fallback deterministic signing key or read from env
-  const key = privateKey || (process.env.AGENT_PRIVATE_KEY as `0x${string}`) || '0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  const key = privateKey || CONFIG.AGENT_PRIVATE_KEY;
+  if (!key) {
+    throw new Error('AGENT_PRIVATE_KEY is not configured in environment variables');
+  }
   const account = privateKeyToAccount(key);
 
   return createWalletClient({

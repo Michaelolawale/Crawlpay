@@ -69,19 +69,13 @@ flowchart TD
 npm install
 ```
 
-### 2. Configure Environment (Optional)
-```bash
-cp .env.example .env
-```
-Default parameters are pre-configured for Celo Mainnet and attribution tag `celo_757c2ac3b70c`.
-
-### 3. Run Development Server
+### 2. Run Development Server
 ```bash
 npm run dev
 ```
 Open **[http://localhost:3000](http://localhost:3000)** in your browser.
 
-### 4. Production Build & Deployment
+### 3. Production Build & Deployment
 ```bash
 npm run build
 npm start

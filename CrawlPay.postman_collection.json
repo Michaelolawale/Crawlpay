@@ -1,0 +1,163 @@
+{
+  "info": {
+    "name": "CrawlPay API Collection",
+    "description": "Comprehensive API collection for CrawlPay (Autonomous SEO & Intelligence Agent on Celo)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Discovery & Identity",
+      "item": [
+        {
+          "name": "Agent Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "status"]
+            }
+          }
+        },
+        {
+          "name": "x402 Bazaar Schema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/x402-bazaar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "x402-bazaar"]
+            }
+          }
+        },
+        {
+          "name": "ERC-8004 Registration Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/agent-registration",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "agent-registration"]
+            }
+          }
+        },
+        {
+          "name": "Celo Mainnet Telemetry & Wallet Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/agent/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "agent", "status"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Audits & Comparison",
+      "item": [
+        {
+          "name": "Run Quick Audit",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com\",\n  \"mode\": \"quick\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "audit"]
+            }
+          }
+        },
+        {
+          "name": "Trigger HTTP 402 Challenge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com\",\n  \"requirePaid\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "audit"]
+            }
+          }
+        },
+        {
+          "name": "Head-to-Head Competitor Comparison",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUrl\": \"https://example.com\",\n  \"competitorUrl\": \"https://iana.org\",\n  \"mode\": \"quick\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/compare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "compare"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment & Verification",
+      "item": [
+        {
+          "name": "Verify Celo Transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"txHash\": \"0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payment/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payment", "verify"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

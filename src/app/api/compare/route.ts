@@ -1,11 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runAuditPipeline } from '@/services/auditRunner';
 import { compareCompetitors } from '@/analyzer/competitorComparator';
+import { auditRateLimiter } from '@/utils/security';
 
 export async function POST(req: NextRequest) {
   try {
+    const forwarded = req.headers.get('x-forwarded-for');
+    const ip = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1';
+
+    const rateCheck = auditRateLimiter.check(ip);
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: 'Rate limit exceeded. Please wait before running more audits.',
+          retryAfterSec: rateCheck.retryAfterSec,
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(rateCheck.retryAfterSec || 60),
+          },
+        }
+      );
+    }
+
     const body = await req.json();
-    const { targetUrl, competitorUrl } = body;
+    const { targetUrl, competitorUrl, mode = 'quick' } = body;
 
     if (!targetUrl || !competitorUrl) {
       return NextResponse.json(
@@ -14,9 +34,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const crawlMode = mode === 'full' ? 'full' : 'quick';
     const [targetReport, competitorReport] = await Promise.all([
-      runAuditPipeline(targetUrl),
-      runAuditPipeline(competitorUrl),
+      runAuditPipeline(targetUrl, crawlMode, false),
+      runAuditPipeline(competitorUrl, 'quick', false),
     ]);
 
     const comparison = compareCompetitors(targetReport, competitorReport);
@@ -27,9 +48,10 @@ export async function POST(req: NextRequest) {
       comparison,
     });
   } catch (err: any) {
+    const isSecurityError = err?.message?.includes('SSRF') || err?.message?.includes('prohibited');
     return NextResponse.json(
-      { error: 'Comparison execution failed', details: err?.message },
-      { status: 500 }
+      { error: err?.message || 'Comparison execution failed' },
+      { status: isSecurityError ? 400 : 500 }
     );
   }
 }
