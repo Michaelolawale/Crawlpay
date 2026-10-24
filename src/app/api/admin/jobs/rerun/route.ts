@@ -3,6 +3,8 @@ import { db } from '@/services/db';
 import { runAuditPipeline } from '@/services/auditRunner';
 import { verifyAdminAuth } from '@/utils/adminAuth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   if (!verifyAdminAuth(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

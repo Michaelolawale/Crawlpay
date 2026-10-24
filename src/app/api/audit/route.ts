@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
             id: paymentId,
             wallet: verification.from || wallet || 'unknown',
             amount: isCelo
-              ? (verification.valueCelo || (mode === 'full' ? '1.0' : '0.5'))
+              ? (verification.valueCelo || (mode === 'full' ? CONFIG.CELO_PRICE_FULL : CONFIG.CELO_PRICE_QUICK))
               : (mode === 'full' ? '0.50' : '0.25'),
             token: isCelo ? 'CELO' : 'USDT',
             chain_id: CONFIG.CELO_CHAIN_ID,

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAdminAuth } from '@/utils/adminAuth';
+import { verifyAdminAuth, isAllowedAdminIp } from '@/utils/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  if (!isAllowedAdminIp(req)) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+
   const body = await req.json().catch(() => ({}));
   const { passphrase } = body;
 

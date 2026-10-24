@@ -60,7 +60,7 @@ export function PaymentModal({
   const [manualVerifying, setManualVerifying] = useState(false);
 
   const priceUsd = mode === 'quick' ? '0.25' : '0.50';
-  const celoAmount = mode === 'quick' ? (CONFIG.CELO_PRICE_QUICK || '0.5') : (CONFIG.CELO_PRICE_FULL || '1.0');
+  const celoAmount = mode === 'quick' ? (CONFIG.CELO_PRICE_QUICK || '3.3') : (CONFIG.CELO_PRICE_FULL || '6.6');
   const payToAddress = CONFIG.AGENT_WALLET_ADDRESS;
 
   // Restore active job if refreshed (auto-expires stale jobs after 3 minutes)
