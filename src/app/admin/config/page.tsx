@@ -17,7 +17,7 @@ export default function AdminConfigPage() {
   const [savedFeedback, setSavedFeedback] = useState(false);
 
   useEffect(() => {
-    const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+    const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
     fetch('/api/admin/config', {
       headers: { Authorization: `Bearer ${authKey}` },
     })
@@ -35,7 +35,7 @@ export default function AdminConfigPage() {
     setSavedFeedback(false);
 
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
       const res = await fetch('/api/admin/config', {
         method: 'POST',
         headers: {

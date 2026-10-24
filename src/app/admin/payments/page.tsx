@@ -12,7 +12,7 @@ export default function AdminPaymentsPage() {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
       const res = await fetch('/api/admin/payments', {
         headers: { Authorization: `Bearer ${authKey}` },
       });

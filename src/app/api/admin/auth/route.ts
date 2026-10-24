@@ -7,15 +7,22 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { passphrase } = body;
 
-  const expectedKey = process.env.ADMIN_KEY || 'crawlpay-admin-2025';
+  const expectedKey = process.env.ADMIN_KEY;
   const clean = (passphrase || '').trim();
 
-  if (clean === expectedKey || clean === 'crawlpay-admin-2025') {
+  if (!expectedKey) {
+    return NextResponse.json(
+      { error: 'Admin authentication is not configured on the server (missing ADMIN_KEY).' },
+      { status: 500 }
+    );
+  }
+
+  if (clean && clean === expectedKey) {
     return NextResponse.json({ success: true, token: expectedKey });
   }
 
   return NextResponse.json(
-    { error: 'Invalid admin passphrase. Hint: default is crawlpay-admin-2025' },
+    { error: 'Invalid operator credentials. Access denied.' },
     { status: 401 }
   );
 }

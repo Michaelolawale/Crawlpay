@@ -32,7 +32,7 @@ export default function AdminSandboxPage() {
     setJobInfo(null);
 
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
       const res = await fetch('/api/admin/sandbox', {
         method: 'POST',
         headers: {

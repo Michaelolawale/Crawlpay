@@ -29,7 +29,7 @@ const ADMIN_NAV = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passphrase, setPassphrase] = useState('crawlpay-admin-2025');
+  const [passphrase, setPassphrase] = useState('');
   const [authError, setAuthError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
@@ -47,13 +47,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             setIsAuthenticated(false);
           }
         })
-        .catch(() => setIsAuthenticated(true));
+        .catch(() => {
+          sessionStorage.removeItem('crawlpay_admin_auth');
+          setIsAuthenticated(false);
+        });
     }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = passphrase.trim();
+    if (!clean) {
+      setAuthError('Please enter the operator passphrase.');
+      return;
+    }
+
     setLoggingIn(true);
     setAuthError('');
 
@@ -67,16 +75,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (res.ok && data.success) {
         sessionStorage.setItem('crawlpay_admin_auth', data.token || clean);
         setIsAuthenticated(true);
+        setPassphrase('');
       } else {
-        setAuthError(data.error || 'Invalid admin passphrase. Hint: default is crawlpay-admin-2025');
+        setAuthError(data.error || 'Invalid credentials. Access denied.');
       }
     } catch {
-      if (clean === 'crawlpay-admin-2025') {
-        sessionStorage.setItem('crawlpay_admin_auth', clean);
-        setIsAuthenticated(true);
-      } else {
-        setAuthError('Failed to authenticate.');
-      }
+      setAuthError('Authentication service unreachable. Please try again.');
     } finally {
       setLoggingIn(false);
     }
@@ -112,8 +116,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   type="password"
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
-                  placeholder="Enter admin key..."
-                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-mono"
+                  placeholder="Enter operator key..."
+                  autoComplete="current-password"
+                  required
+                  disabled={loggingIn}
+                  className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-mono disabled:opacity-50"
                 />
               </div>
               {authError && <p className="mt-1.5 text-xs text-destructive">{authError}</p>}
@@ -121,10 +128,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <button
               type="submit"
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+              disabled={loggingIn}
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
             >
               <KeyRound className="size-3.5" />
-              <span>Unlock Admin Console</span>
+              <span>{loggingIn ? 'Authenticating...' : 'Unlock Admin Console'}</span>
             </button>
           </form>
 
@@ -203,7 +211,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Mobile Navigation bar */}
-        <div className="flex md:hidden overflow-x-auto border-t border-border px-4 py-2 gap-1 bg-card/40">
+        <div className="flex md:hidden overflow-x-auto no-scrollbar border-t border-border px-3 py-2 gap-1 bg-card/40">
           {ADMIN_NAV.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;

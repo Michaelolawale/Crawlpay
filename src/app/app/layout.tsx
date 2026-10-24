@@ -88,20 +88,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex h-14 sm:h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           {/* Left: Logo */}
-          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-90 shrink-0">
-            <span className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <CrawlLogo className="size-4 sm:size-5" />
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2.5 transition-opacity hover:opacity-90 shrink-0">
+            <span className="flex size-7 sm:size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+              <CrawlLogo className="size-3.5 sm:size-5" />
             </span>
-            <span className="font-display text-base sm:text-lg font-bold tracking-tight">
+            <span className="font-display text-sm sm:text-lg font-bold tracking-tight">
               crawl<span className="text-primary">pay</span>
             </span>
           </Link>
 
           {/* Middle: Exactly two tabs (Audit, Reports) */}
-          <nav className="flex items-center gap-1 rounded-xl border border-border bg-card/60 p-1">
+          <nav className="flex items-center gap-0.5 sm:gap-1 rounded-xl border border-border bg-card/60 p-0.5 sm:p-1">
             <Link
               href="/app/audit"
-              className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-1 sm:py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 rounded-lg px-2 sm:px-4 py-1 sm:py-1.5 text-xs font-semibold transition-all ${
                 isAuditActive
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
@@ -113,7 +113,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
             <Link
               href="/app/reports"
-              className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-1 sm:py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1 sm:gap-2 rounded-lg px-2 sm:px-4 py-1 sm:py-1.5 text-xs font-semibold transition-all ${
                 isReportsActive
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
@@ -125,12 +125,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
 
           {/* Right: Network Status Indicator */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {isWrongNetwork ? (
               <button
                 type="button"
                 onClick={switchToCelo}
-                className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-colors"
+                className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-colors"
                 title="Click to switch to Celo Mainnet"
               >
                 <AlertTriangle className="size-3 sm:size-3.5 text-amber-400 shrink-0" />
@@ -138,7 +138,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <span className="sm:hidden">Switch</span>
               </button>
             ) : (
-              <div className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-medium text-muted-foreground">
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-card px-2 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-muted-foreground">
                 <span className="size-1.5 sm:size-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="hidden sm:inline">Celo Mainnet</span>
                 <span className="sm:hidden">Celo</span>

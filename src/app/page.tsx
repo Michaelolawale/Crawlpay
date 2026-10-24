@@ -46,14 +46,20 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    fetch('/api/activity')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.activity) {
-          setActivities(data.activity);
-        }
-      })
-      .catch(() => {});
+    const fetchActivities = () => {
+      fetch('/api/activity')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.activity) {
+            setActivities(data.activity);
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchActivities();
+    const interval = setInterval(fetchActivities, 6000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleHeroSubmit = (e: React.FormEvent) => {

@@ -23,7 +23,7 @@ export default function AdminJobsPage() {
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
       const res = await fetch('/api/admin/jobs', {
         headers: { Authorization: `Bearer ${authKey}` },
       });
@@ -45,7 +45,7 @@ export default function AdminJobsPage() {
   const handleRerun = async (jobId: string) => {
     setRerunningId(jobId);
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
       const res = await fetch('/api/admin/jobs/rerun', {
         method: 'POST',
         headers: {

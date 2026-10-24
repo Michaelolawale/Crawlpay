@@ -24,7 +24,7 @@ export default function AdminOverviewPage() {
   const fetchData = async () => {
     setRefreshing(true);
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
       const res = await fetch('/api/admin/overview', {
         headers: { Authorization: `Bearer ${authKey}` },
       });

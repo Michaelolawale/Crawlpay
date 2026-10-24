@@ -55,6 +55,9 @@ module.exports = {
         sans: ['"DM Sans"', 'sans-serif'],
         display: ['"Space Grotesk"', 'sans-serif'],
       },
+      screens: {
+        xs: '420px',
+      },
     },
   },
   plugins: [],

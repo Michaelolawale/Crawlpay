@@ -14,7 +14,7 @@ export default function AdminAbusePage() {
   const fetchBlocklist = async () => {
     setLoading(true);
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
       const res = await fetch('/api/admin/abuse', {
         headers: { Authorization: `Bearer ${authKey}` },
       });
@@ -38,7 +38,7 @@ export default function AdminAbusePage() {
     if (!value.trim()) return;
 
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
       const res = await fetch('/api/admin/abuse', {
         method: 'POST',
         headers: {
@@ -59,7 +59,7 @@ export default function AdminAbusePage() {
 
   const handleRemove = async (bType: string, bValue: string) => {
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || 'crawlpay-admin-2025';
+      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
       const res = await fetch(`/api/admin/abuse?type=${encodeURIComponent(bType)}&value=${encodeURIComponent(bValue)}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${authKey}` },
