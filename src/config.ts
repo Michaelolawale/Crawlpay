@@ -25,6 +25,8 @@ export const CONFIG = {
   USEBUY_GATEWAY: 'https://gateway.usebuy.ai',
   X402_FACILITATOR: 'https://x402.celo.org',
   DEFAULT_AUDIT_PRICE_USD: '0.25',
+  CELO_PRICE_QUICK: process.env.CELO_PRICE_QUICK || '0.5',
+  CELO_PRICE_FULL: process.env.CELO_PRICE_FULL || '1.0',
   UPSTREAM_BROWSER_PRICE_USD: '0.045',
   UPSTREAM_SOCIAL_PRICE_USD: '0.020',
   // Hard Crawl & Spend Caps

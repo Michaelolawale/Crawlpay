@@ -3,6 +3,29 @@ import { db } from '@/services/db';
 
 export const dynamic = 'force-dynamic';
 
+function maskDomain(urlStr: string): string {
+  try {
+    let raw = urlStr.trim();
+    if (!raw.startsWith('http://') && !raw.startsWith('https://')) {
+      raw = 'https://' + raw;
+    }
+    const parsed = new URL(raw);
+    const host = parsed.hostname.replace(/^www\./, '');
+    const lastDot = host.lastIndexOf('.');
+    if (lastDot > 0) {
+      const name = host.slice(0, lastDot);
+      const tld = host.slice(lastDot); // e.g. .com, .io
+      if (name.length <= 3) {
+        return `${name[0]}*${name.slice(-1)}${tld}`;
+      }
+      return `${name.slice(0, 2)}***${name.slice(-2)}${tld}`;
+    }
+    return host.length > 4 ? `${host.slice(0, 2)}***${host.slice(-2)}` : 'dom***.com';
+  } catch {
+    return 'dom***.com';
+  }
+}
+
 export async function GET() {
   // Exclude is_test jobs from public activity and sort newest first
   const nonTestJobs = db
@@ -20,7 +43,7 @@ export async function GET() {
 
     return {
       id: job.id,
-      url: job.url,
+      url: maskDomain(job.url),
       depth: job.depth,
       status: job.status,
       timestamp: job.finished_at || job.started_at,
@@ -34,3 +57,4 @@ export async function GET() {
 
   return NextResponse.json({ activity });
 }
+

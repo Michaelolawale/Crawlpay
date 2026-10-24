@@ -437,7 +437,7 @@ export default function LandingPage() {
                   Live Audit Output
                 </span>
                 <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-1 break-words">
-                  Example report: evangelcarriersnetwork.org
+                  Demo preview: evangelcarriersnetwork.org
                 </h3>
                 <p className="text-xs text-muted-foreground mt-1">
                   A real, verified technical audit executed directly on Celo Mainnet.
@@ -448,7 +448,7 @@ export default function LandingPage() {
                 href="/example"
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm shrink-0"
               >
-                <span>View Real Example Report</span>
+                <span>View Demo Preview</span>
                 <ArrowRight className="size-3.5" />
               </Link>
             </div>
@@ -516,7 +516,10 @@ export default function LandingPage() {
                     <Activity className="size-3.5 text-primary shrink-0" />
                     <span className="font-mono text-muted-foreground">{act.truncatedWallet}</span>
                     <span className="text-muted-foreground">audited</span>
-                    <span className="font-mono font-medium text-foreground truncate max-w-[150px] sm:max-w-[240px]">
+                    <span
+                      className="font-mono font-medium text-foreground truncate max-w-[150px] sm:max-w-[240px]"
+                      title="Domain masked for client privacy"
+                    >
                       {act.url}
                     </span>
                     <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase font-semibold text-muted-foreground shrink-0">

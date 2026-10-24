@@ -38,7 +38,7 @@ export default function TermsPage() {
               Docs
             </Link>
             <Link href="/example" className="text-muted-foreground hover:text-foreground transition-colors">
-              Example Report
+              Demo Preview
             </Link>
           </nav>
 
@@ -86,7 +86,7 @@ export default function TermsPage() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="rounded-lg px-3 py-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
               >
-                View Example Report
+                View Demo Preview
               </Link>
               <Link
                 href="/app/audit"

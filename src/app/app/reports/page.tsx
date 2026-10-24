@@ -147,7 +147,7 @@ export default function AppReportsPage() {
               href="/example"
               className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-accent"
             >
-              <span>View Example Report</span>
+              <span>View Demo Preview</span>
             </Link>
           </div>
         </div>

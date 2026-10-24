@@ -60,6 +60,7 @@ export function PaymentModal({
   const [manualVerifying, setManualVerifying] = useState(false);
 
   const priceUsd = mode === 'quick' ? '0.25' : '0.50';
+  const celoAmount = mode === 'quick' ? (CONFIG.CELO_PRICE_QUICK || '0.5') : (CONFIG.CELO_PRICE_FULL || '1.0');
   const payToAddress = CONFIG.AGENT_WALLET_ADDRESS;
 
   // Restore active job if refreshed (auto-expires stale jobs after 3 minutes)
@@ -235,6 +236,9 @@ export function PaymentModal({
 
       // 4. Send attributed micropayment transaction on Celo Mainnet
       let submittedTxHash: string;
+      const celoInWei = BigInt(Math.floor(Number(celoAmount) * 1e18));
+      const valueHex = '0x' + celoInWei.toString(16);
+
       try {
         submittedTxHash = await ethereum.request({
           method: 'eth_sendTransaction',
@@ -242,7 +246,7 @@ export function PaymentModal({
             {
               from: userWallet,
               to: payToAddress,
-              value: '0x0', // Micro-payment
+              value: valueHex, // Deducts real CELO
               data: CONFIG.DATA_SUFFIX, // ERC-8021 Attribution tag suffix
             },
           ],
@@ -417,7 +421,7 @@ export function PaymentModal({
 
               <div className="flex items-center justify-between pt-2 border-t border-border/60">
                 <span className="text-sm font-semibold text-foreground">Total Fee:</span>
-                <span className="text-base font-bold text-primary font-mono">${priceUsd} USDT</span>
+                <span className="text-base font-bold text-primary font-mono">{celoAmount} CELO <span className="text-xs text-muted-foreground font-normal">(${priceUsd} USD)</span></span>
               </div>
             </div>
 
@@ -450,7 +454,7 @@ export function PaymentModal({
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md disabled:opacity-50"
               >
                 {isPaying ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
-                <span>{isPaying ? 'Processing...' : 'Pay with wallet'}</span>
+                <span>{isPaying ? 'Processing...' : `Pay ${celoAmount} CELO with wallet`}</span>
               </button>
 
               <div className="mt-2.5 text-center">
@@ -459,7 +463,7 @@ export function PaymentModal({
                   target="_blank"
                   className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
                 >
-                  See an example report
+                  See a demo preview
                 </Link>
               </div>
             </div>
@@ -478,7 +482,7 @@ export function PaymentModal({
               {showManualPay && (
                 <div className="mt-3 space-y-2.5 rounded-lg border border-border/70 bg-muted/20 p-3 text-xs animate-in fade-in">
                   <p className="text-[11px] text-muted-foreground">
-                    Transfer exactly <strong className="text-foreground">${priceUsd} USDT</strong> or equivalent to the agent address on Celo Mainnet:
+                    Transfer exactly <strong className="text-foreground">{celoAmount} CELO</strong> (${priceUsd} USDT/USD) to the agent address on Celo Mainnet:
                   </p>
                   <div className="flex items-center justify-between rounded-lg border border-border/70 bg-card px-3 py-2 font-mono text-[11px] min-w-0">
                     <span className="truncate mr-2 text-foreground flex-1 min-w-0">{payToAddress}</span>

@@ -345,6 +345,8 @@ export class IdentityService {
     valid: boolean;
     mined: boolean;
     hasAttributionTag: boolean;
+    isToAgent?: boolean;
+    valueCelo?: string;
     from?: string;
     to?: string;
     blockNumber?: number;
@@ -392,17 +394,51 @@ export class IdentityService {
       const verifyRes = await verifyTx({ client: this.publicClient, hash: txHash as `0x${string}` });
       const hasAttributionTag = verifyRes?.codes?.includes(CONFIG.ATTRIBUTION_TAG) ?? false;
 
-      // Check recipient or data
-      const isToAgent = tx.to?.toLowerCase() === CONFIG.AGENT_WALLET_ADDRESS.toLowerCase();
+      // Check recipient: Direct CELO or ERC20 Transfer event to agent wallet
+      const agentLower = CONFIG.AGENT_WALLET_ADDRESS.toLowerCase();
+      const isDirectToAgent = tx.to?.toLowerCase() === agentLower;
+      
+      // Check ERC20 Transfer logs to agent wallet: Transfer(address,address,uint256)
+      const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+      const erc20TransferToAgent = receipt.logs.some((log) => {
+        if (!log.topics || log.topics.length < 3) return false;
+        if (log.topics[0]?.toLowerCase() !== TRANSFER_TOPIC) return false;
+        const toTopic = log.topics[2]?.toLowerCase() || '';
+        return toTopic.endsWith(agentLower.slice(2));
+      });
+
+      const isToAgent = isDirectToAgent || erc20TransferToAgent;
+      const hasPositiveValue = (tx.value && tx.value > 0n) || erc20TransferToAgent;
+      const valueCelo = tx.value ? (Number(tx.value) / 1e18).toFixed(4) : '0';
+
+      if (!isToAgent) {
+        return {
+          valid: false,
+          mined: true,
+          hasAttributionTag,
+          isToAgent: false,
+          valueCelo,
+          from: tx.from,
+          to: tx.to || undefined,
+          blockNumber: Number(receipt.blockNumber),
+          celoscanUrl: `https://celoscan.io/tx/${txHash}`,
+          error: `Transaction was not sent to agent address (${CONFIG.AGENT_WALLET_ADDRESS})`,
+        };
+      }
+
+      const isValid = (receipt.status === 'success') && isToAgent && (hasPositiveValue || hasAttributionTag);
 
       return {
-        valid: receipt.status === 'success',
+        valid: isValid,
         mined: true,
         hasAttributionTag,
+        isToAgent,
+        valueCelo,
         from: tx.from,
         to: tx.to || undefined,
         blockNumber: Number(receipt.blockNumber),
         celoscanUrl: `https://celoscan.io/tx/${txHash}`,
+        error: !isValid ? 'Transaction has no value transferred or was reverted' : undefined,
       };
     } catch (err: any) {
       return {

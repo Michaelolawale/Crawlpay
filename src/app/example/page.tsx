@@ -30,7 +30,7 @@ export default function ExampleReportPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `crawlpay-example-evangelcarriersnetwork.json`;
+    a.download = `crawlpay-demo-preview-evangelcarriersnetwork.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -53,7 +53,7 @@ export default function ExampleReportPage() {
               crawl<span className="text-primary">pay</span>
             </span>
             <span className="hidden xs:inline-block rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-400 uppercase">
-              Example
+              Demo Preview
             </span>
           </Link>
 
@@ -161,7 +161,7 @@ export default function ExampleReportPage() {
                 <span className="text-xs text-muted-foreground">Executed on Celo Mainnet</span>
               </div>
               <h1 className="font-display text-lg sm:text-2xl font-bold text-foreground break-all sm:break-normal">
-                Example report: evangelcarriersnetwork.org
+                Demo preview: evangelcarriersnetwork.org
               </h1>
               <p className="text-xs text-muted-foreground">
                 This is a live, deterministic technical SEO audit executed directly through the Crawlpay pipeline on a real production domain.

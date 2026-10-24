@@ -102,26 +102,35 @@ export async function POST(req: NextRequest) {
       } else {
         const { identityService } = await import('@/services/identityService');
         const verification = await identityService.verifyPaymentTx(incomingTxHash);
-        if (verification.mined) {
+        if (verification.valid && verification.mined) {
           isVerifiedPaid = true;
           verifiedPaymentInfo = verification;
+
+          const isCelo = Boolean(verification.valueCelo && Number(verification.valueCelo) > 0);
 
           // Log payment in database
           paymentId = `pay_${Date.now()}`;
           db.addPayment({
             id: paymentId,
             wallet: verification.from || wallet || 'unknown',
-            amount: mode === 'full' ? '0.50' : '0.25',
-            token: 'USDT',
+            amount: isCelo
+              ? (verification.valueCelo || (mode === 'full' ? '1.0' : '0.5'))
+              : (mode === 'full' ? '0.50' : '0.25'),
+            token: isCelo ? 'CELO' : 'USDT',
             chain_id: CONFIG.CELO_CHAIN_ID,
             tx_hash: incomingTxHash,
             status: 'confirmed',
             created_at: new Date().toISOString(),
           });
+        } else {
+          return NextResponse.json(
+            { error: `Payment verification failed: ${verification.error || 'Transaction not verified on Celo'}` },
+            { status: 402 }
+          );
         }
       }
-    } else if (paymentProof || (authHeader && authHeader.toLowerCase().includes('x402'))) {
-      // Direct machine or simulated proof
+    } else if (process.env.ENABLE_SANDBOX === 'true' && paymentProof === 'sandbox_simulator_proof') {
+      // Internal developer sandbox only
       isVerifiedPaid = true;
     }
 
