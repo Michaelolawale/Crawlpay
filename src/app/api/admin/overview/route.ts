@@ -24,10 +24,24 @@ export async function GET(req: NextRequest) {
 
   // Revenue from confirmed non-test payments
   const nonTestJobPaymentIds = new Set(nonTestJobs.map((j) => j.payment_id).filter(Boolean));
-  const revenueUsd = payments
+  let totalUsd = 0;
+  let totalCelo = 0;
+
+  payments
     .filter((p) => p.status === 'confirmed' && (!p.id || nonTestJobPaymentIds.has(p.id) || p.id === 'pay_init_1'))
-    .reduce((acc, p) => acc + (parseFloat(p.amount) || 0), 0)
-    .toFixed(2);
+    .forEach((p) => {
+      const amt = parseFloat(p.amount) || 0;
+      if (p.token === 'CELO') {
+        totalCelo += amt;
+        // 3.3 CELO = $0.25 USD, 6.6 CELO = $0.50 USD
+        totalUsd += amt >= 6 ? 0.50 : 0.25;
+      } else {
+        totalUsd += amt;
+      }
+    });
+
+  const revenueUsd = totalUsd.toFixed(2);
+  const revenueCelo = totalCelo.toFixed(2);
 
   // Receiving wallet balance from Celo
   let onchainStatus: any = null;
@@ -39,6 +53,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     revenueUsd,
+    revenueCelo,
     totalCalls,
     successRate: `${successRate}%`,
     failedJobsCount: failedJobs.length,

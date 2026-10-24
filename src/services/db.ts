@@ -144,7 +144,7 @@ class CrawlpayDatabase {
       const agent = (process.env.AGENT_WALLET_ADDRESS || '0xf06c2b754d07cba299751f0985a48f8013bb6b39').toLowerCase();
       const res = await fetch(
         `https://explorer.celo.org/mainnet/api?module=account&action=txlist&address=${agent}&page=1&offset=100&sort=desc`,
-        { cache: 'no-store' }
+        { cache: 'no-store', signal: AbortSignal.timeout(4000) }
       );
       const json = await res.json().catch(() => ({}));
       if (json.status === '1' && Array.isArray(json.result)) {

@@ -80,9 +80,13 @@ export default function AdminOverviewPage() {
           </div>
           <div className="text-2xl font-bold text-foreground font-mono">
             ${data ? data.revenueUsd : '0.00'}{' '}
-            <span className="text-xs font-normal text-muted-foreground">USDT</span>
+            <span className="text-xs font-normal text-muted-foreground">USD equiv</span>
           </div>
-          <p className="text-[11px] text-muted-foreground">Verified non-test settlements on Celo</p>
+          <p className="text-[11px] text-muted-foreground">
+            {data?.revenueCelo && Number(data.revenueCelo) > 0
+              ? `${data.revenueCelo} CELO collected on-chain`
+              : 'Verified non-test settlements on Celo'}
+          </p>
         </div>
 
         {/* Total Audit Calls */}
