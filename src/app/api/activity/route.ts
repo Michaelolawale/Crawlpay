@@ -27,6 +27,8 @@ function maskDomain(urlStr: string): string {
 }
 
 export async function GET() {
+  await db.syncOnchainTransactions();
+
   // Exclude is_test jobs from public activity and sort newest first
   const nonTestJobs = db
     .listJobs(false)

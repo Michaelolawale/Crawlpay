@@ -126,7 +126,7 @@ export function PaymentModal({
     const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout guard
 
     try {
-      const auditRes = await fetch('/api/audit', {
+      let auditRes = await fetch('/api/audit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -140,6 +140,26 @@ export function PaymentModal({
         }),
         signal: controller.signal,
       });
+
+      // If 402/retry needed, give the node 3 seconds to sync and retry once
+      if (auditRes.status === 402) {
+        setStatusMessage('Syncing receipt on Celo Mainnet... retrying verification...');
+        await new Promise((r) => setTimeout(r, 3000));
+        auditRes = await fetch('/api/audit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `x402 ${proofTxHash}`,
+          },
+          body: JSON.stringify({
+            url: targetUrl,
+            mode,
+            paymentProof: proofTxHash,
+            wallet,
+          }),
+          signal: controller.signal,
+        });
+      }
 
       const auditData = await auditRes.json();
       if (!auditRes.ok) {
@@ -274,9 +294,28 @@ export function PaymentModal({
       // Transaction successfully broadcasted on Celo
       setTxHash(submittedTxHash);
       setStatusPhase('onchain_confirm');
-      setStatusMessage(`Transaction submitted (${submittedTxHash.slice(0, 10)}...). Confirming on Celo Mainnet...`);
+      setStatusMessage(`Transaction broadcast (${submittedTxHash.slice(0, 10)}...). Confirming on Celo Mainnet...`);
 
-      // 5. Execute audit pipeline
+      // 5. Poll for on-chain block mining confirmation
+      for (let attempt = 1; attempt <= 15; attempt++) {
+        try {
+          const verifyRes = await fetch('/api/payment/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ txHash: submittedTxHash }),
+          });
+          const vData = await verifyRes.json();
+          if (vData.valid && vData.mined) {
+            break;
+          }
+        } catch {}
+        if (attempt < 15) {
+          setStatusMessage(`Awaiting Celo block confirmation (attempt ${attempt}/15)...`);
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+
+      // 6. Execute audit pipeline with verified payment proof
       await executeAuditPipeline(submittedTxHash, userWallet);
     } catch (err: any) {
       console.error('[Payment Flow Error]', err);

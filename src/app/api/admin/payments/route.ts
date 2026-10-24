@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  await db.syncOnchainTransactions();
   const payments = db.listPayments();
   return NextResponse.json({ payments });
 }

@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized: Admin authentication required' }, { status: 401 });
   }
 
+  await db.syncOnchainTransactions();
   const jobs = db.listJobs(true);
   const payments = db.listPayments();
 
