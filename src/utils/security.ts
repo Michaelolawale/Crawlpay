@@ -201,7 +201,7 @@ export async function safeFetchHtml(
       signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; CrawlPayBot/1.0; +https://github.com/Michaelolawale/Crawlpay)',
-        Accept: 'text/html,application/xhtml+xml',
+        Accept: 'text/html,application/xhtml+xml,application/xml,text/xml;q=0.9,*/*;q=0.8',
       },
     });
 
@@ -213,7 +213,7 @@ export async function safeFetchHtml(
 
     // Check content-type header
     const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
+    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml') && !contentType.includes('xml')) {
       // Still accept if empty or text, but block binary/media
       if (contentType.includes('image/') || contentType.includes('video/') || contentType.includes('application/zip')) {
         throw new Error(`Invalid content-type: ${contentType}`);
@@ -243,6 +243,7 @@ export async function safeFetchHtml(
       accumulatedHtml += decoder.decode(value, { stream: true });
     }
 
+    accumulatedHtml += decoder.decode(); // Flush any trailing bytes
     return accumulatedHtml;
   } catch (err: any) {
     clearTimeout(timeoutId);

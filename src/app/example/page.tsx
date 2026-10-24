@@ -94,7 +94,7 @@ export default function ExampleReportPage() {
                 </span>
                 <span className="text-xs text-muted-foreground">Executed on Celo Mainnet</span>
               </div>
-              <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl">
+              <h1 className="font-display text-lg sm:text-2xl font-bold text-foreground break-all sm:break-normal">
                 Example report: evangelcarriersnetwork.org
               </h1>
               <p className="text-xs text-muted-foreground">

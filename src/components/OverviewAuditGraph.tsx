@@ -123,16 +123,16 @@ export function OverviewAuditGraph({
   return (
     <section className="scroll-mt-20 overflow-hidden rounded-lg border border-border bg-card shadow-sm mb-6" id="overview-graph-section">
       {/* Header bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4 sm:px-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border p-4 sm:p-6">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded bg-primary/10 text-primary">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex size-7 items-center justify-center rounded bg-primary/10 text-primary shrink-0">
               <Activity className="size-4" />
             </span>
             <h2 className="font-display text-sm font-semibold sm:text-base">
               Performance & Core Web Vitals Benchmark
             </h2>
-            <span className="rounded border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+            <span className="rounded border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary shrink-0">
               Detailed Graph
             </span>
           </div>
@@ -143,11 +143,11 @@ export function OverviewAuditGraph({
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center rounded-md border border-border bg-background p-1 text-[11px] font-medium">
+        <div className="flex items-center overflow-x-auto no-scrollbar max-w-full rounded-md border border-border bg-background p-1 text-[11px] font-medium shrink-0">
           <button
             type="button"
             onClick={() => setActiveTab('vitals')}
-            className={`rounded px-2.5 py-1 transition-colors ${
+            className={`rounded px-2.5 py-1 whitespace-nowrap transition-colors ${
               activeTab === 'vitals'
                 ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -158,7 +158,7 @@ export function OverviewAuditGraph({
           <button
             type="button"
             onClick={() => setActiveTab('pillars')}
-            className={`rounded px-2.5 py-1 transition-colors ${
+            className={`rounded px-2.5 py-1 whitespace-nowrap transition-colors ${
               activeTab === 'pillars'
                 ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -169,7 +169,7 @@ export function OverviewAuditGraph({
           <button
             type="button"
             onClick={() => setActiveTab('curve')}
-            className={`rounded px-2.5 py-1 transition-colors ${
+            className={`rounded px-2.5 py-1 whitespace-nowrap transition-colors ${
               activeTab === 'curve'
                 ? 'bg-primary text-primary-foreground font-semibold shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -180,22 +180,22 @@ export function OverviewAuditGraph({
         </div>
       </div>
 
-      <div className="p-5 sm:p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
         {/* Graph Legend & Status Summary */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-background/60 p-3 text-xs">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="flex items-center gap-2">
-              <span className="size-2.5 rounded-full bg-primary" />
-              <span className="font-semibold text-foreground">{auditedDomain}</span>
-              <span className="rounded border border-border bg-card px-1.5 py-0.2 text-[9px] text-muted-foreground font-mono">
+              <span className="size-2.5 rounded-full bg-primary shrink-0" />
+              <span className="font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">{auditedDomain}</span>
+              <span className="rounded border border-border bg-card px-1.5 py-0.2 text-[9px] text-muted-foreground font-mono shrink-0">
                 Target
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="size-2.5 rounded-full bg-crawl-blue" />
-              <span className="font-semibold text-foreground">{competitorDomain}</span>
-              <span className="rounded border border-border bg-card px-1.5 py-0.2 text-[9px] text-muted-foreground font-mono">
+              <span className="size-2.5 rounded-full bg-crawl-blue shrink-0" />
+              <span className="font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">{competitorDomain}</span>
+              <span className="rounded border border-border bg-card px-1.5 py-0.2 text-[9px] text-muted-foreground font-mono shrink-0">
                 Competitor
               </span>
             </div>
@@ -204,11 +204,11 @@ export function OverviewAuditGraph({
           <div className="flex items-center gap-2 text-[11px]">
             {isTargetFaster ? (
               <span className="flex items-center gap-1 font-medium text-primary">
-                <TrendingUp className="size-3.5" /> Your site leads by {Math.abs(Number(lcpDiff))}s
+                <TrendingUp className="size-3.5 shrink-0" /> Your site leads by {Math.abs(Number(lcpDiff))}s
               </span>
             ) : (
               <span className="flex items-center gap-1 font-medium text-crawl-lime">
-                <TrendingDown className="size-3.5" /> Competitor leads by {Math.abs(Number(lcpDiff))}s LCP
+                <TrendingDown className="size-3.5 shrink-0" /> Competitor leads by {Math.abs(Number(lcpDiff))}s LCP
               </span>
             )}
           </div>
@@ -496,13 +496,13 @@ export function OverviewAuditGraph({
               </svg>
 
               {/* Bottom Timeline Axis */}
-              <div className="flex justify-between pt-2 border-t border-border text-[9px] font-mono text-muted-foreground">
-                <span>0.0s (Request)</span>
-                <span>1.0s (FCP)</span>
-                <span>2.0s (Interactive)</span>
-                <span className="text-primary font-bold">2.5s (Google Good)</span>
+              <div className="flex justify-between pt-2 border-t border-border text-[9px] font-mono text-muted-foreground overflow-x-auto">
+                <span>0.0s <span className="hidden sm:inline">(Request)</span></span>
+                <span>1.0s <span className="hidden sm:inline">(FCP)</span></span>
+                <span>2.0s <span className="hidden sm:inline">(Interactive)</span></span>
+                <span className="text-primary font-bold">2.5s <span className="hidden sm:inline">(Google Good)</span></span>
                 <span>3.0s</span>
-                <span>4.0s (Timeout)</span>
+                <span>4.0s <span className="hidden sm:inline">(Timeout)</span></span>
               </div>
             </div>
           </div>

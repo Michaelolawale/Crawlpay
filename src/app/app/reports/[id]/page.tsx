@@ -136,14 +136,16 @@ export default function SingleReportPage() {
           >
             <ArrowLeft className="size-4" />
           </button>
-          <div>
-            <div className="flex items-center gap-2">
-              <Globe className="size-4 text-primary" />
-              <h1 className="font-mono text-lg font-bold text-foreground">{report.targetUrl}</h1>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <Globe className="size-4 text-primary shrink-0" />
+              <h1 className="font-mono text-base sm:text-lg font-bold text-foreground truncate">{report.targetUrl}</h1>
             </div>
-            <p className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-              <Calendar className="size-3" />
-              <span>{new Date(report.auditTimestamp).toLocaleString()}</span>
+            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-2 mt-0.5">
+              <span className="flex items-center gap-1">
+                <Calendar className="size-3 shrink-0" />
+                <span>{new Date(report.auditTimestamp).toLocaleString()}</span>
+              </span>
               <span>•</span>
               <span className="font-mono text-[11px] text-muted-foreground">ID: {reportId}</span>
             </p>

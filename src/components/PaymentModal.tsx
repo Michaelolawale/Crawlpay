@@ -50,6 +50,7 @@ export function PaymentModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isWrongNetwork, setIsWrongNetwork] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+  const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
 
   // Expandable sections
   const [showManualPay, setShowManualPay] = useState(false);
@@ -60,18 +61,6 @@ export function PaymentModal({
 
   const priceUsd = mode === 'quick' ? '0.25' : '0.50';
   const payToAddress = CONFIG.AGENT_WALLET_ADDRESS;
-
-  // Helper to completely clear stuck active jobs
-  const handleResetFlow = () => {
-    try {
-      localStorage.removeItem('crawlpay_active_job');
-    } catch {}
-    setStep('review');
-    setStatusPhase('wallet_confirm');
-    setStatusMessage('Waiting to start...');
-    setErrorMessage(null);
-    setIsPaying(false);
-  };
 
   // Restore active job if refreshed (auto-expires stale jobs after 3 minutes)
   useEffect(() => {
@@ -92,6 +81,7 @@ export function PaymentModal({
           setStatusMessage(active.statusMessage || 'Processing your audit request...');
           setTxHash(active.txHash || null);
           setCreatedReportId(active.reportId || null);
+          if (active.userWallet) setConnectedWallet(active.userWallet);
         }
       }
     } catch {}
@@ -103,6 +93,89 @@ export function PaymentModal({
     navigator.clipboard.writeText(text);
     setCopiedManual(true);
     setTimeout(() => setCopiedManual(false), 2000);
+  };
+
+  /**
+   * Execute Audit Pipeline with Verified Payment Proof
+   */
+  const executeAuditPipeline = async (proofTxHash: string, userWalletAddr?: string) => {
+    setIsPaying(true);
+    setStatusPhase('running_audit');
+    const runningMsg = 'Payment confirmed! Running multi-page crawler and deterministic SEO checks...';
+    setStatusMessage(runningMsg);
+    setErrorMessage(null);
+
+    const wallet = userWalletAddr || connectedWallet || 'unknown';
+    const newJobId = `job_${Date.now()}`;
+    localStorage.setItem(
+      'crawlpay_active_job',
+      JSON.stringify({
+        jobId: newJobId,
+        targetUrl,
+        mode,
+        txHash: proofTxHash,
+        userWallet: wallet,
+        statusPhase: 'running_audit',
+        statusMessage: runningMsg,
+        timestamp: Date.now(),
+      })
+    );
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 65000); // 65s timeout guard
+
+    try {
+      const auditRes = await fetch('/api/audit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `x402 ${proofTxHash}`,
+        },
+        body: JSON.stringify({
+          url: targetUrl,
+          mode,
+          paymentProof: proofTxHash,
+          wallet,
+        }),
+        signal: controller.signal,
+      });
+
+      const auditData = await auditRes.json();
+      if (!auditRes.ok) {
+        throw new Error(auditData.error || 'Audit crawler failed during execution.');
+      }
+
+      const generatedReportId = `rep_${Date.now()}`;
+      setCreatedReportId(generatedReportId);
+      setStatusPhase('ready');
+      setStatusMessage('Audit completed successfully! Your report and code fixes are ready.');
+
+      // Update stored active job
+      localStorage.setItem(
+        'crawlpay_active_job',
+        JSON.stringify({
+          jobId: newJobId,
+          targetUrl,
+          mode,
+          txHash: proofTxHash,
+          userWallet: wallet,
+          statusPhase: 'ready',
+          reportId: generatedReportId,
+        })
+      );
+
+      // Save report in localStorage history
+      saveToHistory(auditData, generatedReportId, proofTxHash, mode, targetUrl, wallet);
+      onAuditReady?.(auditData, generatedReportId);
+      onPaymentConfirmed?.(proofTxHash);
+    } catch (err: any) {
+      console.error('[Audit Pipeline Error]', err);
+      setStatusPhase('failed');
+      setErrorMessage(err?.message || 'Audit execution encountered an error.');
+    } finally {
+      clearTimeout(timeoutId);
+      setIsPaying(false);
+    }
   };
 
   /**
@@ -127,6 +200,7 @@ export function PaymentModal({
         throw new Error('Wallet connection was cancelled or rejected.');
       }
       const userWallet = accounts[0];
+      setConnectedWallet(userWallet);
 
       // 2. Ensure Celo Mainnet (42220 / 0xa4ec)
       try {
@@ -174,7 +248,7 @@ export function PaymentModal({
           ],
         });
       } catch (txErr: any) {
-        // Handle User Rejection gracefully
+        // Handle User Rejection gracefully (No funds deducted yet)
         if (txErr?.code === 4001 || txErr?.message?.toLowerCase().includes('reject') || txErr?.message?.toLowerCase().includes('denied')) {
           setStep('review');
           setErrorMessage('Transaction was rejected in your wallet. You can try again whenever you’re ready.');
@@ -193,95 +267,13 @@ export function PaymentModal({
         throw txErr;
       }
 
+      // Transaction successfully broadcasted on Celo
       setTxHash(submittedTxHash);
       setStatusPhase('onchain_confirm');
       setStatusMessage(`Transaction submitted (${submittedTxHash.slice(0, 10)}...). Confirming on Celo Mainnet...`);
 
-      // Persist active job to survive refresh
-      const newJobId = `job_${Date.now()}`;
-      localStorage.setItem(
-        'crawlpay_active_job',
-        JSON.stringify({
-          jobId: newJobId,
-          targetUrl,
-          mode,
-          txHash: submittedTxHash,
-          userWallet,
-          statusPhase: 'onchain_confirm',
-          statusMessage: `Transaction submitted (${submittedTxHash.slice(0, 10)}...). Confirming on Celo Mainnet...`,
-          timestamp: Date.now(),
-        })
-      );
-
-      // 5. Trigger audit pipeline execution
-      setStatusPhase('running_audit');
-      const runningMsg = 'Payment verified! Running multi-page crawler and deterministic SEO checks...';
-      setStatusMessage(runningMsg);
-      localStorage.setItem(
-        'crawlpay_active_job',
-        JSON.stringify({
-          jobId: newJobId,
-          targetUrl,
-          mode,
-          txHash: submittedTxHash,
-          userWallet,
-          statusPhase: 'running_audit',
-          statusMessage: runningMsg,
-          timestamp: Date.now(),
-        })
-      );
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 65000); // 65 second timeout guard
-
-      let auditRes: Response;
-      try {
-        auditRes = await fetch('/api/audit', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `x402 ${submittedTxHash}`,
-          },
-          body: JSON.stringify({
-            url: targetUrl,
-            mode,
-            paymentProof: submittedTxHash,
-            wallet: userWallet,
-          }),
-          signal: controller.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      const auditData = await auditRes.json();
-      if (!auditRes.ok) {
-        throw new Error(auditData.error || 'Audit crawler failed during execution.');
-      }
-
-      const generatedReportId = `rep_${Date.now()}`;
-      setCreatedReportId(generatedReportId);
-      setStatusPhase('ready');
-      setStatusMessage('Audit completed successfully! Your report and code fixes are ready.');
-
-      // Update stored job
-      localStorage.setItem(
-        'crawlpay_active_job',
-        JSON.stringify({
-          jobId: newJobId,
-          targetUrl,
-          mode,
-          txHash: submittedTxHash,
-          userWallet,
-          statusPhase: 'ready',
-          reportId: generatedReportId,
-        })
-      );
-
-      // Save report in localStorage history
-      saveToHistory(auditData, generatedReportId, submittedTxHash, mode, targetUrl, userWallet);
-      onAuditReady?.(auditData, generatedReportId);
-      onPaymentConfirmed?.(submittedTxHash);
+      // 5. Execute audit pipeline
+      await executeAuditPipeline(submittedTxHash, userWallet);
     } catch (err: any) {
       console.error('[Payment Flow Error]', err);
       if (step === 'status') {
@@ -317,29 +309,7 @@ export function PaymentModal({
       if (verifyData.valid && verifyData.mined) {
         setTxHash(manualTxInput.trim());
         setStep('status');
-        setStatusPhase('running_audit');
-        setStatusMessage('Manual transaction confirmed! Running audit...');
-
-        const auditRes = await fetch('/api/audit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            url: targetUrl,
-            mode,
-            paymentProof: manualTxInput.trim(),
-          }),
-        });
-
-        const auditData = await auditRes.json();
-        if (!auditRes.ok) throw new Error(auditData.error || 'Audit execution failed.');
-
-        const repId = `rep_${Date.now()}`;
-        setCreatedReportId(repId);
-        setStatusPhase('ready');
-        setStatusMessage('Audit completed successfully!');
-        saveToHistory(auditData, repId, manualTxInput.trim(), mode, targetUrl, 'Manual');
-        onAuditReady?.(auditData, repId);
-        onPaymentConfirmed?.(manualTxInput.trim());
+        await executeAuditPipeline(manualTxInput.trim(), 'Manual');
       } else {
         setErrorMessage(verifyData.error || 'Transaction was not found or has not been mined yet on Celo Mainnet.');
       }
@@ -384,18 +354,13 @@ export function PaymentModal({
   };
 
   const handleClose = () => {
-    if (statusPhase === 'running_audit' || statusPhase === 'onchain_confirm') {
-      if (!confirm('An audit is currently in progress. Are you sure you want to close this window?')) {
-        return;
-      }
-    }
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/30 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
       {/* Modal Container: Bottom sheet on mobile, rounded card on desktop */}
-      <div className="relative w-full max-w-lg rounded-t-2xl sm:rounded-2xl border border-border bg-card p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg rounded-t-2xl sm:rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={handleClose}
@@ -407,7 +372,7 @@ export function PaymentModal({
 
         {/* Modal Header */}
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
             <Wallet className="size-5" />
           </div>
           <div>
@@ -430,15 +395,15 @@ export function PaymentModal({
           <div className="mt-5 space-y-4">
             {/* Summary Box with clean elevated background */}
             <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Target URL:</span>
-                <span className="font-mono font-medium text-foreground truncate max-w-[280px]">
+              <div className="flex items-center justify-between text-xs gap-2">
+                <span className="text-muted-foreground shrink-0">Target URL:</span>
+                <span className="font-mono font-medium text-foreground truncate max-w-[180px] sm:max-w-[280px]">
                   {targetUrl}
                 </span>
               </div>
 
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Crawl Depth:</span>
+              <div className="flex items-center justify-between text-xs gap-2">
+                <span className="text-muted-foreground shrink-0">Crawl Depth:</span>
                 <span className="font-medium text-foreground capitalize">
                   {mode === 'quick' ? 'Quick Audit (1 Page)' : 'Full Audit (Up to 50 Pages)'}
                 </span>
@@ -460,7 +425,7 @@ export function PaymentModal({
             {errorMessage && (
               <div className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
                 <AlertCircle className="size-4 shrink-0 mt-0.5" />
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <p>{errorMessage}</p>
                   {isWrongNetwork && (
                     <button
@@ -515,8 +480,8 @@ export function PaymentModal({
                   <p className="text-[11px] text-muted-foreground">
                     Transfer exactly <strong className="text-foreground">${priceUsd} USDT</strong> or equivalent to the agent address on Celo Mainnet:
                   </p>
-                  <div className="flex items-center justify-between rounded-lg border border-border/70 bg-card px-3 py-2 font-mono text-[11px]">
-                    <span className="truncate mr-2 text-foreground">{payToAddress}</span>
+                  <div className="flex items-center justify-between rounded-lg border border-border/70 bg-card px-3 py-2 font-mono text-[11px] min-w-0">
+                    <span className="truncate mr-2 text-foreground flex-1 min-w-0">{payToAddress}</span>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(payToAddress)}
@@ -531,19 +496,19 @@ export function PaymentModal({
                     <label className="block text-[11px] text-muted-foreground mb-1">
                       Already sent? Enter your transaction hash:
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <input
                         type="text"
                         placeholder="0x..."
                         value={manualTxInput}
                         onChange={(e) => setManualTxInput(e.target.value)}
-                        className="flex-1 rounded-lg border border-border/70 bg-card px-3 py-1.5 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="flex-1 rounded-lg border border-border/70 bg-card px-3 py-2 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary min-w-0"
                       />
                       <button
                         type="button"
                         onClick={handleVerifyManualTx}
                         disabled={manualVerifying}
-                        className="rounded-lg bg-primary/20 text-primary px-3 py-1.5 text-xs font-semibold hover:bg-primary/30 disabled:opacity-50"
+                        className="rounded-lg bg-primary/20 text-primary px-3 py-2 text-xs font-semibold hover:bg-primary/30 disabled:opacity-50 shrink-0"
                       >
                         {manualVerifying ? <Loader2 className="size-3.5 animate-spin" /> : "I've sent it"}
                       </button>
@@ -674,16 +639,43 @@ export function PaymentModal({
               )}
             </div>
 
-            {/* Cancel or Start fresh if user wants to abort */}
-            {statusPhase !== 'ready' && statusPhase !== 'failed' && (
+            {/* Before payment deduction: safe cancel option */}
+            {statusPhase === 'wallet_confirm' && (
               <div className="flex justify-center pt-1">
                 <button
                   type="button"
-                  onClick={handleResetFlow}
-                  className="text-xs text-muted-foreground/80 hover:text-foreground hover:underline transition-colors cursor-pointer"
+                  onClick={() => {
+                    setStep('review');
+                    setStatusPhase('wallet_confirm');
+                    setErrorMessage(null);
+                    setIsPaying(false);
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground underline transition-colors cursor-pointer"
                 >
-                  Cancel or start fresh
+                  Cancel and return to review
                 </button>
+              </div>
+            )}
+
+            {/* After payment deduction: Run in background reassurance (never cancel) */}
+            {(statusPhase === 'onchain_confirm' || statusPhase === 'running_audit') && (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs space-y-1.5 animate-in fade-in">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 font-semibold text-foreground text-[11px]">
+                    <ShieldCheck className="size-3.5 text-emerald-400 shrink-0" />
+                    <span>Payment Verified on Celo</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleClose}
+                    className="text-primary hover:underline text-[11px] font-semibold cursor-pointer"
+                  >
+                    Run in background
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Your audit is executing. You can keep this dialog open or close it—your report will be saved to your Reports history automatically upon completion.
+                </p>
               </div>
             )}
 
@@ -706,7 +698,7 @@ export function PaymentModal({
               </div>
             )}
 
-            {/* Action when Failed */}
+            {/* Action when Failed: Never charge twice, offer free retry using txHash */}
             {statusPhase === 'failed' && (
               <div className="space-y-3">
                 <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
@@ -717,22 +709,33 @@ export function PaymentModal({
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => {
-                      setStep('review');
-                      setStatusPhase('wallet_confirm');
-                      setErrorMessage(null);
-                    }}
+                    onClick={handleClose}
                     className="flex-1 rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:bg-accent transition-colors"
                   >
-                    Return to Review
+                    Close
                   </button>
-                  <button
-                    type="button"
-                    onClick={handlePayWithWallet}
-                    className="flex-1 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
-                  >
-                    Retry Audit
-                  </button>
+                  {txHash ? (
+                    <button
+                      type="button"
+                      onClick={() => executeAuditPipeline(txHash, connectedWallet || undefined)}
+                      disabled={isPaying}
+                      className="flex-1 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    >
+                      {isPaying ? 'Retrying...' : 'Retry Audit (No Extra Fee)'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep('review');
+                        setStatusPhase('wallet_confirm');
+                        setErrorMessage(null);
+                      }}
+                      className="flex-1 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                    >
+                      Return to Review
+                    </button>
+                  )}
                 </div>
               </div>
             )}

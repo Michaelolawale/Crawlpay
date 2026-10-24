@@ -86,13 +86,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* App Top Bar */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 sm:h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           {/* Left: Logo */}
-          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-            <span className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <CrawlLogo className="size-5" />
+          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-90 shrink-0">
+            <span className="flex size-8 sm:size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+              <CrawlLogo className="size-4 sm:size-5" />
             </span>
-            <span className="font-display text-lg font-bold tracking-tight">
+            <span className="font-display text-base sm:text-lg font-bold tracking-tight">
               crawl<span className="text-primary">pay</span>
             </span>
           </Link>
@@ -101,45 +101,45 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <nav className="flex items-center gap-1 rounded-xl border border-border bg-card/60 p-1">
             <Link
               href="/app/audit"
-              className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-1 sm:py-1.5 text-xs font-semibold transition-all ${
                 isAuditActive
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
-              <Search className="size-3.5" />
+              <Search className="size-3 sm:size-3.5" />
               <span>Audit</span>
             </Link>
 
             <Link
               href="/app/reports"
-              className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 rounded-lg px-2.5 sm:px-4 py-1 sm:py-1.5 text-xs font-semibold transition-all ${
                 isReportsActive
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
-              <FileText className="size-3.5" />
+              <FileText className="size-3 sm:size-3.5" />
               <span>Reports</span>
             </Link>
           </nav>
 
           {/* Right: Network Status Indicator */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {isWrongNetwork ? (
               <button
                 type="button"
                 onClick={switchToCelo}
-                className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-colors"
                 title="Click to switch to Celo Mainnet"
               >
-                <AlertTriangle className="size-3.5 text-amber-400 shrink-0" />
+                <AlertTriangle className="size-3 sm:size-3.5 text-amber-400 shrink-0" />
                 <span className="hidden sm:inline">Wrong Network — Switch to Celo</span>
-                <span className="sm:hidden">Switch Celo</span>
+                <span className="sm:hidden">Switch</span>
               </button>
             ) : (
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-muted-foreground">
-                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2 sm:px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-medium text-muted-foreground">
+                <span className="size-1.5 sm:size-2 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="hidden sm:inline">Celo Mainnet</span>
                 <span className="sm:hidden">Celo</span>
               </div>
@@ -149,14 +149,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 relative">
         {children}
       </main>
 
       {/* Unified App Footer */}
-      <footer className="border-t border-border bg-card/40 py-8 text-xs text-muted-foreground">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
-          <div className="flex items-center gap-4">
+      <footer className="border-t border-border bg-card/40 py-6 sm:py-8 text-xs text-muted-foreground">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-3 sm:px-6 lg:px-8 sm:flex-row text-center sm:text-left">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <Link href="/docs" className="hover:text-foreground transition-colors">
               Docs
             </Link>
@@ -173,7 +173,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             </a>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-[11px]">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px]">
             <span>Agent:</span>
             <a
               href={`https://celoscan.io/address/${CONFIG.AGENT_WALLET_ADDRESS}`}

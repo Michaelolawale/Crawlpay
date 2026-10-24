@@ -37,30 +37,36 @@ export async function fetchAndParseSitemap(
       const $ = cheerio.load(xml, { xmlMode: true });
 
       // Check if it's a sitemap index
-      const sitemapTags = $('sitemap > loc');
+      const sitemapTags = $('sitemap > loc, sitemap loc');
       if (sitemapTags.length > 0) {
-        // Child sitemaps - fetch up to first 2 to keep crawl within limits
+        // Child sitemaps - fetch up to first 3 to keep crawl within limits
         const childSitemaps: string[] = [];
         sitemapTags.slice(0, 3).each((_, el) => {
           const loc = $(el).text().trim();
-          if (loc) childSitemaps.push(loc);
+          if (loc && (loc.startsWith('http://') || loc.startsWith('https://'))) {
+            childSitemaps.push(loc);
+          }
         });
 
         for (const childUrl of childSitemaps) {
           try {
             const childXml = await safeFetchHtml(childUrl, 2 * 1024 * 1024, 4000);
             const $child = cheerio.load(childXml, { xmlMode: true });
-            $child('url > loc').each((_, el) => {
+            $child('url > loc, url loc, loc').each((_, el) => {
               const url = $child(el).text().trim();
-              if (url) seenUrls.add(url);
+              if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+                seenUrls.add(url);
+              }
             });
           } catch {}
         }
       } else {
         // Standard sitemap
-        $('url > loc').each((_, el) => {
+        $('url > loc, url loc, loc').each((_, el) => {
           const url = $(el).text().trim();
-          if (url) seenUrls.add(url);
+          if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+            seenUrls.add(url);
+          }
         });
       }
 

@@ -76,33 +76,49 @@ export async function POST(req: NextRequest) {
     let paymentId: string | undefined;
 
     if (incomingTxHash) {
-      // Replay prevention: verify tx hash has not been previously used
+      // Replay prevention & idempotent retry support
       const existingPayment = db.getPaymentByTxHash(incomingTxHash);
       if (existingPayment) {
-        return NextResponse.json(
-          { error: 'Transaction hash has already been used for a previous audit.' },
-          { status: 400 }
+        // Check if there is already a completed report for this payment
+        const allJobs = db.listJobs();
+        const completedJob = allJobs.find(
+          (j) => j.payment_id === existingPayment.id && j.status === 'done' && j.report_id
         );
-      }
 
-      const { identityService } = await import('@/services/identityService');
-      const verification = await identityService.verifyPaymentTx(incomingTxHash);
-      if (verification.mined) {
+        if (completedJob && completedJob.report_id) {
+          const existingReport = db.getReport(completedJob.report_id);
+          if (existingReport) {
+            return NextResponse.json(existingReport);
+          }
+          return NextResponse.json(
+            { error: 'Transaction hash has already been used for a previous audit.' },
+            { status: 400 }
+          );
+        }
+
+        // Previous job failed, timed out, or is being retried — allow retry with existing payment!
         isVerifiedPaid = true;
-        verifiedPaymentInfo = verification;
+        paymentId = existingPayment.id;
+      } else {
+        const { identityService } = await import('@/services/identityService');
+        const verification = await identityService.verifyPaymentTx(incomingTxHash);
+        if (verification.mined) {
+          isVerifiedPaid = true;
+          verifiedPaymentInfo = verification;
 
-        // Log payment in database
-        paymentId = `pay_${Date.now()}`;
-        db.addPayment({
-          id: paymentId,
-          wallet: verification.from || wallet || 'unknown',
-          amount: mode === 'full' ? '0.50' : '0.25',
-          token: 'USDT',
-          chain_id: CONFIG.CELO_CHAIN_ID,
-          tx_hash: incomingTxHash,
-          status: 'confirmed',
-          created_at: new Date().toISOString(),
-        });
+          // Log payment in database
+          paymentId = `pay_${Date.now()}`;
+          db.addPayment({
+            id: paymentId,
+            wallet: verification.from || wallet || 'unknown',
+            amount: mode === 'full' ? '0.50' : '0.25',
+            token: 'USDT',
+            chain_id: CONFIG.CELO_CHAIN_ID,
+            tx_hash: incomingTxHash,
+            status: 'confirmed',
+            created_at: new Date().toISOString(),
+          });
+        }
       }
     } else if (paymentProof || (authHeader && authHeader.toLowerCase().includes('x402'))) {
       // Direct machine or simulated proof

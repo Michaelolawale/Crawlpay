@@ -334,10 +334,10 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           SECTION 1: SEMRUSH-STYLE SITE AUDIT HERO
           Circular Progress Bar + Issue Distribution Bar Charts
           ========================================================================= */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           {/* Circular Site Health Gauge */}
-          <div className="flex items-center gap-5">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-5">
             <div className="relative flex size-28 shrink-0 items-center justify-center">
               <svg className="size-full -rotate-90" viewBox="0 0 110 110">
                 {/* Background Ring Track */}
@@ -376,7 +376,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <span className="font-display text-base font-bold text-foreground">
                   Site Audit Health
                 </span>
@@ -384,10 +384,10 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                   {healthMeta.label}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed mx-auto sm:mx-0">
                 Benchmark against top 10% web assets (avg 82%). Evaluated via {pagesChecked} page crawl.
               </p>
-              <div className="flex items-center gap-2 pt-0.5 text-[11px] text-muted-foreground font-mono">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-0.5 text-[11px] text-muted-foreground font-mono">
                 <span>{pagesChecked} Page{pagesChecked > 1 ? 's' : ''} Crawled</span>
                 <span>•</span>
                 <span>Stack: {detectedStack?.cms || 'Custom'}</span>
@@ -397,28 +397,28 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
           {/* Tri-Color Semrush Issues Breakdown (Errors, Warnings, Notices) */}
           <div className="flex-1 max-w-xl space-y-3">
-            <div className="grid grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
               {/* Errors Card */}
               <button
                 type="button"
                 onClick={() => setFilterTab(filterTab === 'errors' ? 'all' : 'errors')}
-                className={`flex flex-col rounded-xl border p-3 text-left transition-all ${
+                className={`flex flex-col rounded-xl border p-2 sm:p-3 text-left transition-all ${
                   filterTab === 'errors'
                     ? 'border-rose-500 bg-rose-500/10 ring-1 ring-rose-500'
                     : 'border-border bg-background/60 hover:border-rose-500/40 hover:bg-rose-500/5'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-400 flex items-center gap-1">
-                    <ShieldAlert className="size-3" />
-                    Errors
+                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-rose-400 flex items-center gap-1">
+                    <ShieldAlert className="size-3 shrink-0" />
+                    <span>Errors</span>
                   </span>
-                  <span className="size-2 rounded-full bg-rose-500" />
+                  <span className="size-1.5 sm:size-2 rounded-full bg-rose-500 shrink-0" />
                 </div>
-                <span className="mt-1 font-display text-xl font-bold text-rose-400">
+                <span className="mt-1 font-display text-lg sm:text-xl font-bold text-rose-400">
                   {errorCount || errorGroups.length}
                 </span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate block">
                   {errorGroups.length} critical issue{errorGroups.length !== 1 ? 's' : ''}
                 </span>
               </button>
@@ -427,23 +427,23 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               <button
                 type="button"
                 onClick={() => setFilterTab(filterTab === 'warnings' ? 'all' : 'warnings')}
-                className={`flex flex-col rounded-xl border p-3 text-left transition-all ${
+                className={`flex flex-col rounded-xl border p-2 sm:p-3 text-left transition-all ${
                   filterTab === 'warnings'
                     ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500'
                     : 'border-border bg-background/60 hover:border-amber-500/40 hover:bg-amber-500/5'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                    <AlertTriangle className="size-3" />
-                    Warnings
+                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                    <AlertTriangle className="size-3 shrink-0" />
+                    <span>Warns</span>
                   </span>
-                  <span className="size-2 rounded-full bg-amber-500" />
+                  <span className="size-1.5 sm:size-2 rounded-full bg-amber-500 shrink-0" />
                 </div>
-                <span className="mt-1 font-display text-xl font-bold text-amber-400">
+                <span className="mt-1 font-display text-lg sm:text-xl font-bold text-amber-400">
                   {warningCount || warningGroups.length}
                 </span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate block">
                   {warningGroups.length} medium issue{warningGroups.length !== 1 ? 's' : ''}
                 </span>
               </button>
@@ -452,23 +452,23 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               <button
                 type="button"
                 onClick={() => setFilterTab(filterTab === 'notices' ? 'all' : 'notices')}
-                className={`flex flex-col rounded-xl border p-3 text-left transition-all ${
+                className={`flex flex-col rounded-xl border p-2 sm:p-3 text-left transition-all ${
                   filterTab === 'notices'
                     ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
                     : 'border-border bg-background/60 hover:border-blue-500/40 hover:bg-blue-500/5'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-blue-400 flex items-center gap-1">
-                    <Info className="size-3" />
-                    Notices
+                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-blue-400 flex items-center gap-1">
+                    <Info className="size-3 shrink-0" />
+                    <span>Notices</span>
                   </span>
-                  <span className="size-2 rounded-full bg-blue-500" />
+                  <span className="size-1.5 sm:size-2 rounded-full bg-blue-500 shrink-0" />
                 </div>
-                <span className="mt-1 font-display text-xl font-bold text-blue-400">
+                <span className="mt-1 font-display text-lg sm:text-xl font-bold text-blue-400">
                   {noticeCount || noticeGroups.length}
                 </span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate block">
                   {noticeGroups.length} notice item{noticeGroups.length !== 1 ? 's' : ''}
                 </span>
               </button>
@@ -742,12 +742,12 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               {performance.opportunities.map((opp, idx) => (
                 <div
                   key={idx}
-                  className="flex items-start justify-between gap-3 rounded-lg border border-border bg-background/70 p-3 text-xs"
+                  className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-3 rounded-lg border border-border bg-background/70 p-3 text-xs"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`rounded px-1.5 py-0.2 text-[10px] font-bold ${
+                        className={`rounded px-1.5 py-0.2 text-[10px] font-bold shrink-0 ${
                           opp.impact === 'High'
                             ? 'bg-rose-500/15 text-rose-400'
                             : opp.impact === 'Medium'
@@ -760,7 +760,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                       <span className="font-medium text-foreground">{opp.title}</span>
                     </div>
                   </div>
-                  <span className="shrink-0 rounded bg-primary/10 border border-primary/20 px-2 py-0.5 font-mono text-[11px] font-bold text-primary">
+                  <span className="shrink-0 self-start sm:self-auto rounded bg-primary/10 border border-primary/20 px-2 py-0.5 font-mono text-[11px] font-bold text-primary">
                     {opp.savingEstimate}
                   </span>
                 </div>
@@ -774,10 +774,10 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           SECTION 4: COMPETITOR ANALYSIS BENCHMARK
           Head-to-head comparison with rivals (winner, score delta, speed advantage)
           ========================================================================= */}
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-5">
+      <section className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
               <Swords className="size-4" />
             </div>
             <div>
@@ -811,7 +811,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           <button
             type="submit"
             disabled={compLoading || !competitorUrl.trim()}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm shrink-0"
           >
             {compLoading ? (
               <>
@@ -836,20 +836,20 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
         {/* Competitor Results View */}
         {comparison ? (
-          <div className="space-y-5 rounded-xl border border-border bg-background/50 p-5 animate-in fade-in">
+          <div className="space-y-5 rounded-xl border border-border bg-background/50 p-4 sm:p-5 animate-in fade-in">
             {/* Winner Badge Banner */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5">
               <div className="flex items-center gap-2.5">
                 {comparison.winner === 'target' ? (
-                  <span className="flex size-7 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold shrink-0">
                     🏆
                   </span>
                 ) : comparison.winner === 'competitor' ? (
-                  <span className="flex size-7 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-bold">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-bold shrink-0">
                     ⚡
                   </span>
                 ) : (
-                  <span className="flex size-7 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 font-bold">
+                  <span className="flex size-7 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 font-bold shrink-0">
                     🤝
                   </span>
                 )}
@@ -864,7 +864,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                   <p className="text-xs text-muted-foreground">{comparison.speedAdvantage}</p>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <span className="font-mono text-xs font-bold text-foreground">
                   Score Delta: {comparison.scoreDelta > 0 ? `+${comparison.scoreDelta}` : comparison.scoreDelta}
                 </span>
@@ -875,11 +875,11 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             <div className="grid gap-3 sm:grid-cols-2">
               {/* Target Card */}
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-primary font-mono truncate max-w-[200px]">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-primary font-mono truncate max-w-[140px] sm:max-w-[200px]">
                     {comparison.target.url}
                   </span>
-                  <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
+                  <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary shrink-0">
                     Your Site
                   </span>
                 </div>
@@ -906,11 +906,11 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
               {/* Competitor Card */}
               <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-foreground font-mono truncate max-w-[200px]">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-foreground font-mono truncate max-w-[140px] sm:max-w-[200px]">
                     {comparison.competitor.url}
                   </span>
-                  <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+                  <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground shrink-0">
                     Competitor
                   </span>
                 </div>
@@ -977,7 +977,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
       </section>
 
       {/* Meta Bar & Raw Agent JSON */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5 sm:p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 border border-primary/20 px-2.5 py-1 text-primary font-medium">
             <Globe className="size-3.5" />
@@ -1000,7 +1000,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
         <button
           type="button"
           onClick={() => setShowJson(!showJson)}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
         >
           <FileCode className="size-3.5 text-primary" />
           <span>{showJson ? 'Hide Agent JSON' : 'Export Agent JSON'}</span>
@@ -1020,7 +1020,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               <span>{copiedKey === 'raw-json' ? 'Copied' : 'Copy JSON'}</span>
             </button>
           </div>
-          <pre className="max-h-72 overflow-y-auto text-[11px] font-mono text-primary/90 bg-black/40 p-3 rounded">
+          <pre className="max-h-72 overflow-y-auto text-[11px] font-mono text-primary/90 bg-black/40 p-3 rounded break-all max-w-full">
             {JSON.stringify({ scores: report?.scores, performance, prioritizedGroups: groups, whatPassed, notChecked }, null, 2)}
           </pre>
         </div>
@@ -1038,8 +1038,8 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           </p>
           <div className="space-y-1.5 max-h-48 overflow-y-auto pt-1">
             {gscAnalysis.unindexedUrls.map((url, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-2 rounded border border-border bg-background/80 px-3 py-1.5 text-xs font-mono">
-                <span className="truncate text-foreground/90">{url}</span>
+              <div key={idx} className="flex items-center justify-between gap-2 rounded border border-border bg-background/80 px-3 py-1.5 text-xs font-mono min-w-0">
+                <span className="truncate text-foreground/90 flex-1 min-w-0">{url}</span>
                 <span className="shrink-0 rounded bg-destructive/15 text-destructive px-1.5 py-0.5 text-[10px] font-sans font-semibold">
                   Crawled - not indexed
                 </span>
@@ -1071,7 +1071,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
         </div>
 
         {displayedGroups.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <div className="rounded-lg border border-border bg-card p-6 sm:p-8 text-center">
             <CheckCircle2 className="mx-auto size-8 text-primary mb-2" />
             <p className="text-sm font-medium text-foreground">
               {filterTab === 'all'
@@ -1095,23 +1095,23 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                 {/* Group Header */}
                 <div
                   onClick={() => toggleExpand(group.rootCauseKey)}
-                  className="flex cursor-pointer flex-wrap items-center justify-between gap-3 p-4 hover:bg-accent/40 transition-colors"
+                  className="flex cursor-pointer flex-wrap items-center justify-between gap-2 sm:gap-3 p-3.5 sm:p-4 hover:bg-accent/40 transition-colors"
                 >
-                  <div className="flex flex-wrap items-center gap-2.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 min-w-0">
                     {getSeverityBadge(group.severity)}
-                    <span className="font-mono text-xs font-semibold text-foreground truncate">
+                    <span className="font-mono text-xs font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">
                       {group.checkId}
                     </span>
-                    <span className="rounded bg-secondary px-2 py-0.5 text-[11px] text-muted-foreground font-medium">
+                    <span className="rounded bg-secondary px-2 py-0.5 text-[10px] sm:text-[11px] text-muted-foreground font-medium shrink-0">
                       {group.affectedCount} page{group.affectedCount > 1 ? 's' : ''} affected
                     </span>
-                    <span className="text-[10px] text-muted-foreground/80 font-mono">
+                    <span className="text-[10px] text-muted-foreground/80 font-mono shrink-0">
                       (Priority: {group.priority})
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="text-[11px] font-mono truncate max-w-[200px] text-muted-foreground/70 hidden sm:inline">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
+                    <span className="text-[11px] font-mono truncate max-w-[120px] sm:max-w-[200px] text-muted-foreground/70 hidden sm:inline">
                       {group.rootCauseKey}
                     </span>
                     {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
@@ -1120,7 +1120,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="border-t border-border bg-background/50 p-4 space-y-4">
+                  <div className="border-t border-border bg-background/50 p-3.5 sm:p-4 space-y-4">
                     {/* Stack Tailored Fix */}
                     {group.stackFix && (
                       <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
@@ -1137,25 +1137,25 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                     {/* Evidence Card */}
                     {firstFinding && (
                       <div className="grid gap-3 sm:grid-cols-2 text-xs">
-                        <div className="rounded border border-border/80 bg-card p-3">
+                        <div className="rounded border border-border/80 bg-card p-3 min-w-0">
                           <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400">
                             Observed State
                           </span>
-                          <p className="mt-1 text-foreground/90 font-medium leading-relaxed">
+                          <p className="mt-1 text-foreground/90 font-medium leading-relaxed break-words">
                             {firstFinding.evidence.observed}
                           </p>
                           {firstFinding.evidence.snippet && (
-                            <pre className="mt-2 text-[10px] font-mono text-muted-foreground bg-black/30 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                            <pre className="mt-2 text-[10px] font-mono text-muted-foreground bg-black/30 p-2 rounded overflow-x-auto whitespace-pre-wrap break-all max-w-full">
                               {firstFinding.evidence.snippet}
                             </pre>
                           )}
                         </div>
 
-                        <div className="rounded border border-border/80 bg-card p-3">
+                        <div className="rounded border border-border/80 bg-card p-3 min-w-0">
                           <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
                             Expected Benchmark
                           </span>
-                          <p className="mt-1 text-foreground/90 font-medium leading-relaxed">
+                          <p className="mt-1 text-foreground/90 font-medium leading-relaxed break-words">
                             {firstFinding.evidence.expected}
                           </p>
                           <div className="mt-3">
@@ -1167,7 +1167,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                                   href={url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-[11px] font-mono text-primary hover:underline truncate"
+                                  className="flex items-center gap-1 text-[11px] font-mono text-primary hover:underline truncate max-w-full"
                                 >
                                   <ExternalLink className="size-3 shrink-0" />
                                   <span className="truncate">{url}</span>
@@ -1198,7 +1198,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
       </section>
 
       {/* Scope Transparency */}
-      <section className="rounded-xl border border-border bg-card/60 p-5 text-xs space-y-3">
+      <section className="rounded-xl border border-border bg-card/60 p-4 sm:p-5 text-xs space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-2.5">
           <div className="flex items-center gap-2 font-semibold text-foreground">
             <HelpCircle className="size-4 text-primary" />
@@ -1235,9 +1235,9 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             return (
               <div
                 key={idx}
-                className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/60 p-2.5 text-[11px]"
+                className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/60 p-2.5 text-[11px] min-w-0"
               >
-                <span className="text-foreground/90 font-medium truncate">{item}</span>
+                <span className="text-foreground/90 font-medium truncate flex-1 min-w-0">{item}</span>
                 <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold ${tagColor}`}>
                   {tag}
                 </span>

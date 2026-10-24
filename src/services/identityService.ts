@@ -362,9 +362,18 @@ export class IdentityService {
     }
 
     try {
-      const receipt = await this.publicClient.getTransactionReceipt({
-        hash: txHash as `0x${string}`,
-      });
+      let receipt;
+      try {
+        receipt = await this.publicClient.waitForTransactionReceipt({
+          hash: txHash as `0x${string}`,
+          confirmations: 1,
+          timeout: 10000,
+        });
+      } catch {
+        receipt = await this.publicClient.getTransactionReceipt({
+          hash: txHash as `0x${string}`,
+        }).catch(() => null);
+      }
 
       if (!receipt || receipt.status !== 'success') {
         return {
@@ -372,7 +381,7 @@ export class IdentityService {
           mined: false,
           hasAttributionTag: false,
           celoscanUrl: `https://celoscan.io/tx/${txHash}`,
-          error: 'Transaction was reverted or not found',
+          error: 'Transaction was reverted or not found on Celo Mainnet',
         };
       }
 

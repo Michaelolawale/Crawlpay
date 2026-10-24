@@ -97,20 +97,20 @@ function AuditPageContent() {
   };
 
   return (
-    <div className="w-full space-y-8 animate-in fade-in duration-300">
+    <div className="w-full space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* Top Banner / Breadcrumb */}
       <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+        <h1 className="font-display text-xl sm:text-3xl font-bold tracking-tight text-foreground leading-snug">
           Deterministic SEO & Competitor Intelligence Audit
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
           Autonomous crawl with 10 deterministic checks, root cause grouping, and actionable code fixes. Settled on Celo rails.
         </p>
       </div>
 
       {/* Main Audit Form Card */}
-      <div className="rounded-2xl border border-border bg-card/60 p-6 sm:p-8 backdrop-blur-xl shadow-sm">
-        <form onSubmit={handleLaunchModal} className="space-y-6">
+      <div className="rounded-2xl border border-border bg-card/60 p-4 sm:p-8 backdrop-blur-xl shadow-sm">
+        <form onSubmit={handleLaunchModal} className="space-y-5 sm:space-y-6">
           {/* URL Input Field */}
           <div>
             <label htmlFor="target-url" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
@@ -126,7 +126,7 @@ function AuditPageContent() {
                 placeholder="example.com or https://company.com"
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
-                className="block w-full rounded-xl border border-border bg-background py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-mono transition-colors"
+                className="block w-full rounded-xl border border-border bg-background py-3 pl-10 pr-4 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-mono transition-colors"
               />
             </div>
             {targetUrl && !isFormValid && (
@@ -141,11 +141,11 @@ function AuditPageContent() {
             <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
               Select Audit Depth
             </label>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
               {/* Quick Depth Card */}
               <div
                 onClick={() => setDepth('quick')}
-                className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                className={`cursor-pointer rounded-xl border p-3.5 sm:p-4 transition-all ${
                   depth === 'quick'
                     ? 'border-primary bg-primary/5 ring-1 ring-primary'
                     : 'border-border bg-background hover:border-border/80'
@@ -168,7 +168,7 @@ function AuditPageContent() {
               {/* Full Depth Card */}
               <div
                 onClick={() => setDepth('full')}
-                className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                className={`cursor-pointer rounded-xl border p-3.5 sm:p-4 transition-all ${
                   depth === 'full'
                     ? 'border-primary bg-primary/5 ring-1 ring-primary'
                     : 'border-border bg-background hover:border-border/80'
@@ -191,8 +191,8 @@ function AuditPageContent() {
           </div>
 
           {/* Optional Google Search Console Upload */}
-          <div className="rounded-xl border border-dashed border-border p-4 bg-muted/20">
-            <div className="flex items-center justify-between">
+          <div className="rounded-xl border border-dashed border-border p-3.5 sm:p-4 bg-muted/20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                   <FileSpreadsheet className="size-3.5 text-primary" />
@@ -207,7 +207,7 @@ function AuditPageContent() {
                 <button
                   type="button"
                   onClick={clearGscFile}
-                  className="inline-flex items-center gap-1 rounded-md bg-destructive/10 px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/20"
+                  className="inline-flex items-center justify-center gap-1 rounded-md bg-destructive/10 px-2.5 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 self-start sm:self-auto"
                 >
                   <X className="size-3" />
                   <span>Remove</span>
@@ -216,7 +216,7 @@ function AuditPageContent() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors self-start sm:self-auto shrink-0"
                 >
                   <UploadCloud className="size-3.5 text-muted-foreground" />
                   <span>Upload File</span>
