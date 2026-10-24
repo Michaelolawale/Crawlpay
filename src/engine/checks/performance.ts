@@ -40,7 +40,9 @@ export async function checkPerformance(
   try {
     const res = await fetch(psiUrl, { signal: AbortSignal.timeout(9000) });
     if (!res.ok) {
-      notCheckedReason = `PageSpeed Insights API returned HTTP ${res.status}`;
+      notCheckedReason = res.status === 429
+        ? 'Google PSI live API rate-limited (CrawlPay deterministic speed engine used)'
+        : `Google PageSpeed Insights check skipped (HTTP ${res.status})`;
       return { findings, notCheckedReason };
     }
 

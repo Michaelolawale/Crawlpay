@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Search,
   UploadCloud,
@@ -22,10 +22,11 @@ import { FullAuditReport } from '@/types/audit';
 
 interface AuditHomeTabProps {
   initialTarget?: string;
+  loadedReport?: FullAuditReport | null;
   onAuditCompleted?: (report: FullAuditReport) => void;
 }
 
-export function AuditHomeTab({ initialTarget = '', onAuditCompleted }: AuditHomeTabProps) {
+export function AuditHomeTab({ initialTarget = '', loadedReport, onAuditCompleted }: AuditHomeTabProps) {
   const [targetUrl, setTargetUrl] = useState(initialTarget);
   const [mode, setMode] = useState<'quick' | 'full'>('quick');
   const [gscAnalysis, setGscAnalysis] = useState<GscAnalysisResult | null>(null);
@@ -33,12 +34,28 @@ export function AuditHomeTab({ initialTarget = '', onAuditCompleted }: AuditHome
   const [loading, setLoading] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [report, setReport] = useState<FullAuditReport | null>(null);
+  const [report, setReport] = useState<FullAuditReport | null>(loadedReport || null);
   const [activePatchTab, setActivePatchTab] = useState<'html' | 'nextjs' | 'shopify' | 'schema'>('html');
   const [copiedPatch, setCopiedPatch] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (initialTarget) {
+      setTargetUrl(initialTarget);
+    }
+  }, [initialTarget]);
+
+  useEffect(() => {
+    if (loadedReport) {
+      setReport(loadedReport);
+      setTargetUrl(loadedReport.targetUrl);
+      setTimeout(() => {
+        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    }
+  }, [loadedReport]);
 
   // Price shown plainly
   const currentPrice = mode === 'quick' ? '0.25' : '0.50';
@@ -195,12 +212,14 @@ export function AuditHomeTab({ initialTarget = '', onAuditCompleted }: AuditHome
       {/* Main Audit Form */}
       <form onSubmit={handlePayClick} className="rounded-xl border border-border bg-card p-5 sm:p-7 shadow-sm">
         {/* Target URL */}
-        <label className="block">
+        <label htmlFor="targetUrl" className="block">
           <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Target Website URL
           </span>
           <div className="relative">
             <input
+              id="targetUrl"
+              name="targetUrl"
               type="url"
               required
               value={targetUrl}
@@ -234,7 +253,7 @@ export function AuditHomeTab({ initialTarget = '', onAuditCompleted }: AuditHome
                 />
                 <div>
                   <span className="text-sm font-semibold text-foreground">Quick Audit</span>
-                  <p className="text-xs text-muted-foreground">Homepage & Core Meta (1 page)</p>
+                  <p className="text-xs text-muted-foreground">Homepage & Core Navigation (Up to 5 pages)</p>
                 </div>
               </div>
               <div className="rounded bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-bold text-primary font-mono">
@@ -306,6 +325,8 @@ export function AuditHomeTab({ initialTarget = '', onAuditCompleted }: AuditHome
                     <UploadCloud className="size-3.5 text-primary" />
                     <span>Choose GSC File</span>
                     <input
+                      id="gscFile"
+                      name="gscFile"
                       ref={fileInputRef}
                       type="file"
                       accept=".csv,.json"
@@ -383,6 +404,7 @@ export function AuditHomeTab({ initialTarget = '', onAuditCompleted }: AuditHome
 
           {/* Deterministic Check Engine View */}
           <CheckEngineView
+            report={report}
             groups={report.prioritizedGroups || []}
             whatPassed={report.whatPassed || 'Verified clean on all inspected criteria.'}
             notChecked={report.notChecked || []}

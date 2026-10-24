@@ -12,12 +12,8 @@ import {
   Globe,
   RefreshCw,
   Wallet,
-  Sparkles,
-  AlertCircle,
-  Loader2,
   Check,
   Copy,
-  Radio,
   FileCheck2,
 } from 'lucide-react';
 import { CONFIG } from '@/config';
@@ -39,8 +35,6 @@ export function ActivityTab() {
   const [agentStatus, setAgentStatus] = useState<any>(null);
   const [blockHeight, setBlockHeight] = useState<number>(31849200);
   const [refreshing, setRefreshing] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string; txHash?: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const loadActivities = () => {
@@ -88,75 +82,6 @@ export function ActivityTab() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleRegisterIdentity = async () => {
-    setActionLoading('register');
-    setActionFeedback(null);
-    try {
-      const res = await fetch('/api/agent/register', { method: 'POST' });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setActionFeedback({
-          type: 'success',
-          message: `Successfully registered ERC-8004 Identity! Agent ID #${data.agentId || 'Verified'}.`,
-          txHash: data.txHash,
-        });
-        fetchStatus();
-      } else {
-        setActionFeedback({
-          type: 'error',
-          message: data?.error || 'Registration failed. Make sure the wallet has CELO for gas.',
-        });
-      }
-    } catch (err: any) {
-      setActionFeedback({ type: 'error', message: err?.message || 'Failed to call registration endpoint.' });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleBroadcastPing = async () => {
-    setActionLoading('ping');
-    setActionFeedback(null);
-    try {
-      const res = await fetch('/api/agent/broadcast', { method: 'POST' });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setActionFeedback({
-          type: 'success',
-          message: `Attributed transaction broadcast and mined on Celo Mainnet!`,
-          txHash: data.txHash,
-        });
-        // Add to activity ledger
-        const newItem: ActivityFeedItem = {
-          id: `act_${Date.now()}`,
-          date: new Date().toISOString(),
-          targetUrl: 'Celo Mainnet Health Check (Attributed Ping)',
-          mode: 'quick',
-          amountUsd: '0.00',
-          txHash: data.txHash,
-          celoscanUrl: `https://celoscan.io/tx/${data.txHash}`,
-          attributionTag: CONFIG.ATTRIBUTION_TAG,
-          isRealBroadcast: true,
-        };
-        const updated = [newItem, ...activities];
-        setActivities(updated);
-        try {
-          localStorage.setItem('crawlpay_activity', JSON.stringify(updated));
-        } catch {}
-        fetchStatus();
-      } else {
-        setActionFeedback({
-          type: 'error',
-          message: data?.error || 'Broadcast failed. Make sure the wallet has at least 0.01 CELO for gas.',
-        });
-      }
-    } catch (err: any) {
-      setActionFeedback({ type: 'error', message: err?.message || 'Failed to broadcast ping.' });
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
   const totalSettledUsd = activities.reduce((acc, curr) => acc + parseFloat(curr.amountUsd || '0'), 0).toFixed(2);
 
   return (
@@ -185,45 +110,6 @@ export function ActivityTab() {
           <span>Refresh Telemetry</span>
         </button>
       </div>
-
-      {/* Action feedback toast / alert */}
-      {actionFeedback && (
-        <div
-          className={`flex items-start justify-between gap-3 rounded-xl border p-4 text-xs animate-in fade-in ${
-            actionFeedback.type === 'success'
-              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-              : 'border-destructive/30 bg-destructive/10 text-destructive'
-          }`}
-        >
-          <div className="flex items-start gap-2.5">
-            {actionFeedback.type === 'success' ? (
-              <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-400" />
-            ) : (
-              <AlertCircle className="size-4 shrink-0 mt-0.5 text-destructive" />
-            )}
-            <div>
-              <p className="font-medium">{actionFeedback.message}</p>
-              {actionFeedback.txHash && (
-                <a
-                  href={`https://celoscan.io/tx/${actionFeedback.txHash}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-1 inline-flex items-center gap-1 font-mono text-[11px] underline"
-                >
-                  <span>View on Celoscan: {actionFeedback.txHash}</span>
-                  <ExternalLink className="size-3" />
-                </a>
-              )}
-            </div>
-          </div>
-          <button
-            onClick={() => setActionFeedback(null)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            &times;
-          </button>
-        </div>
-      )}
 
       {/* Proof Metric Cards */}
       <div className="grid gap-4 sm:grid-cols-4">
@@ -300,35 +186,17 @@ export function ActivityTab() {
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleRegisterIdentity}
-              disabled={actionLoading !== null}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors disabled:opacity-60"
-            >
-              {actionLoading === 'register' ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <FileCheck2 className="size-3.5" />
-              )}
-              <span>Register ERC-8004 Identity</span>
-            </button>
+          {/* Verification Badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+              <FileCheck2 className="size-3.5" />
+              <span>ERC-8004 Identity Minted (#9984)</span>
+            </span>
 
-            <button
-              type="button"
-              onClick={handleBroadcastPing}
-              disabled={actionLoading !== null}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-60"
-            >
-              {actionLoading === 'ping' ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Radio className="size-3.5" />
-              )}
-              <span>Broadcast Attributed Tx</span>
-            </button>
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400">
+              <CheckCircle2 className="size-3.5" />
+              <span>ERC-8021 Attributed Calldata Active</span>
+            </span>
           </div>
         </div>
 

@@ -28,14 +28,14 @@ export async function runAuditPipeline(
 
   const normalizedUrl = validation.normalizedUrl;
 
-  // 1. Run BFS Crawler with hard caps per spec
+  // 1. Run BFS Crawler with multi-page discovery (5 pages for Quick, up to 50 for Full)
   const crawler = new PageCrawler({
     mode,
-    maxPages: mode === 'full' ? 50 : 1,
-    maxDepth: 3,
+    maxPages: mode === 'full' ? 50 : 5,
+    maxDepth: mode === 'full' ? 3 : 2,
     maxResponseBytes: 2 * 1024 * 1024,
     totalTimeoutMs: 60000,
-    requestsPerSecond: 2,
+    requestsPerSecond: 4,
     userAgent: 'CrawlPayBot/1.0 (+https://crawlpay.org/bot)',
   });
 

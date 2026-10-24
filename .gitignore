@@ -2,10 +2,12 @@ node_modules/
 .next/
 dist/
 .env
-.env*
-.env.local
-.env.*.local
+.env*.local
+!.env.example
+data/
+*.tsbuildinfo
 *.log
 *.pem
 *.key
 .DS_Store
+

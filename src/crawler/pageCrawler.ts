@@ -23,14 +23,15 @@ export class PageCrawler {
   private startTime = 0;
 
   constructor(customConfig?: Partial<CrawlConfig>) {
+    const isFull = customConfig?.mode === 'full';
     this.config = {
       mode: customConfig?.mode || 'quick',
-      maxPages: customConfig?.mode === 'full' ? (customConfig?.maxPages || 50) : 1,
-      maxDepth: customConfig?.maxDepth !== undefined ? customConfig.maxDepth : 3,
+      maxPages: customConfig?.maxPages !== undefined ? customConfig.maxPages : (isFull ? 50 : 5),
+      maxDepth: customConfig?.maxDepth !== undefined ? customConfig.maxDepth : (isFull ? 3 : 2),
       maxResponseBytes: customConfig?.maxResponseBytes || 2 * 1024 * 1024,
       totalTimeoutMs: customConfig?.totalTimeoutMs || 60000,
       perRequestTimeoutMs: customConfig?.perRequestTimeoutMs || 8000,
-      requestsPerSecond: customConfig?.requestsPerSecond || 2,
+      requestsPerSecond: customConfig?.requestsPerSecond || 4,
       userAgent: customConfig?.userAgent || 'CrawlPayBot/1.0 (+https://crawlpay.org/bot)',
     };
   }
@@ -56,7 +57,8 @@ export class PageCrawler {
     try {
       const robotsUrl = `${rootOrigin}/robots.txt`;
       const res = await fetch(robotsUrl, {
-        headers: { 'User-Agent': this.config.userAgent },
+        headers: { 'User-Agent': this.config.userAgent, 'Cache-Control': 'no-cache' },
+        cache: 'no-store',
         signal: AbortSignal.timeout(4000),
       });
       if (res.ok) {
@@ -71,9 +73,20 @@ export class PageCrawler {
     // 2. Discover and parse sitemap
     const sitemapData = await fetchAndParseSitemap(startUrl, robotsParser.getSitemaps());
 
-    // 3. Initialize crawl queue
+    // 3. Initialize crawl queue with startUrl and sitemap URLs
     this.queue.push({ url: startUrl, depth: 0 });
     this.visitedUrls.add(this.normalizeUrlKey(startUrl));
+
+    if (sitemapData.urls && sitemapData.urls.length > 0) {
+      for (const sitemapUrl of sitemapData.urls) {
+        if (this.queue.length >= this.config.maxPages) break;
+        const key = this.normalizeUrlKey(sitemapUrl);
+        if (!this.visitedUrls.has(key)) {
+          this.visitedUrls.add(key);
+          this.queue.push({ url: sitemapUrl, depth: 1 });
+        }
+      }
+    }
 
     let stoppedEarlyReason: string | undefined;
     let detectedStack: SiteMetadata['detectedStack'] = { cms: 'Unknown', seoPlugin: 'None' };
@@ -102,7 +115,7 @@ export class PageCrawler {
         }
       } catch {}
 
-      // Rate limit enforcement: max 2 requests/sec (min 500ms delay)
+      // Rate limit enforcement: max 4 requests/sec (min 250ms delay)
       const minIntervalMs = Math.ceil(1000 / this.config.requestsPerSecond);
       const elapsedSinceLastReq = Date.now() - this.lastRequestTime;
       if (elapsedSinceLastReq < minIntervalMs) {
@@ -122,9 +135,10 @@ export class PageCrawler {
           detectedStack = detectStackFromHtml(pageData.html, $);
         }
 
-        // In full mode, enqueue child internal links if within depth limit
-        if (this.config.mode === 'full' && depth < this.config.maxDepth) {
+        // Enqueue child internal links if within depth limit and under page cap
+        if (depth < this.config.maxDepth && (this.pageDataMap.size + this.queue.length) < this.config.maxPages) {
           for (const link of pageData.links) {
+            if (this.pageDataMap.size + this.queue.length >= this.config.maxPages) break;
             if (link.isInternal && !this.visitedUrls.has(this.normalizeUrlKey(link.resolvedUrl))) {
               this.visitedUrls.add(this.normalizeUrlKey(link.resolvedUrl));
               this.queue.push({ url: link.resolvedUrl, depth: depth + 1 });
@@ -190,7 +204,10 @@ export class PageCrawler {
         headers: {
           'User-Agent': this.config.userAgent,
           Accept: 'text/html,application/xhtml+xml',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
         },
+        cache: 'no-store',
         redirect: 'follow',
         signal: controller.signal,
       });
@@ -275,10 +292,7 @@ export class PageCrawler {
         return;
       }
 
-      let isInternal = false;
-      try {
-        isInternal = new URL(resolved).origin === rootOrigin;
-      } catch {}
+      const isInternal = this.isSameDomain(resolved, rootOrigin, finalUrl);
 
       const anchorText = $(el).text().replace(/\s+/g, ' ').trim();
       const rel = $(el).attr('rel') || '';
@@ -380,6 +394,17 @@ export class PageCrawler {
       return `${u.protocol}//${u.host}${path}${u.search}`;
     } catch {
       return rawUrl;
+    }
+  }
+
+  private isSameDomain(resolvedUrl: string, rootOrigin: string, finalUrl?: string): boolean {
+    try {
+      const linkHost = new URL(resolvedUrl).hostname.toLowerCase().replace(/^www\./, '');
+      const rootHost = new URL(rootOrigin).hostname.toLowerCase().replace(/^www\./, '');
+      const finalHost = finalUrl ? new URL(finalUrl).hostname.toLowerCase().replace(/^www\./, '') : rootHost;
+      return linkHost === rootHost || linkHost === finalHost;
+    } catch {
+      return false;
     }
   }
 }
