@@ -5,6 +5,7 @@ import { CONFIG } from '@/config';
 import { db } from '@/services/db';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();

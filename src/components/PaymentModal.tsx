@@ -61,15 +61,35 @@ export function PaymentModal({
   const priceUsd = mode === 'quick' ? '0.25' : '0.50';
   const payToAddress = CONFIG.AGENT_WALLET_ADDRESS;
 
-  // Restore active job if refreshed
+  // Helper to completely clear stuck active jobs
+  const handleResetFlow = () => {
+    try {
+      localStorage.removeItem('crawlpay_active_job');
+    } catch {}
+    setStep('review');
+    setStatusPhase('wallet_confirm');
+    setStatusMessage('Waiting to start...');
+    setErrorMessage(null);
+    setIsPaying(false);
+  };
+
+  // Restore active job if refreshed (auto-expires stale jobs after 3 minutes)
   useEffect(() => {
     try {
       const activeJobRaw = localStorage.getItem('crawlpay_active_job');
       if (activeJobRaw) {
         const active = JSON.parse(activeJobRaw);
+        const ageMs = Date.now() - (active.timestamp || 0);
+        // If older than 3 minutes, discard stale session
+        if (ageMs > 3 * 60 * 1000) {
+          localStorage.removeItem('crawlpay_active_job');
+          return;
+        }
+
         if (active.targetUrl === targetUrl && active.statusPhase !== 'ready') {
           setStep('status');
           setStatusPhase(active.statusPhase);
+          setStatusMessage(active.statusMessage || 'Processing your audit request...');
           setTxHash(active.txHash || null);
           setCreatedReportId(active.reportId || null);
         }
@@ -188,26 +208,51 @@ export function PaymentModal({
           txHash: submittedTxHash,
           userWallet,
           statusPhase: 'onchain_confirm',
+          statusMessage: `Transaction submitted (${submittedTxHash.slice(0, 10)}...). Confirming on Celo Mainnet...`,
+          timestamp: Date.now(),
         })
       );
 
       // 5. Trigger audit pipeline execution
       setStatusPhase('running_audit');
-      setStatusMessage('Payment verified! Running BFS crawler and deterministic SEO checks...');
-
-      const auditRes = await fetch('/api/audit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `x402 ${submittedTxHash}`,
-        },
-        body: JSON.stringify({
-          url: targetUrl,
+      const runningMsg = 'Payment verified! Running multi-page crawler and deterministic SEO checks...';
+      setStatusMessage(runningMsg);
+      localStorage.setItem(
+        'crawlpay_active_job',
+        JSON.stringify({
+          jobId: newJobId,
+          targetUrl,
           mode,
-          paymentProof: submittedTxHash,
-          wallet: userWallet,
-        }),
-      });
+          txHash: submittedTxHash,
+          userWallet,
+          statusPhase: 'running_audit',
+          statusMessage: runningMsg,
+          timestamp: Date.now(),
+        })
+      );
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 65000); // 65 second timeout guard
+
+      let auditRes: Response;
+      try {
+        auditRes = await fetch('/api/audit', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `x402 ${submittedTxHash}`,
+          },
+          body: JSON.stringify({
+            url: targetUrl,
+            mode,
+            paymentProof: submittedTxHash,
+            wallet: userWallet,
+          }),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       const auditData = await auditRes.json();
       if (!auditRes.ok) {
@@ -628,6 +673,19 @@ export function PaymentModal({
                 </div>
               )}
             </div>
+
+            {/* Cancel or Start fresh if user wants to abort */}
+            {statusPhase !== 'ready' && statusPhase !== 'failed' && (
+              <div className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  onClick={handleResetFlow}
+                  className="text-xs text-muted-foreground/80 hover:text-foreground hover:underline transition-colors cursor-pointer"
+                >
+                  Cancel or start fresh
+                </button>
+              </div>
+            )}
 
             {/* Action when Ready */}
             {statusPhase === 'ready' && (

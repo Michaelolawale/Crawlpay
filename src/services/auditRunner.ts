@@ -83,9 +83,11 @@ export async function runAuditPipeline(
   const performance = auditSpeedVitals($, rootPage.html.length);
   const codePatches = generateCodePatches(normalizedUrl, technical, archetype);
 
-  // 6. Upstream x402 payment & receipt via buy coordinator on Celo Mainnet
-  const browserReceipt = await buyCoordinator.rentBrowserSession(normalizedUrl, isPaidExecution);
-  const socialReceipt = await buyCoordinator.querySocialSignals(metadata.hostname, isPaidExecution);
+  // 6. Upstream x402 payment & receipt via buy coordinator on Celo Mainnet (concurrent for low latency)
+  const [browserReceipt, socialReceipt] = await Promise.all([
+    buyCoordinator.rentBrowserSession(normalizedUrl, isPaidExecution),
+    buyCoordinator.querySocialSignals(metadata.hostname, isPaidExecution),
+  ]);
   const onchainReceipt = buyCoordinator.buildExecutionLog(normalizedUrl, browserReceipt, socialReceipt);
 
   // 7. Calculate scores from deterministic findings
