@@ -1,0 +1,965 @@
+{
+  "targetUrl": "https://evangelcarriersnetwork.org/",
+  "auditTimestamp": "2026-10-22T13:03:55.001Z",
+  "summary": "Audit analyzed 1 page(s) for evangelcarriersnetwork.org (WordPress stack). Found 3 actionable optimization group(s) across metadata, structure, and media assets.",
+  "scores": {
+    "overall": 100,
+    "technical": 100,
+    "content": 88,
+    "performance": 75,
+    "social": 90
+  },
+  "archetype": {
+    "type": "ecommerce",
+    "label": "E-Commerce Store",
+    "confidence": 95,
+    "detectedSignals": [
+      "E-commerce platform signatures (Shopify/WooCommerce)",
+      "Article layout & author bylines"
+    ],
+    "primarySchemaNeeded": "Product & Offer with Rating",
+    "keyAuditFocus": "Product rich snippets, Google Merchant feed readiness & high-res image compression"
+  },
+  "topNeedleMovers": [
+    {
+      "priority": "Quick Win",
+      "title": "links.empty anchor (7 pages)",
+      "description": "Internal/external link to 'https://www.instagram.com/theecnglobal/' has no anchor text.",
+      "action": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins."
+    },
+    {
+      "priority": "Quick Win",
+      "title": "images.missing dimensions (5 pages)",
+      "description": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+      "action": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins."
+    },
+    {
+      "priority": "Quick Win",
+      "title": "titles.too long (1 page)",
+      "description": "Title is too long (61 characters) and will truncate in Google search: \"ECN Global | Evangel Carriers Network — Telling of His Return\".",
+      "action": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins."
+    }
+  ],
+  "prioritizedGroups": [
+    {
+      "rootCauseKey": "links.empty_anchor",
+      "checkId": "links.empty_anchor",
+      "severity": "low",
+      "priority": 9.15,
+      "affectedCount": 7,
+      "totalPagesChecked": 1,
+      "exampleUrls": [
+        "https://evangelcarriersnetwork.org/"
+      ],
+      "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "findings": [
+        {
+          "id": "links.empty_anchor.f925c17102a0",
+          "checkId": "links.empty_anchor",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Internal/external link to 'https://www.instagram.com/theecnglobal/' has no anchor text.",
+            "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+            "snippet": "<a href=\"https://www.instagram.com/theecnglobal/\"></a>"
+          },
+          "rootCauseKey": "links.empty_anchor"
+        },
+        {
+          "id": "links.empty_anchor.200fa1ad2010",
+          "checkId": "links.empty_anchor",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Internal/external link to 'https://x.com/theecnglobal?t=JAYbYKlKriUCtuGA6me7Nw&s=09' has no anchor text.",
+            "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+            "snippet": "<a href=\"https://x.com/theecnglobal?t=JAYbYKlKriUCtuGA6me7Nw&s=09\"></a>"
+          },
+          "rootCauseKey": "links.empty_anchor"
+        },
+        {
+          "id": "links.empty_anchor.6b466d3ca96f",
+          "checkId": "links.empty_anchor",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Internal/external link to 'https://t.me/ecnglobal' has no anchor text.",
+            "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+            "snippet": "<a href=\"https://t.me/ecnglobal\"></a>"
+          },
+          "rootCauseKey": "links.empty_anchor"
+        },
+        {
+          "id": "links.empty_anchor.bdd0b261d270",
+          "checkId": "links.empty_anchor",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Internal/external link to 'https://www.tiktok.com/@theecnglobal?_t=8rm2a8u7zSq&_r=1' has no anchor text.",
+            "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+            "snippet": "<a href=\"https://www.tiktok.com/@theecnglobal?_t=8rm2a8u7zSq&_r=1\"></a>"
+          },
+          "rootCauseKey": "links.empty_anchor"
+        },
+        {
+          "id": "links.empty_anchor.0b96af55c152",
+          "checkId": "links.empty_anchor",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Internal/external link to 'https://www.facebook.com/share/3RgozFGUfew2QLrY/' has no anchor text.",
+            "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+            "snippet": "<a href=\"https://www.facebook.com/share/3RgozFGUfew2QLrY/\"></a>"
+          },
+          "rootCauseKey": "links.empty_anchor"
+        },
+        {
+          "id": "links.empty_anchor.498e49800daf",
+          "checkId": "links.empty_anchor",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Internal/external link to 'https://www.youtube.com/@theecnglobal' has no anchor text.",
+            "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+            "snippet": "<a href=\"https://www.youtube.com/@theecnglobal\"></a>"
+          },
+          "rootCauseKey": "links.empty_anchor"
+        },
+        {
+          "id": "links.empty_anchor.f7dfa29bd345",
+          "checkId": "links.empty_anchor",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Internal/external link to 'https://medium.com/@theecnglobal' has no anchor text.",
+            "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+            "snippet": "<a href=\"https://medium.com/@theecnglobal\"></a>"
+          },
+          "rootCauseKey": "links.empty_anchor"
+        }
+      ]
+    },
+    {
+      "rootCauseKey": "images.missing_dimensions::/root",
+      "checkId": "images.missing_dimensions",
+      "severity": "low",
+      "priority": 7.88,
+      "affectedCount": 5,
+      "totalPagesChecked": 1,
+      "exampleUrls": [
+        "https://evangelcarriersnetwork.org/"
+      ],
+      "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "findings": [
+        {
+          "id": "images.missing_dimensions.dd5bb0200bc7",
+          "checkId": "images.missing_dimensions",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+            "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+            "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+          },
+          "rootCauseKey": "images.missing_dimensions::/root"
+        },
+        {
+          "id": "images.missing_dimensions.dd5bb0200bc7",
+          "checkId": "images.missing_dimensions",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+            "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+            "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+          },
+          "rootCauseKey": "images.missing_dimensions::/root"
+        },
+        {
+          "id": "images.missing_dimensions.dd5bb0200bc7",
+          "checkId": "images.missing_dimensions",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+            "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+            "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+          },
+          "rootCauseKey": "images.missing_dimensions::/root"
+        },
+        {
+          "id": "images.missing_dimensions.dd5bb0200bc7",
+          "checkId": "images.missing_dimensions",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+            "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+            "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+          },
+          "rootCauseKey": "images.missing_dimensions::/root"
+        },
+        {
+          "id": "images.missing_dimensions.dd5bb0200bc7",
+          "checkId": "images.missing_dimensions",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+            "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+            "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+          },
+          "rootCauseKey": "images.missing_dimensions::/root"
+        }
+      ]
+    },
+    {
+      "rootCauseKey": "titles.too_long",
+      "checkId": "titles.too_long",
+      "severity": "low",
+      "priority": 3.05,
+      "affectedCount": 1,
+      "totalPagesChecked": 1,
+      "exampleUrls": [
+        "https://evangelcarriersnetwork.org/"
+      ],
+      "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "findings": [
+        {
+          "id": "titles.too_long.ddec1fdf3858",
+          "checkId": "titles.too_long",
+          "severity": "low",
+          "url": "https://evangelcarriersnetwork.org/",
+          "evidence": {
+            "observed": "Title is too long (61 characters) and will truncate in Google search: \"ECN Global | Evangel Carriers Network — Telling of His Return\".",
+            "expected": "Keep page titles within 30–60 characters (under ~600px pixel width).",
+            "snippet": "<title>ECN Global | Evangel Carriers Network — Telling of His Return</title>"
+          },
+          "rootCauseKey": "titles.too_long"
+        }
+      ]
+    }
+  ],
+  "prioritiesFromLlm": [
+    {
+      "rootCauseKey": "links.empty_anchor",
+      "whyItMatters": "Directly impacts how search engines crawl and index pages.",
+      "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "effort": "medium"
+    },
+    {
+      "rootCauseKey": "images.missing_dimensions::/root",
+      "whyItMatters": "Directly impacts how search engines crawl and index pages.",
+      "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "effort": "medium"
+    },
+    {
+      "rootCauseKey": "titles.too_long",
+      "whyItMatters": "Reduces organic click-through rate (CTR) and keyword relevancy signals.",
+      "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "effort": "low"
+    }
+  ],
+  "whatPassed": "All checked pages cleanly passed: Robots.txt & meta robots indexation, Canonical tag resolution, Meta descriptions, Heading hierarchy & H1 uniqueness, XML sitemap parsing, Near-duplicate body content, JSON-LD schema markup.",
+  "notChecked": [
+    "Backlinks profile & external domain authority",
+    "Keyword search rankings & search impressions",
+    "Google Search Console API crawl stats",
+    "Google Analytics 4 & conversion tracking setup",
+    "Google Business Profile / Map pack verification",
+    "Protected pages behind authentication / paywalls",
+    "PageSpeed Insights API returned HTTP 429"
+  ],
+  "allFindings": [
+    {
+      "id": "titles.too_long.ddec1fdf3858",
+      "checkId": "titles.too_long",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Title is too long (61 characters) and will truncate in Google search: \"ECN Global | Evangel Carriers Network — Telling of His Return\".",
+        "expected": "Keep page titles within 30–60 characters (under ~600px pixel width).",
+        "snippet": "<title>ECN Global | Evangel Carriers Network — Telling of His Return</title>"
+      },
+      "rootCauseKey": "titles.too_long"
+    },
+    {
+      "id": "links.empty_anchor.f925c17102a0",
+      "checkId": "links.empty_anchor",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Internal/external link to 'https://www.instagram.com/theecnglobal/' has no anchor text.",
+        "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+        "snippet": "<a href=\"https://www.instagram.com/theecnglobal/\"></a>"
+      },
+      "rootCauseKey": "links.empty_anchor"
+    },
+    {
+      "id": "links.empty_anchor.200fa1ad2010",
+      "checkId": "links.empty_anchor",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Internal/external link to 'https://x.com/theecnglobal?t=JAYbYKlKriUCtuGA6me7Nw&s=09' has no anchor text.",
+        "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+        "snippet": "<a href=\"https://x.com/theecnglobal?t=JAYbYKlKriUCtuGA6me7Nw&s=09\"></a>"
+      },
+      "rootCauseKey": "links.empty_anchor"
+    },
+    {
+      "id": "links.empty_anchor.6b466d3ca96f",
+      "checkId": "links.empty_anchor",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Internal/external link to 'https://t.me/ecnglobal' has no anchor text.",
+        "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+        "snippet": "<a href=\"https://t.me/ecnglobal\"></a>"
+      },
+      "rootCauseKey": "links.empty_anchor"
+    },
+    {
+      "id": "links.empty_anchor.bdd0b261d270",
+      "checkId": "links.empty_anchor",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Internal/external link to 'https://www.tiktok.com/@theecnglobal?_t=8rm2a8u7zSq&_r=1' has no anchor text.",
+        "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+        "snippet": "<a href=\"https://www.tiktok.com/@theecnglobal?_t=8rm2a8u7zSq&_r=1\"></a>"
+      },
+      "rootCauseKey": "links.empty_anchor"
+    },
+    {
+      "id": "links.empty_anchor.0b96af55c152",
+      "checkId": "links.empty_anchor",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Internal/external link to 'https://www.facebook.com/share/3RgozFGUfew2QLrY/' has no anchor text.",
+        "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+        "snippet": "<a href=\"https://www.facebook.com/share/3RgozFGUfew2QLrY/\"></a>"
+      },
+      "rootCauseKey": "links.empty_anchor"
+    },
+    {
+      "id": "links.empty_anchor.498e49800daf",
+      "checkId": "links.empty_anchor",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Internal/external link to 'https://www.youtube.com/@theecnglobal' has no anchor text.",
+        "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+        "snippet": "<a href=\"https://www.youtube.com/@theecnglobal\"></a>"
+      },
+      "rootCauseKey": "links.empty_anchor"
+    },
+    {
+      "id": "links.empty_anchor.f7dfa29bd345",
+      "checkId": "links.empty_anchor",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Internal/external link to 'https://medium.com/@theecnglobal' has no anchor text.",
+        "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+        "snippet": "<a href=\"https://medium.com/@theecnglobal\"></a>"
+      },
+      "rootCauseKey": "links.empty_anchor"
+    },
+    {
+      "id": "images.missing_dimensions.dd5bb0200bc7",
+      "checkId": "images.missing_dimensions",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+        "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+        "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+      },
+      "rootCauseKey": "images.missing_dimensions::/root"
+    },
+    {
+      "id": "images.missing_dimensions.dd5bb0200bc7",
+      "checkId": "images.missing_dimensions",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+        "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+        "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+      },
+      "rootCauseKey": "images.missing_dimensions::/root"
+    },
+    {
+      "id": "images.missing_dimensions.dd5bb0200bc7",
+      "checkId": "images.missing_dimensions",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+        "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+        "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+      },
+      "rootCauseKey": "images.missing_dimensions::/root"
+    },
+    {
+      "id": "images.missing_dimensions.dd5bb0200bc7",
+      "checkId": "images.missing_dimensions",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+        "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+        "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+      },
+      "rootCauseKey": "images.missing_dimensions::/root"
+    },
+    {
+      "id": "images.missing_dimensions.dd5bb0200bc7",
+      "checkId": "images.missing_dimensions",
+      "severity": "low",
+      "url": "https://evangelcarriersnetwork.org/",
+      "evidence": {
+        "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+        "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+        "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+      },
+      "rootCauseKey": "images.missing_dimensions::/root"
+    }
+  ],
+  "pagesChecked": 1,
+  "detectedStack": {
+    "cms": "WordPress",
+    "seoPlugin": "None"
+  },
+  "technical": {
+    "title": "ECN Global | Evangel Carriers Network — Telling of His Return",
+    "titleLength": 61,
+    "metaDescription": "Evangel Carriers Network is a ministry raising awareness of Christ's imminent return. Join ECN Global — telling the world He is coming again.",
+    "metaDescriptionLength": 141,
+    "canonicalUrl": "https://evangelcarriersnetwork.org/",
+    "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+    "isIndexable": true,
+    "openGraph": {
+      "title": "Evangel Carriers Network — Telling of His Return",
+      "description": "Evangel Carriers Network is a global ministry raising an army of believers to spread awareness of Christ's imminent return. Join us today.",
+      "image": "https://evangelcarriersnetwork.org/wp-content/uploads/2026/06/Socialbanner.jpg",
+      "type": "website",
+      "siteName": "Evangel Carriers Network - ECN Global",
+      "hasCompleteOg": true
+    },
+    "twitterCard": {
+      "card": "summary_large_image",
+      "title": "",
+      "description": "",
+      "image": "",
+      "hasCompleteTwitter": false
+    },
+    "headings": {
+      "h1s": [
+        "We see all men come to the knowledge of Christ Jesus and His Return"
+      ],
+      "h2Count": 3,
+      "h3Count": 9,
+      "hasSingleH1": true
+    },
+    "images": {
+      "total": 7,
+      "missingAlt": 1,
+      "altCoveragePercent": 86
+    },
+    "links": {
+      "internalCount": 22,
+      "externalCount": 14
+    },
+    "technical": {
+      "hasViewport": true,
+      "hasCharset": true,
+      "lang": "en-US",
+      "hasJsonLd": true,
+      "existingSchemas": [
+        "WebPage",
+        "BreadcrumbList",
+        "WebSite",
+        "Organization",
+        "Organization"
+      ]
+    }
+  },
+  "semantics": {
+    "h1Quality": "strong",
+    "currentH1": "We see all men come to the knowledge of Christ Jesus and His Return",
+    "recommendedH1": "We see all men come to the knowledge of Christ Jesus and His Return",
+    "primaryKeywordDetected": "const return",
+    "searchIntent": "Commercial / Transactional",
+    "contentDepthWordCount": 1121,
+    "jargonDetected": [],
+    "editorialVerdict": "Your H1 uses clear, descriptive vocabulary matching the topical body content of your page."
+  },
+  "performance": {
+    "score": 75,
+    "lcpEstimateSeconds": 1.7,
+    "clsEstimate": 0.045,
+    "heavyAssetCount": 0,
+    "renderBlockingScriptsCount": 18,
+    "usesModernImageFormats": true,
+    "opportunities": [
+      {
+        "title": "Defer 18 render-blocking scripts",
+        "impact": "High",
+        "savingEstimate": "~4.5s faster LCP"
+      }
+    ]
+  },
+  "codePatches": {
+    "nextJsMetadata": "import type { Metadata } from 'next';\n\nexport const metadata: Metadata = {\n  title: 'ECN Global | Evangel Carriers Network — Telling of His Return',\n  description: 'Evangel Carriers Network is a ministry raising awareness of Christ\\'s imminent return. Join ECN Global — telling the world He is coming again.',\n  alternates: {\n    canonical: 'https://evangelcarriersnetwork.org/',\n  },\n  openGraph: {\n    title: 'ECN Global | Evangel Carriers Network — Telling of His Return',\n    description: 'Evangel Carriers Network is a ministry raising awareness of Christ\\'s imminent return. Join ECN Global — telling the world He is coming again.',\n    url: 'https://evangelcarriersnetwork.org/',\n    siteName: 'Evangel Carriers Network - ECN Global',\n    images: [\n      {\n        url: 'https://evangelcarriersnetwork.org/wp-content/uploads/2026/06/Socialbanner.jpg',\n        width: 1200,\n        height: 630,\n        alt: 'ECN Global | Evangel Carriers Network — Telling of His Return',\n      },\n    ],\n    locale: 'en_US',\n    type: 'website',\n  },\n  twitter: {\n    card: 'summary_large_image',\n    title: 'ECN Global | Evangel Carriers Network — Telling of His Return',\n    description: 'Evangel Carriers Network is a ministry raising awareness of Christ\\'s imminent return. Join ECN Global — telling the world He is coming again.',\n    images: ['https://evangelcarriersnetwork.org/wp-content/uploads/2026/06/Socialbanner.jpg'],\n  },\n  robots: {\n    index: true,\n    follow: true,\n  },\n};",
+    "shopifyLiquid": "{% comment %}\n  CrawlPay Automated SEO & Social Meta Snippet\n  Add this directly inside <head>...</head> in theme.liquid\n{% endcomment %}\n<title>{{ page_title | default: \"ECN Global | Evangel Carriers Network — Telling of His Return\" }}</title>\n<meta name=\"description\" content=\"{{ page_description | default: \"Evangel Carriers Network is a ministry raising awareness of Christ\\'s imminent return. Join ECN Global — telling the world He is coming again.\" }}\">\n<link rel=\"canonical\" href=\"{{ canonical_url | default: \"https://evangelcarriersnetwork.org/\" }}\">\n\n<!-- Open Graph / Social Tags -->\n<meta property=\"og:site_name\" content=\"Evangel Carriers Network - ECN Global\">\n<meta property=\"og:url\" content=\"{{ canonical_url | default: \"https://evangelcarriersnetwork.org/\" }}\">\n<meta property=\"og:title\" content=\"{{ page_title | default: \"ECN Global | Evangel Carriers Network — Telling of His Return\" }}\">\n<meta property=\"og:description\" content=\"{{ page_description | default: \"Evangel Carriers Network is a ministry raising awareness of Christ\\'s imminent return. Join ECN Global — telling the world He is coming again.\" }}\">\n<meta property=\"og:type\" content=\"product\">\n<meta property=\"og:image\" content=\"https://evangelcarriersnetwork.org/wp-content/uploads/2026/06/Socialbanner.jpg\">\n\n<!-- Twitter Card -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n<meta name=\"twitter:title\" content=\"{{ page_title | default: \"ECN Global | Evangel Carriers Network — Telling of His Return\" }}\">\n<meta name=\"twitter:description\" content=\"{{ page_description | default: \"Evangel Carriers Network is a ministry raising awareness of Christ\\'s imminent return. Join ECN Global — telling the world He is coming again.\" }}\">\n<meta name=\"twitter:image\" content=\"https://evangelcarriersnetwork.org/wp-content/uploads/2026/06/Socialbanner.jpg\">",
+    "htmlHeadBlock": "<!-- CrawlPay Verified HTML Meta Tags -->\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>ECN Global | Evangel Carriers Network — Telling of His Return</title>\n<meta name=\"description\" content=\"Evangel Carriers Network is a ministry raising awareness of Christ's imminent return. Join ECN Global — telling the world He is coming again.\">\n<link rel=\"canonical\" href=\"https://evangelcarriersnetwork.org/\">\n<meta name=\"robots\" content=\"index, follow\">\n\n<!-- OpenGraph Social Cards -->\n<meta property=\"og:type\" content=\"website\">\n<meta property=\"og:url\" content=\"https://evangelcarriersnetwork.org/\">\n<meta property=\"og:title\" content=\"ECN Global | Evangel Carriers Network — Telling of His Return\">\n<meta property=\"og:description\" content=\"Evangel Carriers Network is a ministry raising awareness of Christ's imminent return. Join ECN Global — telling the world He is coming again.\">\n<meta property=\"og:image\" content=\"https://evangelcarriersnetwork.org/wp-content/uploads/2026/06/Socialbanner.jpg\">\n<meta property=\"og:site_name\" content=\"Evangel Carriers Network - ECN Global\">\n\n<!-- Twitter Cards -->\n<meta name=\"twitter:card\" content=\"summary_large_image\">\n<meta name=\"twitter:title\" content=\"ECN Global | Evangel Carriers Network — Telling of His Return\">\n<meta name=\"twitter:description\" content=\"Evangel Carriers Network is a ministry raising awareness of Christ's imminent return. Join ECN Global — telling the world He is coming again.\">\n<meta name=\"twitter:image\" content=\"https://evangelcarriersnetwork.org/wp-content/uploads/2026/06/Socialbanner.jpg\">",
+    "schemaJsonLd": "<script type=\"application/ld+json\">\n{\n  \"@context\": \"https://schema.org\",\n  \"@type\": \"Product\",\n  \"name\": \"ECN Global | Evangel Carriers Network — Telling of His Return\",\n  \"image\": [\n    \"https://evangelcarriersnetwork.org/wp-content/uploads/2026/06/Socialbanner.jpg\"\n  ],\n  \"description\": \"Evangel Carriers Network is a ministry raising awareness of Christ's imminent return. Join ECN Global — telling the world He is coming again.\",\n  \"brand\": {\n    \"@type\": \"Brand\",\n    \"name\": \"Evangel Carriers Network - ECN Global\"\n  },\n  \"offers\": {\n    \"@type\": \"Offer\",\n    \"url\": \"https://evangelcarriersnetwork.org/\",\n    \"priceCurrency\": \"USD\",\n    \"price\": \"49.00\",\n    \"availability\": \"https://schema.org/InStock\"\n  }\n}\n</script>"
+  },
+  "onchainReceipt": {
+    "executionId": "exec_a33744581a0872c6",
+    "targetUrl": "https://evangelcarriersnetwork.org/",
+    "clientPaidUsd": "$0.25 USD₮",
+    "upstreamBrowserReceipt": {
+      "serviceId": "buy-isolated-browser-v2",
+      "provider": "gateway.usebuy.ai / browser-pool",
+      "endpoint": "https://gateway.usebuy.ai/browser/session",
+      "network": "Celo Mainnet (chainId: 42220)",
+      "token": "USD₮ / USDC",
+      "costUsd": "0.045",
+      "txHash": "0x7d810b7a7ffb523da313507b0baa78d02bac50ab829ac7070b1b2fc463a8ef37",
+      "celoscanUrl": "https://celoscan.io/tx/0x7d810b7a7ffb523da313507b0baa78d02bac50ab829ac7070b1b2fc463a8ef37",
+      "timestamp": "2026-10-22T13:03:50.990Z",
+      "attributionTag": "celo_757c2ac3b70c",
+      "blockNumber": 80773459,
+      "gasPriceGwei": "202.500",
+      "isRealBroadcast": true
+    },
+    "upstreamSocialReceipt": {
+      "serviceId": "buy-api-gateway-social-feed",
+      "provider": "gateway.usebuy.ai / social-index",
+      "endpoint": "https://gateway.usebuy.ai/data/social?q=evangelcarriersnetwork.org",
+      "network": "Celo Mainnet (chainId: 42220)",
+      "token": "USD₮ / USDC",
+      "costUsd": "0.020",
+      "txHash": "0xfa657bd314f09a67ef83fbd4b1e17fc1978fc49917696db0dabf85d2be0818b6",
+      "celoscanUrl": "https://celoscan.io/tx/0xfa657bd314f09a67ef83fbd4b1e17fc1978fc49917696db0dabf85d2be0818b6",
+      "timestamp": "2026-10-22T13:03:54.999Z",
+      "attributionTag": "celo_757c2ac3b70c",
+      "blockNumber": 80773472,
+      "gasPriceGwei": "202.500",
+      "isRealBroadcast": true
+    },
+    "agentMarginUsd": "$0.1850 USD₮",
+    "timestamp": "2026-10-22T13:03:55.001Z",
+    "celoBlockNumber": 80773459,
+    "celoRpcUrl": "https://forno.celo.org",
+    "attributionTag": "celo_757c2ac3b70c",
+    "isMainnetLive": true,
+    "isRealBroadcast": true
+  },
+  "checkEngineReport": {
+    "summary": "Audit analyzed 1 page(s) for evangelcarriersnetwork.org (WordPress stack). Found 3 actionable optimization group(s) across metadata, structure, and media assets.",
+    "meta": {
+      "targetUrl": "https://evangelcarriersnetwork.org/",
+      "auditTimestamp": "2026-10-22T13:03:55.002Z",
+      "mode": "quick",
+      "pagesChecked": 1,
+      "detectedStack": {
+        "cms": "WordPress",
+        "seoPlugin": "None"
+      },
+      "durationMs": 0
+    },
+    "prioritizedGroups": [
+      {
+        "rootCauseKey": "links.empty_anchor",
+        "checkId": "links.empty_anchor",
+        "severity": "low",
+        "priority": 9.15,
+        "affectedCount": 7,
+        "totalPagesChecked": 1,
+        "exampleUrls": [
+          "https://evangelcarriersnetwork.org/"
+        ],
+        "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "findings": [
+          {
+            "id": "links.empty_anchor.f925c17102a0",
+            "checkId": "links.empty_anchor",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Internal/external link to 'https://www.instagram.com/theecnglobal/' has no anchor text.",
+              "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+              "snippet": "<a href=\"https://www.instagram.com/theecnglobal/\"></a>"
+            },
+            "rootCauseKey": "links.empty_anchor"
+          },
+          {
+            "id": "links.empty_anchor.200fa1ad2010",
+            "checkId": "links.empty_anchor",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Internal/external link to 'https://x.com/theecnglobal?t=JAYbYKlKriUCtuGA6me7Nw&s=09' has no anchor text.",
+              "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+              "snippet": "<a href=\"https://x.com/theecnglobal?t=JAYbYKlKriUCtuGA6me7Nw&s=09\"></a>"
+            },
+            "rootCauseKey": "links.empty_anchor"
+          },
+          {
+            "id": "links.empty_anchor.6b466d3ca96f",
+            "checkId": "links.empty_anchor",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Internal/external link to 'https://t.me/ecnglobal' has no anchor text.",
+              "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+              "snippet": "<a href=\"https://t.me/ecnglobal\"></a>"
+            },
+            "rootCauseKey": "links.empty_anchor"
+          },
+          {
+            "id": "links.empty_anchor.bdd0b261d270",
+            "checkId": "links.empty_anchor",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Internal/external link to 'https://www.tiktok.com/@theecnglobal?_t=8rm2a8u7zSq&_r=1' has no anchor text.",
+              "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+              "snippet": "<a href=\"https://www.tiktok.com/@theecnglobal?_t=8rm2a8u7zSq&_r=1\"></a>"
+            },
+            "rootCauseKey": "links.empty_anchor"
+          },
+          {
+            "id": "links.empty_anchor.0b96af55c152",
+            "checkId": "links.empty_anchor",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Internal/external link to 'https://www.facebook.com/share/3RgozFGUfew2QLrY/' has no anchor text.",
+              "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+              "snippet": "<a href=\"https://www.facebook.com/share/3RgozFGUfew2QLrY/\"></a>"
+            },
+            "rootCauseKey": "links.empty_anchor"
+          },
+          {
+            "id": "links.empty_anchor.498e49800daf",
+            "checkId": "links.empty_anchor",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Internal/external link to 'https://www.youtube.com/@theecnglobal' has no anchor text.",
+              "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+              "snippet": "<a href=\"https://www.youtube.com/@theecnglobal\"></a>"
+            },
+            "rootCauseKey": "links.empty_anchor"
+          },
+          {
+            "id": "links.empty_anchor.f7dfa29bd345",
+            "checkId": "links.empty_anchor",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Internal/external link to 'https://medium.com/@theecnglobal' has no anchor text.",
+              "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+              "snippet": "<a href=\"https://medium.com/@theecnglobal\"></a>"
+            },
+            "rootCauseKey": "links.empty_anchor"
+          }
+        ]
+      },
+      {
+        "rootCauseKey": "images.missing_dimensions::/root",
+        "checkId": "images.missing_dimensions",
+        "severity": "low",
+        "priority": 7.88,
+        "affectedCount": 5,
+        "totalPagesChecked": 1,
+        "exampleUrls": [
+          "https://evangelcarriersnetwork.org/"
+        ],
+        "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "findings": [
+          {
+            "id": "images.missing_dimensions.dd5bb0200bc7",
+            "checkId": "images.missing_dimensions",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+              "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+              "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+            },
+            "rootCauseKey": "images.missing_dimensions::/root"
+          },
+          {
+            "id": "images.missing_dimensions.dd5bb0200bc7",
+            "checkId": "images.missing_dimensions",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+              "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+              "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+            },
+            "rootCauseKey": "images.missing_dimensions::/root"
+          },
+          {
+            "id": "images.missing_dimensions.dd5bb0200bc7",
+            "checkId": "images.missing_dimensions",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+              "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+              "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+            },
+            "rootCauseKey": "images.missing_dimensions::/root"
+          },
+          {
+            "id": "images.missing_dimensions.dd5bb0200bc7",
+            "checkId": "images.missing_dimensions",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+              "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+              "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+            },
+            "rootCauseKey": "images.missing_dimensions::/root"
+          },
+          {
+            "id": "images.missing_dimensions.dd5bb0200bc7",
+            "checkId": "images.missing_dimensions",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+              "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+              "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+            },
+            "rootCauseKey": "images.missing_dimensions::/root"
+          }
+        ]
+      },
+      {
+        "rootCauseKey": "titles.too_long",
+        "checkId": "titles.too_long",
+        "severity": "low",
+        "priority": 3.05,
+        "affectedCount": 1,
+        "totalPagesChecked": 1,
+        "exampleUrls": [
+          "https://evangelcarriersnetwork.org/"
+        ],
+        "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "findings": [
+          {
+            "id": "titles.too_long.ddec1fdf3858",
+            "checkId": "titles.too_long",
+            "severity": "low",
+            "url": "https://evangelcarriersnetwork.org/",
+            "evidence": {
+              "observed": "Title is too long (61 characters) and will truncate in Google search: \"ECN Global | Evangel Carriers Network — Telling of His Return\".",
+              "expected": "Keep page titles within 30–60 characters (under ~600px pixel width).",
+              "snippet": "<title>ECN Global | Evangel Carriers Network — Telling of His Return</title>"
+            },
+            "rootCauseKey": "titles.too_long"
+          }
+        ]
+      }
+    ],
+    "prioritiesFromLlm": [
+      {
+        "rootCauseKey": "links.empty_anchor",
+        "whyItMatters": "Directly impacts how search engines crawl and index pages.",
+        "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "effort": "medium"
+      },
+      {
+        "rootCauseKey": "images.missing_dimensions::/root",
+        "whyItMatters": "Directly impacts how search engines crawl and index pages.",
+        "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "effort": "medium"
+      },
+      {
+        "rootCauseKey": "titles.too_long",
+        "whyItMatters": "Reduces organic click-through rate (CTR) and keyword relevancy signals.",
+        "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "effort": "low"
+      }
+    ],
+    "whatPassed": "All checked pages cleanly passed: Robots.txt & meta robots indexation, Canonical tag resolution, Meta descriptions, Heading hierarchy & H1 uniqueness, XML sitemap parsing, Near-duplicate body content, JSON-LD schema markup.",
+    "notChecked": [
+      "Backlinks profile & external domain authority",
+      "Keyword search rankings & search impressions",
+      "Google Search Console API crawl stats",
+      "Google Analytics 4 & conversion tracking setup",
+      "Google Business Profile / Map pack verification",
+      "Protected pages behind authentication / paywalls",
+      "PageSpeed Insights API returned HTTP 429"
+    ],
+    "allFindings": [
+      {
+        "id": "titles.too_long.ddec1fdf3858",
+        "checkId": "titles.too_long",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Title is too long (61 characters) and will truncate in Google search: \"ECN Global | Evangel Carriers Network — Telling of His Return\".",
+          "expected": "Keep page titles within 30–60 characters (under ~600px pixel width).",
+          "snippet": "<title>ECN Global | Evangel Carriers Network — Telling of His Return</title>"
+        },
+        "rootCauseKey": "titles.too_long"
+      },
+      {
+        "id": "links.empty_anchor.f925c17102a0",
+        "checkId": "links.empty_anchor",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Internal/external link to 'https://www.instagram.com/theecnglobal/' has no anchor text.",
+          "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+          "snippet": "<a href=\"https://www.instagram.com/theecnglobal/\"></a>"
+        },
+        "rootCauseKey": "links.empty_anchor"
+      },
+      {
+        "id": "links.empty_anchor.200fa1ad2010",
+        "checkId": "links.empty_anchor",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Internal/external link to 'https://x.com/theecnglobal?t=JAYbYKlKriUCtuGA6me7Nw&s=09' has no anchor text.",
+          "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+          "snippet": "<a href=\"https://x.com/theecnglobal?t=JAYbYKlKriUCtuGA6me7Nw&s=09\"></a>"
+        },
+        "rootCauseKey": "links.empty_anchor"
+      },
+      {
+        "id": "links.empty_anchor.6b466d3ca96f",
+        "checkId": "links.empty_anchor",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Internal/external link to 'https://t.me/ecnglobal' has no anchor text.",
+          "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+          "snippet": "<a href=\"https://t.me/ecnglobal\"></a>"
+        },
+        "rootCauseKey": "links.empty_anchor"
+      },
+      {
+        "id": "links.empty_anchor.bdd0b261d270",
+        "checkId": "links.empty_anchor",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Internal/external link to 'https://www.tiktok.com/@theecnglobal?_t=8rm2a8u7zSq&_r=1' has no anchor text.",
+          "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+          "snippet": "<a href=\"https://www.tiktok.com/@theecnglobal?_t=8rm2a8u7zSq&_r=1\"></a>"
+        },
+        "rootCauseKey": "links.empty_anchor"
+      },
+      {
+        "id": "links.empty_anchor.0b96af55c152",
+        "checkId": "links.empty_anchor",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Internal/external link to 'https://www.facebook.com/share/3RgozFGUfew2QLrY/' has no anchor text.",
+          "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+          "snippet": "<a href=\"https://www.facebook.com/share/3RgozFGUfew2QLrY/\"></a>"
+        },
+        "rootCauseKey": "links.empty_anchor"
+      },
+      {
+        "id": "links.empty_anchor.498e49800daf",
+        "checkId": "links.empty_anchor",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Internal/external link to 'https://www.youtube.com/@theecnglobal' has no anchor text.",
+          "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+          "snippet": "<a href=\"https://www.youtube.com/@theecnglobal\"></a>"
+        },
+        "rootCauseKey": "links.empty_anchor"
+      },
+      {
+        "id": "links.empty_anchor.f7dfa29bd345",
+        "checkId": "links.empty_anchor",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Internal/external link to 'https://medium.com/@theecnglobal' has no anchor text.",
+          "expected": "All links must have descriptive anchor text for accessibility and search engine link-graph comprehension.",
+          "snippet": "<a href=\"https://medium.com/@theecnglobal\"></a>"
+        },
+        "rootCauseKey": "links.empty_anchor"
+      },
+      {
+        "id": "images.missing_dimensions.dd5bb0200bc7",
+        "checkId": "images.missing_dimensions",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+          "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+          "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+        },
+        "rootCauseKey": "images.missing_dimensions::/root"
+      },
+      {
+        "id": "images.missing_dimensions.dd5bb0200bc7",
+        "checkId": "images.missing_dimensions",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+          "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+          "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+        },
+        "rootCauseKey": "images.missing_dimensions::/root"
+      },
+      {
+        "id": "images.missing_dimensions.dd5bb0200bc7",
+        "checkId": "images.missing_dimensions",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+          "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+          "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+        },
+        "rootCauseKey": "images.missing_dimensions::/root"
+      },
+      {
+        "id": "images.missing_dimensions.dd5bb0200bc7",
+        "checkId": "images.missing_dimensions",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+          "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+          "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+        },
+        "rootCauseKey": "images.missing_dimensions::/root"
+      },
+      {
+        "id": "images.missing_dimensions.dd5bb0200bc7",
+        "checkId": "images.missing_dimensions",
+        "severity": "low",
+        "url": "https://evangelcarriersnetwork.org/",
+        "evidence": {
+          "observed": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
+          "expected": "Provide explicit width and height HTML attributes or CSS aspect-ratio to prevent Cumulative Layout Shift (CLS).",
+          "snippet": "<img src=\"data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMSIgaGVpZ2h0PSIxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjA...\" ...>"
+        },
+        "rootCauseKey": "images.missing_dimensions::/root"
+      }
+    ]
+  }
+}
