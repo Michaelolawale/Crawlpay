@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
   if (!verifyAdminAuth(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  return NextResponse.json(db.getConfig());
+  const config = await db.getConfig();
+  return NextResponse.json(config);
 }
 
 export async function POST(req: NextRequest) {
@@ -17,6 +18,6 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const updated = db.updateConfig(body);
+  const updated = await db.updateConfig(body);
   return NextResponse.json({ success: true, config: updated });
 }

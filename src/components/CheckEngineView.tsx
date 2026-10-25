@@ -112,9 +112,9 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
   // Health Score Color & Rating
   const getHealthColor = (val: number) => {
-    if (val >= 80) return { stroke: '#10b981', text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', label: 'Good Health' };
-    if (val >= 60) return { stroke: '#f59e0b', text: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', label: 'Needs Improvement' };
-    return { stroke: '#ef4444', text: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/30', label: 'Critical Attention' };
+    if (val >= 80) return { stroke: '#10b981', text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', label: 'Good Health' };
+    if (val >= 60) return { stroke: '#f59e0b', text: 'text-amber-800', bg: 'bg-amber-50', border: 'border-amber-200', label: 'Needs Improvement' };
+    return { stroke: '#ef4444', text: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200', label: 'Critical Attention' };
   };
 
   const healthMeta = getHealthColor(overallScore);
@@ -241,37 +241,37 @@ export function CheckEngineView(props: CheckEngineViewProps) {
     switch (sev) {
       case 'critical':
         return (
-          <span className="inline-flex items-center gap-1 rounded bg-rose-500/15 px-2 py-0.5 text-[11px] font-semibold text-rose-400 border border-rose-500/30">
-            <ShieldAlert className="size-3" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200">
+            <ShieldAlert className="size-3 text-rose-600" />
             CRITICAL
           </span>
         );
       case 'high':
         return (
-          <span className="inline-flex items-center gap-1 rounded bg-orange-500/15 px-2 py-0.5 text-[11px] font-semibold text-orange-400 border border-orange-500/30">
-            <AlertTriangle className="size-3" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-0.5 text-[11px] font-bold text-orange-700 border border-orange-200">
+            <AlertTriangle className="size-3 text-orange-600" />
             HIGH
           </span>
         );
       case 'medium':
         return (
-          <span className="inline-flex items-center gap-1 rounded bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-300 border border-amber-500/30">
-            <AlertTriangle className="size-3" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200">
+            <AlertTriangle className="size-3 text-amber-700" />
             WARNING
           </span>
         );
       case 'low':
         return (
-          <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 px-2 py-0.5 text-[11px] font-semibold text-blue-400 border border-blue-500/30">
-            <Info className="size-3" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
+            <Info className="size-3 text-blue-600" />
             NOTICE
           </span>
         );
       case 'info':
       default:
         return (
-          <span className="inline-flex items-center gap-1 rounded bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground border border-border">
-            <Info className="size-3" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#f4f4f6] px-2.5 py-0.5 text-[11px] font-bold text-graphite-800 border border-graphite-100">
+            <Info className="size-3 text-graphite-800" />
             NOTICE
           </span>
         );
@@ -280,47 +280,47 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
   return (
     <div className="space-y-6">
-      {/* Re-Run Comparison Banner (Shows fixes and score improvement from previous audit) */}
+      {/* Re-Run Comparison Banner */}
       {auditDelta && auditDelta.hasPrevious && (
-        <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-5 space-y-3 animate-in fade-in">
+        <div className="rounded-[20px] border border-emerald-200 bg-emerald-50 p-5 space-y-3 animate-in fade-in">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <span className="flex size-7 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold">
+              <span className="flex size-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold">
                 ✓
               </span>
               <div>
-                <h4 className="font-display text-sm font-bold text-foreground">
+                <h4 className="font-display text-sm font-bold text-ink">
                   {auditDelta.scoreDelta > 0
                     ? `Audit Updated: +${auditDelta.scoreDelta} Point Health Score Improvement!`
                     : auditDelta.scoreDelta === 0
                     ? 'Audit Re-Run: Health Score Unchanged'
                     : `Audit Re-Run: Score Shifted by ${auditDelta.scoreDelta} Points`}
                 </h4>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-graphite-800">
                   Compared against prior audit run on {new Date(auditDelta.previousDate).toLocaleString()} (Prior Score: {auditDelta.previousScore}%)
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 font-mono text-xs font-bold text-emerald-400">
+              <span className="rounded-full bg-white border border-emerald-200 px-3 py-1 font-mono text-xs font-bold text-emerald-700 shadow-sm">
                 {auditDelta.fixedCheckIds.length} Issue{auditDelta.fixedCheckIds.length !== 1 ? 's' : ''} Resolved
               </span>
             </div>
           </div>
 
           {auditDelta.fixedCheckIds.length > 0 && (
-            <div className="pt-2 border-t border-emerald-500/20 space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400 block">
+            <div className="pt-2 border-t border-emerald-200 space-y-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">
                 Verified Fixes Detected on Live Re-Run:
               </span>
               <div className="flex flex-wrap gap-2">
                 {auditDelta.fixedCheckIds.map((checkId) => (
                   <span
                     key={checkId}
-                    className="inline-flex items-center gap-1.5 rounded-md bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1 text-xs font-mono text-emerald-300 font-semibold"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-white border border-emerald-200 px-3 py-1 text-xs font-mono text-emerald-800 font-semibold shadow-sm"
                   >
-                    <CheckCircle className="size-3 text-emerald-400" />
+                    <CheckCircle className="size-3 text-emerald-600" />
                     <span>{checkId.replace(/_/g, ' ')}</span>
                   </span>
                 ))}
@@ -334,7 +334,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           SECTION 1: SEMRUSH-STYLE SITE AUDIT HERO
           Circular Progress Bar + Issue Distribution Bar Charts
           ========================================================================= */}
-      <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm">
+      <div className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           {/* Circular Site Health Gauge */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-5">
@@ -346,9 +346,9 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                   cy="55"
                   r={radius}
                   fill="none"
-                  stroke="currentColor"
+                  stroke="#e6e6e8"
+                  className="stroke-[#e6e6e8] dark:stroke-[#252631]"
                   strokeWidth="8"
-                  className="text-border/40"
                 />
                 {/* Animated Fill Circle */}
                 <circle
@@ -366,10 +366,10 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               </svg>
               {/* Inner Percentage Readout */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="font-display text-2xl font-bold tracking-tight text-foreground">
+                <span className="font-display text-2xl font-bold tracking-tight text-ink dark:text-white">
                   {overallScore}%
                 </span>
-                <span className="text-[10px] uppercase font-semibold text-muted-foreground">
+                <span className="text-[10px] uppercase font-bold text-graphite-800 dark:text-graphite-400">
                   Health
                 </span>
               </div>
@@ -377,17 +377,17 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <span className="font-display text-base font-bold text-foreground">
+                <span className="font-display text-base font-bold text-ink dark:text-white">
                   Site Audit Health
                 </span>
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border ${healthMeta.bg} ${healthMeta.text} ${healthMeta.border}`}>
+                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${healthMeta.bg} ${healthMeta.text} ${healthMeta.border}`}>
                   {healthMeta.label}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground max-w-xs leading-relaxed mx-auto sm:mx-0">
+              <p className="text-xs text-graphite-800 dark:text-graphite-400 max-w-xs leading-relaxed mx-auto sm:mx-0">
                 Benchmark against top 10% web assets (avg 82%). Evaluated via {pagesChecked} page crawl.
               </p>
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-0.5 text-[11px] text-muted-foreground font-mono">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-0.5 text-[11px] text-graphite-800 dark:text-graphite-400 font-mono">
                 <span>{pagesChecked} Page{pagesChecked > 1 ? 's' : ''} Crawled</span>
                 <span>•</span>
                 <span>Stack: {detectedStack?.cms || 'Custom'}</span>
@@ -402,23 +402,23 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               <button
                 type="button"
                 onClick={() => setFilterTab(filterTab === 'errors' ? 'all' : 'errors')}
-                className={`flex flex-col rounded-xl border p-2 sm:p-3 text-left transition-all ${
+                className={`flex flex-col rounded-[14px] border p-2.5 sm:p-3 text-left transition-all ${
                   filterTab === 'errors'
-                    ? 'border-rose-500 bg-rose-500/10 ring-1 ring-rose-500'
-                    : 'border-border bg-background/60 hover:border-rose-500/40 hover:bg-rose-500/5'
+                    ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 ring-1 ring-rose-300 dark:ring-rose-800 shadow-sm'
+                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] hover:bg-rose-50/60 dark:hover:bg-rose-950/30 hover:border-rose-200'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-rose-400 flex items-center gap-1">
-                    <ShieldAlert className="size-3 shrink-0" />
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-1">
+                    <ShieldAlert className="size-3 shrink-0 text-rose-600 dark:text-rose-400" />
                     <span>Errors</span>
                   </span>
                   <span className="size-1.5 sm:size-2 rounded-full bg-rose-500 shrink-0" />
                 </div>
-                <span className="mt-1 font-display text-lg sm:text-xl font-bold text-rose-400">
+                <span className="mt-1 font-display text-lg sm:text-xl font-bold text-rose-700 dark:text-rose-300">
                   {errorCount || errorGroups.length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate block">
+                <span className="text-[9px] sm:text-[10px] text-graphite-800 dark:text-graphite-400 truncate block">
                   {errorGroups.length} critical issue{errorGroups.length !== 1 ? 's' : ''}
                 </span>
               </button>
@@ -427,23 +427,23 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               <button
                 type="button"
                 onClick={() => setFilterTab(filterTab === 'warnings' ? 'all' : 'warnings')}
-                className={`flex flex-col rounded-xl border p-2 sm:p-3 text-left transition-all ${
+                className={`flex flex-col rounded-[14px] border p-2.5 sm:p-3 text-left transition-all ${
                   filterTab === 'warnings'
-                    ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500'
-                    : 'border-border bg-background/60 hover:border-amber-500/40 hover:bg-amber-500/5'
+                    ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-300 dark:ring-amber-800 shadow-sm'
+                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] hover:bg-amber-50/60 dark:hover:bg-amber-950/30 hover:border-amber-200'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1">
-                    <AlertTriangle className="size-3 shrink-0" />
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1">
+                    <AlertTriangle className="size-3 shrink-0 text-amber-600 dark:text-amber-400" />
                     <span>Warns</span>
                   </span>
                   <span className="size-1.5 sm:size-2 rounded-full bg-amber-500 shrink-0" />
                 </div>
-                <span className="mt-1 font-display text-lg sm:text-xl font-bold text-amber-400">
+                <span className="mt-1 font-display text-lg sm:text-xl font-bold text-amber-800 dark:text-amber-300">
                   {warningCount || warningGroups.length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate block">
+                <span className="text-[9px] sm:text-[10px] text-graphite-800 dark:text-graphite-400 truncate block">
                   {warningGroups.length} medium issue{warningGroups.length !== 1 ? 's' : ''}
                 </span>
               </button>
@@ -452,23 +452,23 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               <button
                 type="button"
                 onClick={() => setFilterTab(filterTab === 'notices' ? 'all' : 'notices')}
-                className={`flex flex-col rounded-xl border p-2 sm:p-3 text-left transition-all ${
+                className={`flex flex-col rounded-[14px] border p-2.5 sm:p-3 text-left transition-all ${
                   filterTab === 'notices'
-                    ? 'border-blue-500 bg-blue-500/10 ring-1 ring-blue-500'
-                    : 'border-border bg-background/60 hover:border-blue-500/40 hover:bg-blue-500/5'
+                    ? 'border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 ring-1 ring-blue-300 dark:ring-blue-800 shadow-sm'
+                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] hover:bg-blue-50/60 dark:hover:bg-blue-950/30 hover:border-blue-200'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-blue-400 flex items-center gap-1">
-                    <Info className="size-3 shrink-0" />
+                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-1">
+                    <Info className="size-3 shrink-0 text-blue-600 dark:text-blue-400" />
                     <span>Notices</span>
                   </span>
                   <span className="size-1.5 sm:size-2 rounded-full bg-blue-500 shrink-0" />
                 </div>
-                <span className="mt-1 font-display text-lg sm:text-xl font-bold text-blue-400">
+                <span className="mt-1 font-display text-lg sm:text-xl font-bold text-blue-700 dark:text-blue-300">
                   {noticeCount || noticeGroups.length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-muted-foreground truncate block">
+                <span className="text-[9px] sm:text-[10px] text-graphite-800 dark:text-graphite-400 truncate block">
                   {noticeGroups.length} notice item{noticeGroups.length !== 1 ? 's' : ''}
                 </span>
               </button>
@@ -476,7 +476,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
             {/* Stacked Proportional Issues Bar Chart */}
             <div className="space-y-1">
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary flex">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#e6e6e8] dark:bg-[#252631] flex">
                 {totalIssuesCount > 0 ? (
                   <>
                     <div
@@ -499,13 +499,13 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                   <div className="w-full bg-emerald-500" title="Zero Issues Clean" />
                 )}
               </div>
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <div className="flex items-center justify-between text-[10px] text-graphite-800 dark:text-graphite-400">
                 <span>Distribution of detected factors</span>
                 {filterTab !== 'all' && (
                   <button
                     type="button"
                     onClick={() => setFilterTab('all')}
-                    className="text-primary hover:underline font-semibold"
+                    className="text-violet hover:underline font-semibold"
                   >
                     Reset Filter (Showing {displayedGroups.length}/{groups.length})
                   </button>
@@ -521,107 +521,105 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           ========================================================================= */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {/* Crawlability & Indexability */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-2 shadow-sm">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-foreground flex items-center gap-1.5">
-              <Globe className="size-3.5 text-primary" />
+            <span className="font-semibold text-ink dark:text-white flex items-center gap-1.5">
+              <Globe className="size-3.5 text-violet" />
               Crawlability & Indexing
             </span>
-            <span className="font-bold text-foreground font-mono">{technicalScore}%</span>
+            <span className="font-bold text-ink dark:text-white font-mono">{technicalScore}%</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+          <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                technicalScore >= 80 ? 'bg-emerald-400' : technicalScore >= 60 ? 'bg-amber-400' : 'bg-rose-400'
+                technicalScore >= 80 ? 'bg-emerald-500' : technicalScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'
               }`}
               style={{ width: `${technicalScore}%` }}
             />
           </div>
-          <p className="text-[11px] text-muted-foreground">Canonicals, robots.txt, and sitemap coverage</p>
+          <p className="text-[11px] text-graphite-800 dark:text-graphite-400">Canonicals, robots.txt, and sitemap coverage</p>
         </div>
 
         {/* Site Performance & Vitals */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-2 shadow-sm">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-foreground flex items-center gap-1.5">
-              <Zap className="size-3.5 text-amber-400" />
+            <span className="font-semibold text-ink dark:text-white flex items-center gap-1.5">
+              <Zap className="size-3.5 text-amber-500" />
               Site Performance
             </span>
-            <span className="font-bold text-foreground font-mono">{performanceScore}%</span>
+            <span className="font-bold text-ink dark:text-white font-mono">{performanceScore}%</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+          <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                performanceScore >= 80 ? 'bg-emerald-400' : performanceScore >= 60 ? 'bg-amber-400' : 'bg-rose-400'
+                performanceScore >= 80 ? 'bg-emerald-500' : performanceScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'
               }`}
               style={{ width: `${performanceScore}%` }}
             />
           </div>
-          <p className="text-[11px] text-muted-foreground">LCP ~{performance.lcpEstimateSeconds}s · CLS {performance.clsEstimate}</p>
+          <p className="text-[11px] text-graphite-800 dark:text-graphite-400">LCP ~{performance.lcpEstimateSeconds}s · CLS {performance.clsEstimate}</p>
         </div>
 
         {/* Content & On-Page SEO */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-2 shadow-sm">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-foreground flex items-center gap-1.5">
-              <Layers className="size-3.5 text-blue-400" />
+            <span className="font-semibold text-ink dark:text-white flex items-center gap-1.5">
+              <Layers className="size-3.5 text-blue-500" />
               On-Page Content
             </span>
-            <span className="font-bold text-foreground font-mono">{contentScore}%</span>
+            <span className="font-bold text-ink dark:text-white font-mono">{contentScore}%</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+          <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                contentScore >= 80 ? 'bg-emerald-400' : contentScore >= 60 ? 'bg-amber-400' : 'bg-rose-400'
+                contentScore >= 80 ? 'bg-emerald-500' : contentScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'
               }`}
               style={{ width: `${contentScore}%` }}
             />
           </div>
-          <p className="text-[11px] text-muted-foreground">H1 hierarchy, title tags, & meta descriptions</p>
+          <p className="text-[11px] text-graphite-800 dark:text-graphite-400">H1 hierarchy, title tags, & meta descriptions</p>
         </div>
 
         {/* Structured Data & Social */}
-        <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+        <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-2 shadow-sm">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-foreground flex items-center gap-1.5">
-              <Sparkles className="size-3.5 text-purple-400" />
+            <span className="font-semibold text-ink dark:text-white flex items-center gap-1.5">
+              <Sparkles className="size-3.5 text-violet" />
               Structured Data & Social
             </span>
-            <span className="font-bold text-foreground font-mono">{socialScore}%</span>
+            <span className="font-bold text-ink dark:text-white font-mono">{socialScore}%</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
+          <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                socialScore >= 80 ? 'bg-emerald-400' : socialScore >= 60 ? 'bg-amber-400' : 'bg-rose-400'
+                socialScore >= 80 ? 'bg-emerald-500' : socialScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'
               }`}
               style={{ width: `${socialScore}%` }}
             />
           </div>
-          <p className="text-[11px] text-muted-foreground">Schema.org JSON-LD & OpenGraph cards</p>
         </div>
       </div>
 
       {/* =========================================================================
           SECTION 3: SITE PERFORMANCE & CORE WEB VITALS DASHBOARD
-          Utilizing full API call performance details (LCP, CLS, Scripts, Opportunities)
           ========================================================================= */}
-      <section className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
+            <div className="flex size-8 items-center justify-center rounded-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
               <Gauge className="size-4" />
             </div>
             <div>
-              <h3 className="font-display text-base font-bold text-foreground">
+              <h3 className="font-display text-base font-bold text-ink dark:text-white">
                 Site Performance & Core Web Vitals
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-graphite-800 dark:text-graphite-400">
                 Computed via deterministic asset parsing, render-blocking scripts, and DOM transfer telemetry.
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-bold text-amber-400">
+            <span className="font-mono text-sm font-bold text-ink dark:text-white bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-3 py-1 rounded-full">
               Speed Score: {performance.score}/100
             </span>
           </div>
@@ -630,103 +628,103 @@ export function CheckEngineView(props: CheckEngineViewProps) {
         {/* Core Web Vitals Metrics Grid */}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {/* LCP Metric */}
-          <div className="rounded-xl border border-border bg-background p-4 space-y-1.5">
+          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] p-4 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                <Clock className="size-3 text-primary" />
-                LCP (Largest Contentful Paint)
+              <span className="text-xs font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1">
+                <Clock className="size-3 text-violet" />
+                LCP (Largest Contentful)
               </span>
               <span
-                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   performance.lcpEstimateSeconds <= 2.5
-                    ? 'bg-emerald-500/15 text-emerald-400'
+                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
                     : performance.lcpEstimateSeconds <= 4.0
-                    ? 'bg-amber-500/15 text-amber-400'
-                    : 'bg-rose-500/15 text-rose-400'
+                    ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                    : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
                 }`}
               >
                 {performance.lcpEstimateSeconds <= 2.5 ? 'Good (<2.5s)' : performance.lcpEstimateSeconds <= 4.0 ? 'Needs Work' : 'Poor'}
               </span>
             </div>
-            <div className="font-mono text-2xl font-bold text-foreground">
+            <div className="font-mono text-2xl font-bold text-ink dark:text-white">
               {performance.lcpEstimateSeconds}s
             </div>
-            <p className="text-[11px] text-muted-foreground leading-tight">
+            <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-tight">
               Main content rendering benchmark for Google mobile ranking.
             </p>
           </div>
 
           {/* CLS Metric */}
-          <div className="rounded-xl border border-border bg-background p-4 space-y-1.5">
+          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] p-4 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                <Activity className="size-3 text-blue-400" />
+              <span className="text-xs font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1">
+                <Activity className="size-3 text-blue-600" />
                 CLS (Layout Shift)
               </span>
               <span
-                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   performance.clsEstimate <= 0.1
-                    ? 'bg-emerald-500/15 text-emerald-400'
-                    : 'bg-amber-500/15 text-amber-400'
+                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                    : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
                 }`}
               >
                 {performance.clsEstimate <= 0.1 ? 'Stable (<0.1)' : 'Shifting'}
               </span>
             </div>
-            <div className="font-mono text-2xl font-bold text-foreground">
+            <div className="font-mono text-2xl font-bold text-ink dark:text-white">
               {performance.clsEstimate}
             </div>
-            <p className="text-[11px] text-muted-foreground leading-tight">
+            <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-tight">
               Visual page stability during DOM parsing and resource load.
             </p>
           </div>
 
           {/* Render-Blocking Scripts */}
-          <div className="rounded-xl border border-border bg-background p-4 space-y-1.5">
+          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] p-4 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                <Code2 className="size-3 text-purple-400" />
+              <span className="text-xs font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1">
+                <Code2 className="size-3 text-violet" />
                 Render-Blocking Scripts
               </span>
               <span
-                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   performance.renderBlockingScriptsCount === 0
-                    ? 'bg-emerald-500/15 text-emerald-400'
-                    : 'bg-rose-500/15 text-rose-400'
+                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                    : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
                 }`}
               >
                 {performance.renderBlockingScriptsCount === 0 ? 'Optimal' : `${performance.renderBlockingScriptsCount} Blocking`}
               </span>
             </div>
-            <div className="font-mono text-2xl font-bold text-foreground">
+            <div className="font-mono text-2xl font-bold text-ink dark:text-white">
               {performance.renderBlockingScriptsCount}
             </div>
-            <p className="text-[11px] text-muted-foreground leading-tight">
+            <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-tight">
               Synchronous &lt;script&gt; tags lacking async/defer attributes.
             </p>
           </div>
 
           {/* Image Asset Modern Formats */}
-          <div className="rounded-xl border border-border bg-background p-4 space-y-1.5">
+          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] p-4 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-                <ImageIcon className="size-3 text-emerald-400" />
+              <span className="text-xs font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1">
+                <ImageIcon className="size-3 text-emerald-600" />
                 Asset Formats
               </span>
               <span
-                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   performance.usesModernImageFormats
-                    ? 'bg-emerald-500/15 text-emerald-400'
-                    : 'bg-amber-500/15 text-amber-400'
+                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                    : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
                 }`}
               >
                 {performance.usesModernImageFormats ? 'Modern WebP/AVIF' : `${performance.heavyAssetCount} Legacy`}
               </span>
             </div>
-            <div className="font-mono text-lg font-bold text-foreground truncate">
+            <div className="font-mono text-lg font-bold text-ink dark:text-white truncate">
               {performance.usesModernImageFormats ? 'WebP / AVIF' : `${performance.heavyAssetCount} PNG/JPEGs`}
             </div>
-            <p className="text-[11px] text-muted-foreground leading-tight">
+            <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-tight">
               High-efficiency next-gen image compression status.
             </p>
           </div>
@@ -735,32 +733,32 @@ export function CheckEngineView(props: CheckEngineViewProps) {
         {/* Performance Opportunities List */}
         {performance.opportunities && performance.opportunities.length > 0 && (
           <div className="space-y-2 pt-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+            <span className="text-xs font-bold uppercase tracking-wider text-graphite-800 dark:text-graphite-400 block">
               High-Impact Speed Opportunities ({performance.opportunities.length})
             </span>
             <div className="grid gap-2 sm:grid-cols-2">
               {performance.opportunities.map((opp, idx) => (
                 <div
                   key={idx}
-                  className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-3 rounded-lg border border-border bg-background/70 p-3 text-xs"
+                  className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-3 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-3 text-xs shadow-sm"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`rounded px-1.5 py-0.2 text-[10px] font-bold shrink-0 ${
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${
                           opp.impact === 'High'
-                            ? 'bg-rose-500/15 text-rose-400'
+                            ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60'
                             : opp.impact === 'Medium'
-                            ? 'bg-amber-500/15 text-amber-400'
-                            : 'bg-blue-500/15 text-blue-400'
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60'
+                            : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60'
                         }`}
                       >
                         {opp.impact} Impact
                       </span>
-                      <span className="font-medium text-foreground">{opp.title}</span>
+                      <span className="font-semibold text-ink dark:text-white">{opp.title}</span>
                     </div>
                   </div>
-                  <span className="shrink-0 self-start sm:self-auto rounded bg-primary/10 border border-primary/20 px-2 py-0.5 font-mono text-[11px] font-bold text-primary">
+                  <span className="shrink-0 self-start sm:self-auto rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-2.5 py-0.5 font-mono text-[11px] font-bold text-ink dark:text-white">
                     {opp.savingEstimate}
                   </span>
                 </div>
@@ -772,25 +770,24 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
       {/* =========================================================================
           SECTION 4: COMPETITOR ANALYSIS BENCHMARK
-          Head-to-head comparison with rivals (winner, score delta, speed advantage)
           ========================================================================= */}
-      <section className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-sm space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">
+            <div className="flex size-8 items-center justify-center rounded-[10px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shrink-0">
               <Swords className="size-4" />
             </div>
             <div>
-              <h3 className="font-display text-base font-bold text-foreground">
+              <h3 className="font-display text-base font-bold text-ink dark:text-white">
                 Competitor Intelligence Benchmark
               </h3>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-graphite-800 dark:text-graphite-400">
                 Compare your technical SEO and speed vitals head-to-head against any competing domain.
               </p>
             </div>
           </div>
           {comparison && (
-            <span className="rounded-full bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 text-xs font-semibold text-blue-400">
+            <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300">
               Head-to-Head Active
             </span>
           )}
@@ -799,23 +796,23 @@ export function CheckEngineView(props: CheckEngineViewProps) {
         {/* Competitor Input Form */}
         <form onSubmit={handleRunCompetitor} className="flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
-            <Globe className="pointer-events-none absolute left-3.5 top-3 size-4 text-muted-foreground" />
+            <Globe className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 text-graphite-800/60 dark:text-graphite-400" />
             <input
               type="text"
               value={competitorUrl}
               onChange={(e) => setCompetitorUrl(e.target.value)}
               placeholder="Enter competitor domain (e.g. semrush.com or ahrefs.com)"
-              className="h-10 w-full rounded-xl border border-border bg-background pl-10 pr-4 text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-11 w-full rounded-[32px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] pl-11 pr-4 text-xs font-mono text-ink dark:text-white placeholder:text-graphite-800/50 dark:placeholder:text-graphite-400/50 focus:border-ink dark:focus:border-violet focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-violet"
             />
           </div>
           <button
             type="submit"
             disabled={compLoading || !competitorUrl.trim()}
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 text-xs font-bold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors shadow-sm shrink-0"
+            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 text-xs font-bold text-white dark:text-ink hover:opacity-90 disabled:opacity-50 transition-all shadow-sm shrink-0"
           >
             {compLoading ? (
               <>
-                <Loader2 className="size-3.5 animate-spin" />
+                <Loader2 className="size-3.5 animate-spin text-white dark:text-ink" />
                 <span>Auditing Competitor...</span>
               </>
             ) : (
@@ -828,44 +825,44 @@ export function CheckEngineView(props: CheckEngineViewProps) {
         </form>
 
         {compError && (
-          <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-            <AlertTriangle className="size-4 shrink-0" />
+          <div className="flex items-center gap-2 rounded-[14px] border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3 text-xs text-rose-700 dark:text-rose-300">
+            <AlertTriangle className="size-4 shrink-0 text-rose-600 dark:text-rose-400" />
             <span>{compError}</span>
           </div>
         )}
 
         {/* Competitor Results View */}
         {comparison ? (
-          <div className="space-y-5 rounded-xl border border-border bg-background/50 p-4 sm:p-5 animate-in fade-in">
+          <div className="space-y-5 rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#14151b] p-4 sm:p-5 animate-in fade-in">
             {/* Winner Badge Banner */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 shadow-sm">
               <div className="flex items-center gap-2.5">
                 {comparison.winner === 'target' ? (
-                  <span className="flex size-7 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-bold shrink-0">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold shrink-0">
                     🏆
                   </span>
                 ) : comparison.winner === 'competitor' ? (
-                  <span className="flex size-7 items-center justify-center rounded-full bg-amber-500/20 text-amber-400 font-bold shrink-0">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold shrink-0">
                     ⚡
                   </span>
                 ) : (
-                  <span className="flex size-7 items-center justify-center rounded-full bg-blue-500/20 text-blue-400 font-bold shrink-0">
+                  <span className="flex size-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold shrink-0">
                     🤝
                   </span>
                 )}
                 <div>
-                  <h4 className="font-display text-sm font-bold text-foreground">
+                  <h4 className="font-display text-sm font-bold text-ink dark:text-white">
                     {comparison.winner === 'target'
                       ? 'Your Website Wins the Technical Benchmark!'
                       : comparison.winner === 'competitor'
                       ? `Competitor Leads by +${Math.abs(comparison.scoreDelta)} Points`
                       : 'Technical Tie between Target & Competitor'}
                   </h4>
-                  <p className="text-xs text-muted-foreground">{comparison.speedAdvantage}</p>
+                  <p className="text-xs text-graphite-800 dark:text-graphite-400">{comparison.speedAdvantage}</p>
                 </div>
               </div>
               <div className="text-left sm:text-right">
-                <span className="font-mono text-xs font-bold text-foreground">
+                <span className="font-mono text-xs font-bold text-ink dark:text-white bg-[#f4f4f6] dark:bg-[#22232c] px-3 py-1 rounded-full border border-graphite-100 dark:border-graphite-800">
                   Score Delta: {comparison.scoreDelta > 0 ? `+${comparison.scoreDelta}` : comparison.scoreDelta}
                 </span>
               </div>
@@ -874,63 +871,63 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             {/* Side-by-Side Comparison Bars */}
             <div className="grid gap-3 sm:grid-cols-2">
               {/* Target Card */}
-              <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+              <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 space-y-3 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-primary font-mono truncate max-w-[140px] sm:max-w-[200px]">
+                  <span className="text-xs font-bold text-ink dark:text-white font-mono truncate max-w-[140px] sm:max-w-[200px]">
                     {comparison.target.url}
                   </span>
-                  <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary shrink-0">
+                  <span className="rounded-full bg-violet/10 dark:bg-violet/20 border border-violet/20 dark:border-violet/40 px-2.5 py-0.5 text-[10px] font-bold text-violet shrink-0">
                     Your Site
                   </span>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">SEO Health Score</span>
-                    <strong className="text-foreground font-mono">{comparison.target.score}/100</strong>
+                    <span className="text-graphite-800 dark:text-graphite-400">SEO Health Score</span>
+                    <strong className="text-ink dark:text-white font-mono">{comparison.target.score}/100</strong>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: `${comparison.target.score}%` }} />
+                  <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
+                    <div className="h-full bg-ink dark:bg-violet rounded-full" style={{ width: `${comparison.target.score}%` }} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-border/50">
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-100 dark:border-graphite-800">
                   <div>
-                    <span className="text-[10px] text-muted-foreground block">LCP Speed</span>
-                    <strong className="text-foreground font-mono">{comparison.target.lcpSeconds}s</strong>
+                    <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">LCP Speed</span>
+                    <strong className="text-ink dark:text-white font-mono">{comparison.target.lcpSeconds}s</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground block">Schemas</span>
-                    <strong className="text-foreground font-mono">{comparison.target.schemaCount} tags</strong>
+                    <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">Schemas</span>
+                    <strong className="text-ink dark:text-white font-mono">{comparison.target.schemaCount} tags</strong>
                   </div>
                 </div>
               </div>
 
               {/* Competitor Card */}
-              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 space-y-3 shadow-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-foreground font-mono truncate max-w-[140px] sm:max-w-[200px]">
+                  <span className="text-xs font-bold text-ink dark:text-white font-mono truncate max-w-[140px] sm:max-w-[200px]">
                     {comparison.competitor.url}
                   </span>
-                  <span className="rounded bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground shrink-0">
+                  <span className="rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-2.5 py-0.5 text-[10px] font-bold text-graphite-800 dark:text-graphite-300 shrink-0">
                     Competitor
                   </span>
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">SEO Health Score</span>
-                    <strong className="text-foreground font-mono">{comparison.competitor.score}/100</strong>
+                    <span className="text-graphite-800 dark:text-graphite-400">SEO Health Score</span>
+                    <strong className="text-ink dark:text-white font-mono">{comparison.competitor.score}/100</strong>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-secondary overflow-hidden">
-                    <div className="h-full bg-blue-400 rounded-full" style={{ width: `${comparison.competitor.score}%` }} />
+                  <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${comparison.competitor.score}%` }} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-border/50">
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-100 dark:border-graphite-800">
                   <div>
-                    <span className="text-[10px] text-muted-foreground block">LCP Speed</span>
-                    <strong className="text-foreground font-mono">{comparison.competitor.lcpSeconds}s</strong>
+                    <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">LCP Speed</span>
+                    <strong className="text-ink dark:text-white font-mono">{comparison.competitor.lcpSeconds}s</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] text-muted-foreground block">Schemas</span>
-                    <strong className="text-foreground font-mono">{comparison.competitor.schemaCount} tags</strong>
+                    <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">Schemas</span>
+                    <strong className="text-ink dark:text-white font-mono">{comparison.competitor.schemaCount} tags</strong>
                   </div>
                 </div>
               </div>
@@ -938,30 +935,30 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
             {/* Strategic Playbook to Beat Them */}
             <div className="grid gap-3 sm:grid-cols-2 pt-1 text-xs">
-              <div className="rounded-lg border border-border bg-card p-3.5 space-y-2">
-                <span className="font-semibold text-rose-400 flex items-center gap-1.5">
+              <div className="rounded-[14px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/30 p-3.5 space-y-2">
+                <span className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
                   <TrendingDown className="size-3.5" />
                   Why They Are Gaining Edge:
                 </span>
-                <ul className="space-y-1.5 text-muted-foreground text-[11px]">
+                <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
                   {comparison.whyTheyAreWinning.map((item, idx) => (
                     <li key={idx} className="flex items-start gap-1.5">
-                      <span className="text-rose-400 mt-0.5">•</span>
+                      <span className="text-rose-500 mt-0.5">•</span>
                       <span>{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3.5 space-y-2">
-                <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle className="size-3.5" />
+              <div className="rounded-[14px] border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/30 p-3.5 space-y-2">
+                <span className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
+                  <CheckCircle className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                   3 Action Steps to Outrank Them:
                 </span>
-                <ul className="space-y-1.5 text-foreground/90 text-[11px]">
+                <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
                   {comparison.threeStepsToBeatThem.map((step, idx) => (
                     <li key={idx} className="flex items-start gap-1.5">
-                      <span className="text-emerald-400 font-bold">{idx + 1}.</span>
+                      <span className="text-emerald-700 dark:text-emerald-400 font-bold">{idx + 1}.</span>
                       <span>{step}</span>
                     </li>
                   ))}
@@ -970,29 +967,29 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             </div>
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+          <div className="rounded-[16px] border border-dashed border-graphite-200 dark:border-graphite-800 p-5 text-center text-xs text-graphite-800 dark:text-graphite-400 bg-[#f4f4f6] dark:bg-[#1a1b22]">
             <p>Enter any rival website URL above to inspect side-by-side Page Speed, Schema tags, and 3 steps to beat them.</p>
           </div>
         )}
       </section>
 
       {/* Meta Bar & Raw Agent JSON */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5 sm:p-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-3.5 sm:p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 border border-primary/20 px-2.5 py-1 text-primary font-medium">
-            <Globe className="size-3.5" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-3 py-1 text-ink dark:text-white font-semibold">
+            <Globe className="size-3.5 text-violet" />
             <span>{pagesChecked} Page{pagesChecked > 1 ? 's' : ''} Checked</span>
           </span>
 
-          <span className="inline-flex items-center gap-1 rounded-md bg-secondary border border-border px-2.5 py-1 text-muted-foreground font-medium">
-            <Layers className="size-3.5 text-primary" />
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-3 py-1 text-graphite-800 dark:text-graphite-300 font-semibold">
+            <Layers className="size-3.5 text-violet" />
             <span>
               Stack: {detectedStack?.cms || 'Custom HTML'}
               {detectedStack?.seoPlugin && detectedStack.seoPlugin !== 'None' ? ` (${detectedStack.seoPlugin})` : ''}
             </span>
           </span>
 
-          <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 border border-primary/20 px-2.5 py-1 text-primary font-medium">
+          <span className="inline-flex items-center gap-1 rounded-full bg-violet/10 dark:bg-violet/20 border border-violet/20 dark:border-violet/40 px-3 py-1 text-violet font-semibold">
             <span>{groups.length} Issue Group{groups.length !== 1 ? 's' : ''}</span>
           </span>
         </div>
@@ -1000,27 +997,27 @@ export function CheckEngineView(props: CheckEngineViewProps) {
         <button
           type="button"
           onClick={() => setShowJson(!showJson)}
-          className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#22232c] px-4 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#2a2b36] transition-colors shadow-sm"
         >
-          <FileCode className="size-3.5 text-primary" />
+          <FileCode className="size-3.5 text-violet" />
           <span>{showJson ? 'Hide Agent JSON' : 'Export Agent JSON'}</span>
         </button>
       </div>
 
       {/* Raw Agent JSON Export */}
       {showJson && (
-        <div className="relative rounded-lg border border-border bg-background p-4 shadow-inner">
+        <div className="relative rounded-[16px] border border-graphite-800 bg-graphite-900 p-4 shadow-md text-gray-100">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-mono text-muted-foreground">Deterministic Agent FindingGroup Schema</span>
+            <span className="text-xs font-mono text-gray-400">Deterministic Agent FindingGroup Schema</span>
             <button
               onClick={() => handleCopy(JSON.stringify(groups, null, 2), 'raw-json')}
-              className="inline-flex items-center gap-1 rounded border border-border bg-card px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1 rounded-[48px] border border-graphite-700 bg-graphite-800 px-3 py-1 text-xs text-gray-200 hover:text-white"
             >
-              {copiedKey === 'raw-json' ? <Check className="size-3 text-primary" /> : <Copy className="size-3" />}
+              {copiedKey === 'raw-json' ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
               <span>{copiedKey === 'raw-json' ? 'Copied' : 'Copy JSON'}</span>
             </button>
           </div>
-          <pre className="max-h-72 overflow-y-auto text-[11px] font-mono text-primary/90 bg-black/40 p-3 rounded break-all max-w-full">
+          <pre className="max-h-72 overflow-y-auto text-[11px] font-mono text-gray-300 bg-black/40 p-3 rounded-[10px] break-all max-w-full">
             {JSON.stringify({ scores: report?.scores, performance, prioritizedGroups: groups, whatPassed, notChecked }, null, 2)}
           </pre>
         </div>
@@ -1028,19 +1025,19 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
       {/* GSC "Crawled - currently not indexed" Cross-Reference */}
       {gscAnalysis && (
-        <section className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 sm:p-5 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-semibold text-amber-400">
-            <FileSpreadsheet className="size-4" />
+        <section className="rounded-[16px] border border-amber-200 bg-amber-50 p-4 sm:p-5 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-bold text-amber-800">
+            <FileSpreadsheet className="size-4 text-amber-600" />
             <span>Google Search Console: Unindexed Pages Detected ({gscAnalysis.unindexedUrls.length})</span>
           </div>
-          <p className="text-xs text-foreground/90 leading-relaxed">
+          <p className="text-xs text-graphite-800 leading-relaxed">
             Google crawled these URLs but withheld indexation. CrawlPay cross-referenced them with the crawler to pinpoint root causes (e.g. duplicate body copy, missing headings, or low content depth):
           </p>
           <div className="space-y-1.5 max-h-48 overflow-y-auto pt-1">
             {gscAnalysis.unindexedUrls.map((url, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-2 rounded border border-border bg-background/80 px-3 py-1.5 text-xs font-mono min-w-0">
-                <span className="truncate text-foreground/90 flex-1 min-w-0">{url}</span>
-                <span className="shrink-0 rounded bg-destructive/15 text-destructive px-1.5 py-0.5 text-[10px] font-sans font-semibold">
+              <div key={idx} className="flex items-center justify-between gap-2 rounded-[10px] border border-amber-200 bg-white px-3 py-2 text-xs font-mono min-w-0 shadow-sm">
+                <span className="truncate text-ink flex-1 min-w-0">{url}</span>
+                <span className="shrink-0 rounded-full bg-rose-50 border border-rose-200 text-rose-700 px-2 py-0.5 text-[10px] font-sans font-bold">
                   Crawled - not indexed
                 </span>
               </div>
@@ -1051,34 +1048,33 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
       {/* =========================================================================
           SECTION 5: PRIORITIZED ISSUE GROUPS WITH EVIDENCE
-          Semrush-style filterable issues list (Errors, Warnings, Notices, All)
           ========================================================================= */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground tracking-tight">
+            <h3 className="font-display text-sm font-bold text-ink tracking-tight">
               Root-Cause Finding Groups ({displayedGroups.length})
             </h3>
             {filterTab !== 'all' && (
-              <span className="rounded bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-bold uppercase">
+              <span className="rounded-full bg-violet/10 border border-violet/20 text-violet px-2.5 py-0.5 text-[10px] font-bold uppercase">
                 Filtered: {filterTab}
               </span>
             )}
           </div>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[11px] text-graphite-800">
             Ranked by priority formula: severity × log(1 + count) × (1 + importance/5)
           </span>
         </div>
 
         {displayedGroups.length === 0 ? (
-          <div className="rounded-lg border border-border bg-card p-6 sm:p-8 text-center">
-            <CheckCircle2 className="mx-auto size-8 text-primary mb-2" />
-            <p className="text-sm font-medium text-foreground">
+          <div className="rounded-[16px] border border-dashed border-graphite-200 bg-[#f4f4f6] p-6 sm:p-8 text-center">
+            <CheckCircle2 className="mx-auto size-8 text-emerald-600 mb-2" />
+            <p className="text-sm font-bold text-ink">
               {filterTab === 'all'
                 ? 'Zero Technical Issues Detected'
                 : `No issues detected in "${filterTab}" category`}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-graphite-800 mt-1">
               All inspected criteria passed without indexing blockers.
             </p>
           </div>
@@ -1090,45 +1086,45 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             return (
               <div
                 key={group.rootCauseKey}
-                className="overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-all"
+                className="overflow-hidden rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] shadow-sm transition-all"
               >
                 {/* Group Header */}
                 <div
                   onClick={() => toggleExpand(group.rootCauseKey)}
-                  className="flex cursor-pointer flex-wrap items-center justify-between gap-2 sm:gap-3 p-3.5 sm:p-4 hover:bg-accent/40 transition-colors"
+                  className="flex cursor-pointer flex-wrap items-center justify-between gap-2 sm:gap-3 p-3.5 sm:p-4 hover:bg-[#f4f4f6] dark:hover:bg-[#1f2027] transition-colors"
                 >
                   <div className="flex flex-wrap items-center gap-2 min-w-0">
                     {getSeverityBadge(group.severity)}
-                    <span className="font-mono text-xs font-semibold text-foreground truncate max-w-[150px] sm:max-w-none">
+                    <span className="font-mono text-xs font-bold text-ink dark:text-white truncate max-w-[150px] sm:max-w-none">
                       {group.checkId}
                     </span>
-                    <span className="rounded bg-secondary px-2 py-0.5 text-[10px] sm:text-[11px] text-muted-foreground font-medium shrink-0">
+                    <span className="rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-2.5 py-0.5 text-[10px] sm:text-[11px] text-graphite-800 dark:text-graphite-300 font-semibold shrink-0">
                       {group.affectedCount} page{group.affectedCount > 1 ? 's' : ''} affected
                     </span>
-                    <span className="text-[10px] text-muted-foreground/80 font-mono shrink-0">
+                    <span className="text-[10px] text-graphite-800 dark:text-graphite-300 font-mono shrink-0">
                       (Priority: {group.priority})
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground shrink-0">
-                    <span className="text-[11px] font-mono truncate max-w-[120px] sm:max-w-[200px] text-muted-foreground/70 hidden sm:inline">
+                  <div className="flex items-center gap-2 text-xs text-graphite-800 dark:text-graphite-300 shrink-0">
+                    <span className="text-[11px] font-mono truncate max-w-[120px] sm:max-w-[200px] text-graphite-800/80 dark:text-graphite-300/80 hidden sm:inline">
                       {group.rootCauseKey}
                     </span>
-                    {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                    {isExpanded ? <ChevronUp className="size-4 text-ink dark:text-white" /> : <ChevronDown className="size-4 text-ink dark:text-white" />}
                   </div>
                 </div>
 
                 {/* Expanded Details */}
                 {isExpanded && (
-                  <div className="border-t border-border bg-background/50 p-3.5 sm:p-4 space-y-4">
+                  <div className="border-t border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#111216] p-3.5 sm:p-4 space-y-4">
                     {/* Stack Tailored Fix */}
                     {group.stackFix && (
-                      <div className="rounded-md border border-primary/20 bg-primary/5 p-3">
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1">
+                      <div className="rounded-[12px] border border-violet/20 dark:border-violet/40 bg-violet/5 dark:bg-violet/10 p-3">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-violet mb-1">
                           <Wrench className="size-3.5" />
                           <span>Stack-Tailored Fix ({detectedStack?.cms || 'Detected Stack'})</span>
                         </div>
-                        <p className="text-xs text-foreground/90 leading-relaxed font-sans">
+                        <p className="text-xs text-ink dark:text-white leading-relaxed font-sans">
                           {group.stackFix}
                         </p>
                       </div>
@@ -1137,29 +1133,29 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                     {/* Evidence Card */}
                     {firstFinding && (
                       <div className="grid gap-3 sm:grid-cols-2 text-xs">
-                        <div className="rounded border border-border/80 bg-card p-3 min-w-0">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-rose-400">
+                        <div className="rounded-[12px] border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30 p-3 min-w-0">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
                             Observed State
                           </span>
-                          <p className="mt-1 text-foreground/90 font-medium leading-relaxed break-words">
+                          <p className="mt-1 text-ink dark:text-white font-semibold leading-relaxed break-words">
                             {firstFinding.evidence.observed}
                           </p>
                           {firstFinding.evidence.snippet && (
-                            <pre className="mt-2 text-[10px] font-mono text-muted-foreground bg-black/30 p-2 rounded overflow-x-auto whitespace-pre-wrap break-all max-w-full">
+                            <pre className="mt-2 text-[10px] font-mono text-gray-200 bg-graphite-900 dark:bg-black/60 border border-graphite-800 dark:border-graphite-700 p-2.5 rounded-[8px] overflow-x-auto whitespace-pre-wrap break-all max-w-full">
                               {firstFinding.evidence.snippet}
                             </pre>
                           )}
                         </div>
 
-                        <div className="rounded border border-border/80 bg-card p-3 min-w-0">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">
+                        <div className="rounded-[12px] border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/30 p-3 min-w-0">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
                             Expected Benchmark
                           </span>
-                          <p className="mt-1 text-foreground/90 font-medium leading-relaxed break-words">
+                          <p className="mt-1 text-ink dark:text-white font-semibold leading-relaxed break-words">
                             {firstFinding.evidence.expected}
                           </p>
                           <div className="mt-3">
-                            <span className="text-[10px] text-muted-foreground block mb-1">Sample URLs:</span>
+                            <span className="text-[10px] font-semibold text-graphite-800 dark:text-graphite-300 block mb-1">Sample URLs:</span>
                             <div className="space-y-1">
                               {group.exampleUrls.slice(0, 3).map((url, uidx) => (
                                 <a
@@ -1167,7 +1163,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                                   href={url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-[11px] font-mono text-primary hover:underline truncate max-w-full"
+                                  className="flex items-center gap-1 text-[11px] font-mono text-violet hover:underline truncate max-w-full font-medium"
                                 >
                                   <ExternalLink className="size-3 shrink-0" />
                                   <span className="truncate">{url}</span>
@@ -1187,58 +1183,58 @@ export function CheckEngineView(props: CheckEngineViewProps) {
       </section>
 
       {/* What Passed Section */}
-      <section className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-4 text-xs">
-        <div className="flex items-center gap-2 font-semibold text-emerald-400 mb-1">
-          <CheckCircle2 className="size-4" />
+      <section className="rounded-[16px] border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/30 p-4 text-xs">
+        <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-400 mb-1">
+          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
           <span>What Passed (Clean Verification)</span>
         </div>
-        <p className="text-foreground/90 leading-relaxed">
+        <p className="text-ink dark:text-white leading-relaxed">
           {whatPassed || 'All checked pages and technical guidelines passed validation.'}
         </p>
       </section>
 
       {/* Scope Transparency */}
-      <section className="rounded-xl border border-border bg-card/60 p-4 sm:p-5 text-xs space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-2.5">
-          <div className="flex items-center gap-2 font-semibold text-foreground">
-            <HelpCircle className="size-4 text-primary" />
+      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 text-xs space-y-3 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+          <div className="flex items-center gap-2 font-bold text-ink dark:text-white">
+            <HelpCircle className="size-4 text-violet" />
             <span>Scope Transparency: What Was Not Checked</span>
           </div>
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[11px] text-graphite-800 dark:text-graphite-400">
             Areas requiring private credentials or off-page web indexes
           </span>
         </div>
 
-        <p className="text-[11px] text-muted-foreground leading-relaxed">
+        <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-relaxed">
           CrawlPay autonomously inspects all public on-page technical factors, metadata, and Core Web Vitals. The following categories require private account access (like Google OAuth), password authentication, or multi-terabyte search indexes:
         </p>
 
         <div className="grid gap-2 sm:grid-cols-2">
           {notChecked.map((item, idx) => {
             let tag = 'External Scope';
-            let tagColor = 'bg-secondary text-muted-foreground';
+            let tagColor = 'bg-[#f4f4f6] dark:bg-[#22232c] text-graphite-800 dark:text-graphite-300 border border-graphite-100 dark:border-graphite-800';
 
             if (item.toLowerCase().includes('google search console')) {
               tag = 'Upload CSV Above';
-              tagColor = 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
+              tagColor = 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60';
             } else if (item.toLowerCase().includes('google analytics') || item.toLowerCase().includes('google business') || item.toLowerCase().includes('authentication') || item.toLowerCase().includes('paywalls')) {
               tag = 'Requires Private Login';
-              tagColor = 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
+              tagColor = 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60';
             } else if (item.toLowerCase().includes('backlinks') || item.toLowerCase().includes('keyword')) {
               tag = 'Off-Page Index';
-              tagColor = 'bg-purple-500/10 text-purple-400 border border-purple-500/20';
+              tagColor = 'bg-violet/10 dark:bg-violet/20 text-violet border border-violet/20 dark:border-violet/40';
             } else if (item.toLowerCase().includes('pagespeed') || item.toLowerCase().includes('psi')) {
               tag = 'Speed Vitals Substituted';
-              tagColor = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+              tagColor = 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60';
             }
 
             return (
               <div
                 key={idx}
-                className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/60 p-2.5 text-[11px] min-w-0"
+                className="flex items-center justify-between gap-2 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2.5 text-[11px] min-w-0"
               >
-                <span className="text-foreground/90 font-medium truncate flex-1 min-w-0">{item}</span>
-                <span className={`shrink-0 rounded px-2 py-0.5 text-[10px] font-semibold ${tagColor}`}>
+                <span className="text-ink dark:text-white font-medium truncate flex-1 min-w-0">{item}</span>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${tagColor}`}>
                   {tag}
                 </span>
               </div>

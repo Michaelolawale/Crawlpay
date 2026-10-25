@@ -11,8 +11,8 @@ export async function GET(req: NextRequest) {
   }
 
   await db.syncOnchainTransactions();
-  const jobs = db.listJobs(true);
-  const payments = db.listPayments();
+  const jobs = await db.listJobs(true);
+  const payments = await db.listPayments();
 
   // Exclude is_test jobs from stats per spec
   const nonTestJobs = jobs.filter((j) => !j.is_test);
@@ -51,6 +51,8 @@ export async function GET(req: NextRequest) {
     console.warn('[Admin Overview] Celo status fetch error:', e);
   }
 
+  const activeConfig = await db.getConfig();
+
   return NextResponse.json({
     revenueUsd,
     revenueCelo,
@@ -58,6 +60,6 @@ export async function GET(req: NextRequest) {
     successRate: `${successRate}%`,
     failedJobsCount: failedJobs.length,
     onchainStatus,
-    activeConfig: db.getConfig(),
+    activeConfig,
   });
 }

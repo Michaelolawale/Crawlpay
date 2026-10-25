@@ -10,6 +10,6 @@ export async function GET(req: NextRequest) {
   }
 
   await db.syncOnchainTransactions();
-  const payments = db.listPayments();
+  const payments = await db.listPayments();
   return NextResponse.json({ payments });
 }

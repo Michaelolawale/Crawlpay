@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json(exampleReportData);
   }
 
-  const report = db.getReport(id);
+  const report = await db.getReport(id);
   if (report) {
     return NextResponse.json(report);
   }

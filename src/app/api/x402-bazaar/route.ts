@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { CONFIG } from '@/config';
+import { db } from '@/services/db';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const config = await db.getConfig();
   return NextResponse.json(
     {
       status: 402,
@@ -9,7 +13,7 @@ export async function GET() {
       currency: 'USDC / USD₮',
       network: 'celo-mainnet',
       chainId: 42220,
-      price: CONFIG.DEFAULT_AUDIT_PRICE_USD,
+      price: config.quick_price_usd || CONFIG.DEFAULT_AUDIT_PRICE_USD,
       payTo: CONFIG.AGENT_WALLET_ADDRESS,
       attributionTag: CONFIG.ATTRIBUTION_TAG,
       bazaar: {

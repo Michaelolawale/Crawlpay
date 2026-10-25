@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now();
 
   // 3. Mark job strictly as is_test = true in DB
-  db.addJob({
+  await db.addJob({
     id: jobId,
     url,
     depth: mode === 'full' ? 'full' : 'quick',
@@ -48,9 +48,13 @@ export async function POST(req: NextRequest) {
     const duration = Date.now() - startTime;
     const reportId = `rep_sandbox_${Date.now()}`;
 
-    db.saveReport(reportId, report);
+    await db.saveReport(reportId, report, {
+      jobId,
+      targetUrl: url,
+      mode: mode === 'full' ? 'full' : 'quick',
+    });
 
-    db.updateJob(jobId, {
+    await db.updateJob(jobId, {
       status: 'done',
       finished_at: new Date().toISOString(),
       duration_ms: duration,
@@ -66,7 +70,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     const duration = Date.now() - startTime;
-    db.updateJob(jobId, {
+    await db.updateJob(jobId, {
       status: 'failed',
       finished_at: new Date().toISOString(),
       duration_ms: duration,

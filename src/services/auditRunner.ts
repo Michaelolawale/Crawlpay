@@ -12,6 +12,8 @@ import { runAllChecks } from '../engine/checks';
 import { groupAndPrioritizeFindings } from '../engine/aggregator';
 import { summarizeAuditWithLlm } from '../engine/llmLayer';
 
+import { DynamicConfig } from './db';
+
 /**
  * Execute a complete deterministic technical audit on a target URL
  * compliant with the Check Engine Specification (10 checks, root cause grouping, Zod LLM layer)
@@ -19,7 +21,8 @@ import { summarizeAuditWithLlm } from '../engine/llmLayer';
 export async function runAuditPipeline(
   targetUrl: string,
   mode: 'quick' | 'full' = 'quick',
-  isPaidExecution: boolean = false
+  isPaidExecution: boolean = false,
+  dynamicConfig?: DynamicConfig
 ): Promise<FullAuditReport> {
   const validation = await validateAndNormalizeTargetUrl(targetUrl);
   if (!validation.valid || !validation.normalizedUrl) {
@@ -28,13 +31,16 @@ export async function runAuditPipeline(
 
   const normalizedUrl = validation.normalizedUrl;
 
-  // 1. Run BFS Crawler with multi-page discovery (5 pages for Quick, up to 50 for Full)
+  // 1. Run BFS Crawler with multi-page discovery (5 pages for Quick, up to dynamicConfig.max_pages_full for Full)
+  const maxPages = mode === 'full' ? (dynamicConfig?.max_pages_full || 50) : 5;
+  const totalTimeoutMs = dynamicConfig?.crawl_timeout_ms ? Math.max(dynamicConfig.crawl_timeout_ms * 4, 15000) : 60000;
+
   const crawler = new PageCrawler({
     mode,
-    maxPages: mode === 'full' ? 50 : 5,
+    maxPages,
     maxDepth: mode === 'full' ? 3 : 2,
     maxResponseBytes: 2 * 1024 * 1024,
-    totalTimeoutMs: 60000,
+    totalTimeoutMs,
     requestsPerSecond: 4,
     userAgent: 'CrawlPayBot/1.0 (+https://crawlpay.org/bot)',
   });

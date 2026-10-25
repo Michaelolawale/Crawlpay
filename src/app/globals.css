@@ -3,6 +3,21 @@
 @tailwind utilities;
 
 :root {
+  --ink: #18181a;
+  --white: #ffffff;
+  --graphite-800: #454549;
+  --graphite-900: #2f2f31;
+  --graphite-100: #e6e6e8;
+  --graphite-200: #cfcfd1;
+  --graphite-300: #b7b7bb;
+  --graphite-600: #707077;
+  --lavender-tint: #efecff;
+  --mist: #d6e3e8;
+  --violet: #6c5edc;
+  --lavender-panel: #c9c1ff;
+  --gold: #ffb319;
+  --apricot: #ffe1a4;
+
   --radius: 0.5rem;
   --background: oklch(15% 0.025 252);
   --foreground: oklch(96% 0.01 160);
@@ -29,8 +44,11 @@
 }
 
 @layer base {
-  *, ::before, ::after {
-    border-color: oklch(30% 0.026 250 / 0.76) !important;
+  * {
+    border-color: var(--graphite-100);
+  }
+  .dark * {
+    border-color: oklch(30% 0.026 250 / 0.76);
   }
 }
 
@@ -104,3 +122,334 @@ code {
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(40% 0.03 250 / 0.8);
 }
+
+/* Dark Mode Theme Overrides */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #0c0d10 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Header & Nav */
+html.dark header.bg-white,
+html.dark header[class*="bg-white"] {
+  background-color: #121317 !important;
+  border-color: #23242c !important;
+}
+
+html.dark header nav a,
+html.dark header button {
+  color: #f3f4f6 !important;
+}
+
+html.dark header .text-ink {
+  color: #ffffff !important;
+}
+
+/* Surface backgrounds & Cards */
+html.dark .bg-white {
+  background-color: #16171d !important;
+  color: #f3f4f6;
+}
+
+html.dark [class*="bg-white"] {
+  background-color: #16171d !important;
+  color: #f3f4f6;
+}
+
+html.dark [class*="bg-[#f4f4f6]"] {
+  background-color: #1a1b22 !important;
+}
+
+html.dark [class*="bg-[#fafafb]"] {
+  background-color: #14151b !important;
+}
+
+html.dark [class*="bg-[#fcfcfd]"] {
+  background-color: #16171d !important;
+}
+
+html.dark [class*="hover:bg-[#f4f4f6]"]:hover {
+  background-color: #242530 !important;
+}
+
+html.dark [class*="bg-white/"] {
+  background-color: rgba(26, 27, 34, 0.7) !important;
+}
+
+html.dark .bg-graphite-100 {
+  background-color: #22232c !important;
+}
+
+html.dark .bg-graphite-200 {
+  background-color: #2a2b36 !important;
+}
+
+html.dark .bg-graphite-900 {
+  background-color: #111216 !important;
+}
+
+/* Alert panels in dark mode */
+html.dark [class*="bg-emerald-50"] {
+  background-color: rgba(6, 78, 59, 0.25) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+html.dark [class*="bg-amber-50"] {
+  background-color: rgba(120, 53, 15, 0.25) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+
+html.dark [class*="bg-rose-50"] {
+  background-color: rgba(136, 19, 55, 0.25) !important;
+  border-color: rgba(244, 63, 94, 0.25) !important;
+}
+
+html.dark [class*="bg-blue-50"] {
+  background-color: rgba(30, 58, 138, 0.25) !important;
+  border-color: rgba(59, 130, 246, 0.25) !important;
+}
+
+
+/* Typography */
+html.dark .text-ink {
+  color: #f8f9fa !important;
+}
+
+html.dark .text-graphite-800 {
+  color: #d1d4df !important;
+}
+
+html.dark .text-graphite-600 {
+  color: #b5b9c7 !important;
+}
+
+html.dark .text-graphite-300 {
+  color: #9ba0b2 !important;
+}
+
+html.dark .text-graphite-200 {
+  color: #e5e7ef !important;
+}
+
+html.dark .text-violet {
+  color: #a296fa !important;
+}
+
+/* Borders */
+html.dark .border-graphite-100,
+html.dark [class*="border-graphite-100/"],
+html.dark .border-graphite-200 {
+  border-color: #262732 !important;
+}
+
+html.dark .border-graphite-900 {
+  border-color: #23242c !important;
+}
+
+html.dark .border-ink {
+  border-color: #4a4c58 !important;
+}
+
+/* Forms, Inputs, Selects */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #1a1b22 !important;
+  color: #f3f4f6 !important;
+  border-color: #2e303b !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #71717a !important;
+}
+
+/* FAQ Section (Black band stays obsidian dark with white text) */
+html.dark section#faq,
+html.dark section.bg-ink {
+  background-color: #0c0d10 !important;
+  color: #ffffff !important;
+}
+
+html.dark section#faq *,
+html.dark section.bg-ink * {
+  color: inherit;
+}
+
+html.dark section#faq .text-white,
+html.dark section.bg-ink .text-white {
+  color: #ffffff !important;
+}
+
+html.dark section#faq .text-graphite-200,
+html.dark section.bg-ink .text-graphite-200 {
+  color: #a3a3ad !important;
+}
+
+html.dark section#faq .border-graphite-900,
+html.dark section.bg-ink .border-graphite-900 {
+  border-color: #23242c !important;
+}
+
+/* Primary Action Buttons (Capsule CTA inverts to crisp white with dark text) */
+html.dark button.bg-ink:not(footer *):not(section#faq *),
+html.dark a.bg-ink:not(footer *):not(section#faq *) {
+  background-color: #ffffff !important;
+  color: #121316 !important;
+}
+
+html.dark button.bg-ink:not(footer *):not(section#faq *):hover,
+html.dark a.bg-ink:not(footer *):not(section#faq *):hover {
+  background-color: #e5e5e7 !important;
+}
+
+html.dark button.bg-ink:not(footer *):not(section#faq *) svg,
+html.dark a.bg-ink:not(footer *):not(section#faq *) svg {
+  color: #121316 !important;
+  stroke: #121316 !important;
+}
+
+/* Step number badges in How It Works */
+html.dark .size-9.rounded-full.bg-ink {
+  background-color: #292144 !important;
+  color: #c4b5fd !important;
+  border: 1px solid #6c5edc !important;
+}
+
+/* Disabled buttons */
+html.dark button:disabled,
+html.dark button.cursor-not-allowed {
+  background-color: #22232a !important;
+  color: #636570 !important;
+  border-color: #2c2d36 !important;
+}
+
+/* Footer stays obsidian black */
+html.dark footer,
+html.dark footer.bg-ink {
+  background-color: #08090b !important;
+}
+
+html.dark footer * {
+  color: inherit;
+}
+
+html.dark footer .text-white {
+  color: #ffffff !important;
+}
+
+html.dark footer .text-graphite-200 {
+  color: #c4c4c8 !important;
+}
+
+html.dark footer .text-graphite-300 {
+  color: #83838c !important;
+}
+
+html.dark footer .border-graphite-900 {
+  border-color: #1c1d24 !important;
+}
+
+/* Severity Pills & Badges (Refined glow in dark mode) */
+html.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.14) !important;
+  color: #34d399 !important;
+}
+html.dark .text-emerald-700,
+html.dark .text-emerald-800 {
+  color: #34d399 !important;
+}
+html.dark .border-emerald-200 {
+  border-color: rgba(16, 185, 129, 0.28) !important;
+}
+
+html.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.14) !important;
+  color: #fbbf24 !important;
+}
+html.dark .text-amber-800,
+html.dark .text-amber-700 {
+  color: #fbbf24 !important;
+}
+html.dark .border-amber-200 {
+  border-color: rgba(245, 158, 11, 0.28) !important;
+}
+
+html.dark .bg-rose-50 {
+  background-color: rgba(239, 68, 68, 0.14) !important;
+  color: #f87171 !important;
+}
+html.dark .text-rose-700,
+html.dark .text-rose-800 {
+  color: #f87171 !important;
+}
+html.dark .border-rose-200 {
+  border-color: rgba(239, 68, 68, 0.28) !important;
+}
+
+html.dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.14) !important;
+  color: #60a5fa !important;
+}
+html.dark .text-blue-700,
+html.dark .text-blue-800 {
+  color: #60a5fa !important;
+}
+html.dark .border-blue-200 {
+  border-color: rgba(59, 130, 246, 0.28) !important;
+}
+
+html.dark .bg-orange-50 {
+  background-color: rgba(249, 115, 22, 0.14) !important;
+  color: #fb923c !important;
+}
+html.dark .text-orange-700 {
+  color: #fb923c !important;
+}
+html.dark .border-orange-200 {
+  border-color: rgba(249, 115, 22, 0.28) !important;
+}
+
+/* Modals & Overlays */
+html.dark .fixed [class*="bg-ink"] {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Gauge background track */
+html.dark circle[stroke="#e6e6e8"] {
+  stroke: #272832 !important;
+}
+
+/* Violet accents & Inset Shadows */
+html.dark .bg-lavender-tint {
+  background-color: rgba(108, 94, 220, 0.18) !important;
+}
+html.dark .border-violet {
+  border-color: #6c5edc !important;
+}
+html.dark .shadow-screenshot-inset {
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Showcase Panels in Landing Page */
+html.dark .bg-lavender-panel {
+  background-color: #24203a !important;
+  border: 1px solid #3c325c !important;
+}
+html.dark .bg-gold {
+  background-color: #2a2315 !important;
+  border: 1px solid #483a1f !important;
+}
+
+/* Active Depth Cards in Audit form */
+html.dark .border-2.border-ink {
+  border-color: #8c7ffa !important;
+  background-color: #1a1b24 !important;
+}
+
+
+

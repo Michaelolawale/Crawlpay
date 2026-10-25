@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
   if (!verifyAdminAuth(req)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  return NextResponse.json({ blocklist: db.listBlocklist() });
+  const blocklist = await db.listBlocklist();
+  return NextResponse.json({ blocklist });
 }
 
 export async function POST(req: NextRequest) {
@@ -23,14 +24,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing type or value' }, { status: 400 });
   }
 
-  db.addBlocklist({
+  await db.addBlocklist({
     type,
     value,
     reason: reason || 'Flagged by administrator',
     created_at: new Date().toISOString(),
   });
 
-  return NextResponse.json({ success: true, blocklist: db.listBlocklist() });
+  const blocklist = await db.listBlocklist();
+  return NextResponse.json({ success: true, blocklist });
 }
 
 export async function DELETE(req: NextRequest) {
@@ -46,6 +48,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Missing type or value query parameters' }, { status: 400 });
   }
 
-  db.removeBlocklist(type, value);
-  return NextResponse.json({ success: true, blocklist: db.listBlocklist() });
+  await db.removeBlocklist(type, value);
+  const blocklist = await db.listBlocklist();
+  return NextResponse.json({ success: true, blocklist });
 }

@@ -100,105 +100,112 @@ function AuditPageContent() {
     <div className="w-full space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* Top Banner / Breadcrumb */}
       <div>
-        <h1 className="font-display text-xl sm:text-3xl font-bold tracking-tight text-foreground leading-snug">
-          Deterministic SEO & Competitor Intelligence Audit
+        <p className="font-sans text-[14px] sm:text-[16px] leading-[1.6] font-[400] text-violet mb-1">
+          Autonomous Execution
+        </p>
+        <h1 className="font-sans text-[24px] sm:text-[34px] font-[600] tracking-tight text-ink leading-snug">
+          Deterministic SEO &amp; Competitor Intelligence Audit
         </h1>
-        <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          Autonomous crawl with 10 deterministic checks, root cause grouping, and actionable code fixes. Settled on Celo rails.
+        <p className="mt-1 text-[14px] sm:text-[15px] text-graphite-800 leading-relaxed font-normal">
+          Autonomous crawl with 10 deterministic engine checks, root cause grouping, and ready-to-deploy code fixes settled per crawl on Celo Mainnet.
         </p>
       </div>
 
       {/* Main Audit Form Card */}
-      <div className="rounded-2xl border border-border bg-card/60 p-4 sm:p-8 backdrop-blur-xl shadow-sm">
+      <div className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#16171d] p-5 sm:p-8 shadow-sm">
         <form onSubmit={handleLaunchModal} className="space-y-5 sm:space-y-6">
           {/* URL Input Field */}
           <div>
-            <label htmlFor="target-url" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            <label htmlFor="target-url" className="block text-[12px] font-mono uppercase tracking-wider text-graphite-600 dark:text-graphite-400 mb-2 font-medium">
               Target Website URL
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                <Globe className="size-4 text-muted-foreground" />
+                <Globe className="size-4 text-graphite-600 dark:text-graphite-400" />
               </div>
               <input
                 id="target-url"
                 type="text"
-                placeholder="example.com or https://company.com"
+                placeholder="example.com or yoursite.com"
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
-                className="block w-full rounded-xl border border-border bg-background py-3 pl-10 pr-4 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-mono transition-colors"
+                className="block w-full rounded-[32px] border border-ink dark:border-graphite-800 bg-white dark:bg-[#111216] py-3 pl-10 pr-4 text-[14px] sm:text-[15px] text-ink dark:text-white placeholder:text-graphite-600 dark:placeholder:text-graphite-500 focus:outline-none focus:shadow-hero-field font-mono transition-shadow"
               />
             </div>
             {targetUrl && !isFormValid && (
-              <p className="mt-1.5 text-xs text-destructive">
-                Please enter a valid website domain or URL (e.g. evangelcarriersnetwork.org).
+              <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium">
+                Please enter a valid website domain or URL (e.g. example.com).
               </p>
             )}
           </div>
 
           {/* Depth Selector Cards */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+            <label className="block text-[12px] font-mono uppercase tracking-wider text-graphite-600 dark:text-graphite-400 mb-2 font-medium">
               Select Audit Depth
             </label>
             <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
               {/* Quick Depth Card */}
               <div
                 onClick={() => setDepth('quick')}
-                className={`cursor-pointer rounded-xl border p-3.5 sm:p-4 transition-all ${
+                className={`cursor-pointer rounded-[16px] p-4 transition-all ${
                   depth === 'quick'
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                    : 'border-border bg-background hover:border-border/80'
+                    ? 'border-2 border-ink dark:border-violet bg-white dark:bg-[#1a1b22] shadow-sm'
+                    : 'border border-graphite-100 dark:border-graphite-800 bg-white/70 dark:bg-[#16171d]/70 hover:bg-white dark:hover:bg-[#1a1b22]'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Zap className={`size-4 ${depth === 'quick' ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className="font-display font-semibold text-sm text-foreground">Quick Audit</span>
+                    <Zap className={`size-4 ${depth === 'quick' ? 'text-violet' : 'text-graphite-600 dark:text-graphite-400'}`} />
+                    <span className="font-sans font-[600] text-[15px] text-ink dark:text-white">Quick Audit</span>
                   </div>
-                  <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary font-mono">
+                  <span className={`rounded-[48px] px-2.5 py-0.5 text-[12px] font-mono ${
+                    depth === 'quick' ? 'bg-ink dark:bg-white text-white dark:text-ink' : 'bg-graphite-100 dark:bg-[#22232c] text-graphite-600 dark:text-graphite-300'
+                  }`}>
                     $0.25 USDT
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                  Fast multi-page crawl (up to 5 core pages). Runs 10 engine checks, root cause grouping, archetype detection, and ready-to-paste code fixes.
+                <p className="mt-2 text-[13px] text-graphite-800 dark:text-graphite-300 leading-relaxed font-normal">
+                  Fast single-page and core route crawl. Runs 10 engine checks, root cause grouping, stack detection, and code patches.
                 </p>
               </div>
 
               {/* Full Depth Card */}
               <div
                 onClick={() => setDepth('full')}
-                className={`cursor-pointer rounded-xl border p-3.5 sm:p-4 transition-all ${
+                className={`cursor-pointer rounded-[16px] p-4 transition-all ${
                   depth === 'full'
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                    : 'border-border bg-background hover:border-border/80'
+                    ? 'border-2 border-ink dark:border-violet bg-white dark:bg-[#1a1b22] shadow-sm'
+                    : 'border border-graphite-100 dark:border-graphite-800 bg-white/70 dark:bg-[#16171d]/70 hover:bg-white dark:hover:bg-[#1a1b22]'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Layers className={`size-4 ${depth === 'full' ? 'text-primary' : 'text-muted-foreground'}`} />
-                    <span className="font-display font-semibold text-sm text-foreground">Full Deep Crawl</span>
+                    <Layers className={`size-4 ${depth === 'full' ? 'text-violet' : 'text-graphite-600 dark:text-graphite-400'}`} />
+                    <span className="font-sans font-[600] text-[15px] text-ink dark:text-white">Full Deep Crawl</span>
                   </div>
-                  <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary font-mono">
+                  <span className={`rounded-[48px] px-2.5 py-0.5 text-[12px] font-mono ${
+                    depth === 'full' ? 'bg-ink dark:bg-white text-white dark:text-ink' : 'bg-graphite-100 dark:bg-[#22232c] text-graphite-600 dark:text-graphite-300'
+                  }`}>
                     $0.50 USDT
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                  Deep multi-page BFS crawl (up to 50 pages). Detects sitewide orphan links, canonical loops, template-wide rendering defects, and full indexability.
+                <p className="mt-2 text-[13px] text-graphite-800 dark:text-graphite-300 leading-relaxed font-normal">
+                  Deep multi-page BFS crawl (up to 50 pages). Detects sitewide orphan links, canonical loops, rendering defects, and full indexability.
                 </p>
               </div>
             </div>
           </div>
 
           {/* Optional Google Search Console Upload */}
-          <div className="rounded-xl border border-dashed border-border p-3.5 sm:p-4 bg-muted/20">
+          <div className="rounded-[16px] border border-dashed border-graphite-200 dark:border-graphite-800 p-4 bg-white dark:bg-[#16171d]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                  <FileSpreadsheet className="size-3.5 text-primary" />
+                <span className="text-[13px] font-[500] text-ink dark:text-white flex items-center gap-1.5">
+                  <FileSpreadsheet className="size-4 text-violet" />
                   <span>Optional: Google Search Console Export</span>
                 </span>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <p className="text-[12px] text-graphite-600 dark:text-graphite-400 mt-0.5">
                   Upload CSV/ZIP to cross-reference crawl results with real Google impressions and query rankings.
                 </p>
               </div>
@@ -207,7 +214,7 @@ function AuditPageContent() {
                 <button
                   type="button"
                   onClick={clearGscFile}
-                  className="inline-flex items-center justify-center gap-1 rounded-md bg-destructive/10 px-2.5 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 self-start sm:self-auto"
+                  className="inline-flex items-center justify-center gap-1 rounded-[48px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 px-3 py-1.5 text-[12px] font-medium text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 self-start sm:self-auto cursor-pointer"
                 >
                   <X className="size-3" />
                   <span>Remove</span>
@@ -216,9 +223,9 @@ function AuditPageContent() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors self-start sm:self-auto shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#22232c] px-3.5 py-1.5 text-[12px] font-medium text-ink dark:text-white hover:bg-graphite-200/50 dark:hover:bg-[#2a2b36] transition-colors self-start sm:self-auto shrink-0 cursor-pointer"
                 >
-                  <UploadCloud className="size-3.5 text-muted-foreground" />
+                  <UploadCloud className="size-3.5 text-graphite-600 dark:text-graphite-400" />
                   <span>Upload File</span>
                 </button>
               )}
@@ -233,30 +240,30 @@ function AuditPageContent() {
             />
 
             {gscAnalysis && (
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-lg bg-card p-2.5 text-xs border border-border">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[12px] bg-[#f4f4f6] dark:bg-[#1a1b22] p-3 text-xs border border-graphite-100 dark:border-graphite-800">
                 <div>
-                  <span className="text-muted-foreground block text-[10px]">Export File</span>
-                  <strong className="text-foreground truncate block">{gscAnalysis.fileName}</strong>
+                  <span className="text-graphite-600 dark:text-graphite-400 block text-[10px]">Export File</span>
+                  <strong className="text-ink dark:text-white truncate block">{gscAnalysis.fileName}</strong>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[10px]">Total URLs in Export</span>
-                  <strong className="text-foreground">{gscAnalysis.totalUrls.toLocaleString()}</strong>
+                  <span className="text-graphite-600 dark:text-graphite-400 block text-[10px]">Total URLs in Export</span>
+                  <strong className="text-ink dark:text-white">{gscAnalysis.totalUrls.toLocaleString()}</strong>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[10px]">Unindexed URLs Found</span>
-                  <strong className="text-amber-400">{gscAnalysis.unindexedUrls.length} URLs</strong>
+                  <span className="text-graphite-600 dark:text-graphite-400 block text-[10px]">Unindexed URLs Found</span>
+                  <strong className="text-violet">{gscAnalysis.unindexedUrls.length} URLs</strong>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-[10px]">Detected Reasons</span>
-                  <strong className="text-primary">{gscAnalysis.reasonsDetected.length || 1} status type(s)</strong>
+                  <span className="text-graphite-600 dark:text-graphite-400 block text-[10px]">Detected Reasons</span>
+                  <strong className="text-ink dark:text-white">{gscAnalysis.reasonsDetected.length || 1} status type(s)</strong>
                 </div>
               </div>
             )}
           </div>
 
           {errorMsg && (
-            <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-              <AlertCircle className="size-4 shrink-0" />
+            <div className="flex items-center gap-2 rounded-[12px] border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3 text-xs text-rose-700 dark:text-rose-300">
+              <AlertCircle className="size-4 shrink-0 text-rose-600 dark:text-rose-400" />
               <span>{errorMsg}</span>
             </div>
           )}
@@ -265,14 +272,14 @@ function AuditPageContent() {
           <button
             type="submit"
             disabled={!isFormValid}
-            className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-3.5 px-6 text-sm font-bold transition-all shadow-md ${
+            className={`w-full inline-flex items-center justify-center gap-2 rounded-[48px] py-3 px-6 text-[14px] font-normal transition-opacity shadow-sm ${
               isFormValid
-                ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20 hover:shadow-primary/30 cursor-pointer'
-                : 'bg-muted text-muted-foreground cursor-not-allowed opacity-60'
+                ? 'bg-ink dark:bg-white text-white dark:text-ink hover:opacity-90 cursor-pointer'
+                : 'bg-graphite-200 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400 cursor-not-allowed opacity-60'
             }`}
           >
             <ShieldCheck className="size-4" />
-            <span>Pay & audit (${currentPrice} USDT)</span>
+            <span>Pay &amp; audit (${currentPrice} USDT)</span>
           </button>
         </form>
       </div>

@@ -37,18 +37,54 @@ export function ActivityTab() {
   const [refreshing, setRefreshing] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const loadActivities = () => {
+  const loadActivities = async () => {
+    try {
+      // 1. Fetch live activity from backend
+      const res = await fetch('/api/activity');
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.activity && Array.isArray(data.activity)) {
+          const mapped: ActivityFeedItem[] = data.activity.map((act: any) => ({
+            id: act.id,
+            date: act.timestamp || new Date().toISOString(),
+            targetUrl: act.url || 'Audit Target',
+            mode: act.depth === 'full' ? 'full' : 'quick',
+            amountUsd: act.depth === 'full' ? '0.50' : '0.25',
+            txHash: act.txHash || '0x...',
+            celoscanUrl: act.celoscanUrl || (act.txHash ? `https://celoscan.io/tx/${act.txHash}` : 'https://celoscan.io'),
+            attributionTag: CONFIG.ATTRIBUTION_TAG,
+            isRealBroadcast: Boolean(act.txHash && act.txHash.startsWith('0x')),
+          }));
+
+          // Read any local overrides
+          const stored = localStorage.getItem('crawlpay_activity');
+          const localItems: ActivityFeedItem[] = stored ? JSON.parse(stored) : [];
+
+          // Merge by txHash / id
+          const combined = [...localItems, ...mapped];
+          const seen = new Set();
+          const unique: ActivityFeedItem[] = [];
+          for (const item of combined) {
+            const key = item.txHash || item.id;
+            if (!seen.has(key)) {
+              seen.add(key);
+              unique.push(item);
+            }
+          }
+          setActivities(unique);
+          return;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch live activity, falling back to local:', e);
+    }
+
     try {
       const stored = localStorage.getItem('crawlpay_activity');
       if (stored) {
-        const parsed: ActivityFeedItem[] = JSON.parse(stored);
-        setActivities(parsed);
-      } else {
-        setActivities([]);
+        setActivities(JSON.parse(stored));
       }
-    } catch (e) {
-      console.warn('Failed to load activity logs:', e);
-    }
+    } catch {}
   };
 
   const fetchStatus = async () => {
@@ -72,8 +108,12 @@ export function ActivityTab() {
   useEffect(() => {
     loadActivities();
     fetchStatus();
-    const interval = setInterval(fetchStatus, 30000);
-    return () => clearInterval(interval);
+    const actInterval = setInterval(loadActivities, 6000);
+    const statusInterval = setInterval(fetchStatus, 25000);
+    return () => {
+      clearInterval(actInterval);
+      clearInterval(statusInterval);
+    };
   }, []);
 
   const copyAddress = () => {

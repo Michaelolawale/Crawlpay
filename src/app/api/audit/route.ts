@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runAuditPipeline } from '@/services/auditRunner';
-import { auditRateLimiter } from '@/utils/security';
 import { CONFIG } from '@/config';
+import { runAuditPipeline } from '@/services/auditRunner';
 import { db } from '@/services/db';
+import { auditRateLimiter } from '@/utils/security';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 60; // 60s max execution for deep crawler on serverless
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     const forwarded = req.headers.get('x-forwarded-for');
     const ip = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1';
 
-    if (db.isBlocklisted('ip', ip)) {
+    if (await db.isBlocklisted('ip', ip)) {
       return NextResponse.json(
         { error: 'Access denied: IP address is blocklisted.' },
         { status: 403 }
@@ -46,10 +46,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing target URL' }, { status: 400 });
     }
 
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+
+    // Check IP blocklist
+    if (await db.isBlocklisted('ip', clientIp)) {
+      return NextResponse.json(
+        { error: 'Access denied: IP address is blocklisted.' },
+        { status: 403 }
+      );
+    }
+
     // Check domain blocklist
     try {
       const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
-      if (db.isBlocklisted('domain', parsed.hostname)) {
+      if (await db.isBlocklisted('domain', parsed.hostname)) {
         return NextResponse.json(
           { error: `Access denied: Domain '${parsed.hostname}' is blocklisted.` },
           { status: 403 }
@@ -58,35 +68,51 @@ export async function POST(req: NextRequest) {
     } catch {}
 
     // Check wallet blocklist
-    if (wallet && db.isBlocklisted('wallet', wallet)) {
+    if (wallet && (await db.isBlocklisted('wallet', wallet))) {
       return NextResponse.json(
         { error: 'Access denied: Wallet address is blocklisted.' },
         { status: 403 }
       );
     }
 
+    const dynamicConfig = await db.getConfig();
+
+    // Enforce dynamic rate limit per minute
+    if (!db.checkRateLimit(clientIp, dynamicConfig.rate_limit_per_minute)) {
+      return NextResponse.json(
+        { error: `Rate limit exceeded: maximum ${dynamicConfig.rate_limit_per_minute} requests per minute.` },
+        { status: 429 }
+      );
+    }
+
     // 2. Check for x402 Payment Headers or Body proof
     const authHeader = req.headers.get('authorization') || req.headers.get('x-payment');
-    const incomingTxHash = typeof paymentProof === 'string' && paymentProof.startsWith('0x') && paymentProof.length === 66
-      ? paymentProof
-      : (authHeader && authHeader.toLowerCase().includes('0x') ? authHeader.split(' ').pop() : undefined);
+    const incomingTxHash =
+      typeof paymentProof === 'string' && paymentProof.startsWith('0x') && paymentProof.length === 66
+        ? paymentProof
+        : authHeader && authHeader.toLowerCase().includes('0x')
+        ? authHeader.split(' ').pop()
+        : undefined;
 
     let isVerifiedPaid = false;
     let verifiedPaymentInfo: any = null;
     let paymentId: string | undefined;
 
+    const crawlMode = mode === 'full' ? 'full' : 'quick';
+    const targetPriceUsd = crawlMode === 'full' ? dynamicConfig.full_price_usd : dynamicConfig.quick_price_usd;
+
     if (incomingTxHash) {
       // Replay prevention & idempotent retry support
-      const existingPayment = db.getPaymentByTxHash(incomingTxHash);
+      const existingPayment = await db.getPaymentByTxHash(incomingTxHash);
       if (existingPayment) {
         // Check if there is already a completed report for this payment
-        const allJobs = db.listJobs();
+        const allJobs = await db.listJobs();
         const completedJob = allJobs.find(
           (j) => j.payment_id === existingPayment.id && j.status === 'done' && j.report_id
         );
 
         if (completedJob && completedJob.report_id) {
-          const existingReport = db.getReport(completedJob.report_id);
+          const existingReport = await db.getReport(completedJob.report_id);
           if (existingReport) {
             return NextResponse.json(existingReport);
           }
@@ -108,14 +134,14 @@ export async function POST(req: NextRequest) {
 
           const isCelo = Boolean(verification.valueCelo && Number(verification.valueCelo) > 0);
 
-          // Log payment in database
+          // Log payment in database using dynamic pricing
           paymentId = `pay_${Date.now()}`;
-          db.addPayment({
+          await db.addPayment({
             id: paymentId,
             wallet: verification.from || wallet || 'unknown',
             amount: isCelo
-              ? (verification.valueCelo || (mode === 'full' ? CONFIG.CELO_PRICE_FULL : CONFIG.CELO_PRICE_QUICK))
-              : (mode === 'full' ? '0.50' : '0.25'),
+              ? verification.valueCelo || (crawlMode === 'full' ? CONFIG.CELO_PRICE_FULL : CONFIG.CELO_PRICE_QUICK)
+              : targetPriceUsd,
             token: isCelo ? 'CELO' : 'USDT',
             chain_id: CONFIG.CELO_CHAIN_ID,
             tx_hash: incomingTxHash,
@@ -141,7 +167,7 @@ export async function POST(req: NextRequest) {
         {
           status: 402,
           error: 'Payment Required',
-          priceUsd: CONFIG.DEFAULT_AUDIT_PRICE_USD,
+          priceUsd: targetPriceUsd,
           currency: 'USD₮ / USDC / CELO',
           network: 'celo-mainnet',
           chainId: CONFIG.CELO_CHAIN_ID,
@@ -156,7 +182,7 @@ export async function POST(req: NextRequest) {
           status: 402,
           headers: {
             'WWW-Authenticate': 'x402',
-            'X-Accept-Payment': `USDT; amount=${CONFIG.DEFAULT_AUDIT_PRICE_USD}; network=celo; recipient=${CONFIG.AGENT_WALLET_ADDRESS}; attribution=${CONFIG.ATTRIBUTION_TAG}`,
+            'X-Accept-Payment': `USDT; amount=${targetPriceUsd}; network=celo; recipient=${CONFIG.AGENT_WALLET_ADDRESS}; attribution=${CONFIG.ATTRIBUTION_TAG}`,
           },
         }
       );
@@ -164,9 +190,9 @@ export async function POST(req: NextRequest) {
 
     // 4. Log job in database as running
     createdJobId = `job_${Date.now()}`;
-    const crawlMode = mode === 'full' ? 'full' : 'quick';
+    const effectiveWallet = verifiedPaymentInfo?.from || wallet || undefined;
 
-    db.addJob({
+    await db.addJob({
       id: createdJobId,
       payment_id: paymentId,
       url,
@@ -174,15 +200,21 @@ export async function POST(req: NextRequest) {
       status: 'running',
       started_at: new Date().toISOString(),
       is_test: false,
+      wallet: effectiveWallet,
     });
 
-    // 5. Execute audit pipeline
-    const report = await runAuditPipeline(url, crawlMode, isVerifiedPaid);
+    // 5. Execute audit pipeline with runtime dynamic configuration
+    const report = await runAuditPipeline(url, crawlMode, isVerifiedPaid, dynamicConfig);
     const duration = Date.now() - startTime;
     const reportId = `rep_${Date.now()}`;
 
     // Save report in persistent store
-    db.saveReport(reportId, report);
+    await db.saveReport(reportId, report, {
+      jobId: createdJobId,
+      targetUrl: url,
+      wallet: effectiveWallet,
+      mode: crawlMode,
+    });
 
     if (verifiedPaymentInfo) {
       report.onchainReceipt.isRealBroadcast = true;
@@ -192,7 +224,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update job status to done
-    db.updateJob(createdJobId, {
+    await db.updateJob(createdJobId, {
       status: 'done',
       finished_at: new Date().toISOString(),
       duration_ms: duration,
@@ -205,7 +237,7 @@ export async function POST(req: NextRequest) {
     const duration = Date.now() - startTime;
 
     if (createdJobId) {
-      db.updateJob(createdJobId, {
+      await db.updateJob(createdJobId, {
         status: 'failed',
         finished_at: new Date().toISOString(),
         duration_ms: duration,

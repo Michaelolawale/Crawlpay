@@ -18,8 +18,16 @@ import {
   RefreshCw,
   AlertTriangle,
 } from 'lucide-react';
-import { CONFIG } from '@/config';
 import { FullAuditReport } from '@/types/audit';
+
+const PUBLIC_AGENT_ADDRESS =
+  process.env.NEXT_PUBLIC_AGENT_ADDRESS || '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
+const CELO_CHAIN_ID = 42220;
+const ATTRIBUTION_TAG = 'celo_757c2ac3b70c';
+const DATA_SUFFIX =
+  '0x63656c6f5f373537633261633362373063110080218021802180218021802180218021';
+const CELO_PRICE_QUICK = process.env.NEXT_PUBLIC_CELO_PRICE_QUICK || '3.3';
+const CELO_PRICE_FULL = process.env.NEXT_PUBLIC_CELO_PRICE_FULL || '6.6';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -58,10 +66,25 @@ export function PaymentModal({
   const [copiedManual, setCopiedManual] = useState(false);
   const [manualTxInput, setManualTxInput] = useState('');
   const [manualVerifying, setManualVerifying] = useState(false);
+  const [dynamicPrices, setDynamicPrices] = useState<{ quick: string; full: string }>({
+    quick: '0.25',
+    full: '0.50',
+  });
 
-  const priceUsd = mode === 'quick' ? '0.25' : '0.50';
-  const celoAmount = mode === 'quick' ? (CONFIG.CELO_PRICE_QUICK || '3.3') : (CONFIG.CELO_PRICE_FULL || '6.6');
-  const payToAddress = CONFIG.AGENT_WALLET_ADDRESS;
+  useEffect(() => {
+    fetch('/api/config')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.quick_price_usd && data?.full_price_usd) {
+          setDynamicPrices({ quick: data.quick_price_usd, full: data.full_price_usd });
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const priceUsd = mode === 'quick' ? dynamicPrices.quick : dynamicPrices.full;
+  const celoAmount = mode === 'quick' ? CELO_PRICE_QUICK : CELO_PRICE_FULL;
+  const payToAddress = PUBLIC_AGENT_ADDRESS;
 
   // Restore active job if refreshed (auto-expires stale jobs after 3 minutes)
   useEffect(() => {
@@ -267,7 +290,7 @@ export function PaymentModal({
               from: userWallet,
               to: payToAddress,
               value: valueHex, // Deducts real CELO
-              data: CONFIG.DATA_SUFFIX, // ERC-8021 Attribution tag suffix
+              data: DATA_SUFFIX, // ERC-8021 Attribution tag suffix
             },
           ],
         });
@@ -401,13 +424,13 @@ export function PaymentModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink/60 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
       {/* Modal Container: Bottom sheet on mobile, rounded card on desktop */}
-      <div className="relative w-full max-w-lg rounded-t-2xl sm:rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg rounded-t-[24px] sm:rounded-[24px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Close Button */}
         <button
           onClick={handleClose}
-          className="absolute right-4 top-4 rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          className="absolute right-4 top-4 rounded-[10px] p-2 text-graphite-800 dark:text-graphite-300 hover:bg-[#f4f4f6] dark:hover:bg-[#1f2027] hover:text-ink dark:hover:text-white transition-colors"
           aria-label="Close modal"
         >
           <X className="size-4" />
@@ -415,18 +438,18 @@ export function PaymentModal({
 
         {/* Modal Header */}
         <div className="flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
+          <div className="flex size-10 items-center justify-center rounded-[10px] bg-ink dark:bg-violet text-white shadow-sm shrink-0">
             <Wallet className="size-5" />
           </div>
           <div>
-            <h3 className="font-display text-lg font-bold text-foreground">Confirm and pay</h3>
+            <h3 className="font-display text-lg font-bold text-ink dark:text-white">Confirm & pay</h3>
             {/* Stepper Indicator */}
-            <div className="flex items-center gap-2 mt-1 text-xs">
-              <span className={`font-medium ${step === 'review' ? 'text-primary' : 'text-muted-foreground'}`}>
+            <div className="flex items-center gap-2 mt-0.5 text-xs">
+              <span className={`font-semibold ${step === 'review' ? 'text-violet' : 'text-graphite-800 dark:text-graphite-400'}`}>
                 1. Review
               </span>
-              <span className="text-muted-foreground">→</span>
-              <span className={`font-medium ${step === 'status' ? 'text-primary' : 'text-muted-foreground'}`}>
+              <span className="text-graphite-800/40 dark:text-graphite-500">→</span>
+              <span className={`font-semibold ${step === 'status' ? 'text-violet' : 'text-graphite-800 dark:text-graphite-400'}`}>
                 2. Status
               </span>
             </div>
@@ -436,45 +459,47 @@ export function PaymentModal({
         {/* STEP 1: REVIEW & PAY */}
         {step === 'review' && (
           <div className="mt-5 space-y-4">
-            {/* Summary Box with clean elevated background */}
-            <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2.5">
+            {/* Summary Box */}
+            <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#111216] p-4 space-y-2.5">
               <div className="flex items-center justify-between text-xs gap-2">
-                <span className="text-muted-foreground shrink-0">Target URL:</span>
-                <span className="font-mono font-medium text-foreground truncate max-w-[180px] sm:max-w-[280px]">
+                <span className="text-graphite-800 dark:text-graphite-400 shrink-0">Target URL:</span>
+                <span className="font-mono font-semibold text-ink dark:text-white truncate max-w-[180px] sm:max-w-[280px]">
                   {targetUrl}
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-xs gap-2">
-                <span className="text-muted-foreground shrink-0">Crawl Depth:</span>
-                <span className="font-medium text-foreground capitalize">
+                <span className="text-graphite-800 dark:text-graphite-400 shrink-0">Crawl Depth:</span>
+                <span className="font-semibold text-ink dark:text-white capitalize">
                   {mode === 'quick' ? 'Quick Audit (1 Page)' : 'Full Audit (Up to 50 Pages)'}
                 </span>
               </div>
 
-              <div className="text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+              <div className="text-[11px] text-graphite-800 dark:text-graphite-400 pt-1.5 border-t border-graphite-100 dark:border-graphite-800">
                 {mode === 'quick'
                   ? 'Includes single-page crawl, 10 deterministic checks, root cause grouping & AI fixes.'
                   : 'Includes deep multi-page BFS crawl, sitewide indexability, orphan checks, and code patches.'}
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-border/60">
-                <span className="text-sm font-semibold text-foreground">Total Fee:</span>
-                <span className="text-base font-bold text-primary font-mono">{celoAmount} CELO <span className="text-xs text-muted-foreground font-normal">(${priceUsd} USD)</span></span>
+              <div className="flex items-center justify-between pt-2 border-t border-graphite-100 dark:border-graphite-800">
+                <span className="text-sm font-bold text-ink dark:text-white">Total Fee:</span>
+                <span className="text-base font-bold text-ink dark:text-white font-mono">
+                  {celoAmount} CELO <span className="text-xs text-graphite-800 dark:text-graphite-400 font-normal">(${priceUsd} USD)</span>
+                </span>
               </div>
             </div>
 
             {/* Error Feedback */}
             {errorMessage && (
-              <div className="flex items-start gap-2.5 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-                <AlertCircle className="size-4 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2.5 rounded-[14px] border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-600" />
                 <div className="flex-1 min-w-0">
                   <p>{errorMessage}</p>
                   {isWrongNetwork && (
                     <button
                       type="button"
                       onClick={handlePayWithWallet}
-                      className="mt-2 inline-flex items-center gap-1.5 rounded bg-amber-500/20 px-2.5 py-1 text-amber-300 hover:bg-amber-500/30 font-medium"
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-[48px] bg-amber-100 border border-amber-300 px-3 py-1 text-amber-800 hover:bg-amber-200 font-semibold text-xs"
                     >
                       <AlertTriangle className="size-3" />
                       <span>Switch to Celo Mainnet (42220)</span>
@@ -490,9 +515,9 @@ export function PaymentModal({
                 type="button"
                 onClick={handlePayWithWallet}
                 disabled={isPaying}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md disabled:opacity-50"
+                className="w-full inline-flex h-[48px] items-center justify-center gap-2 rounded-[48px] bg-ink dark:bg-white px-4 text-sm font-semibold text-white dark:text-ink hover:opacity-90 transition-all shadow-sm disabled:opacity-50"
               >
-                {isPaying ? <Loader2 className="size-4 animate-spin" /> : <Wallet className="size-4" />}
+                {isPaying ? <Loader2 className="size-4 animate-spin text-white dark:text-ink" /> : <Wallet className="size-4" />}
                 <span>{isPaying ? 'Processing...' : `Pay ${celoAmount} CELO with wallet`}</span>
               </button>
 
@@ -500,7 +525,7 @@ export function PaymentModal({
                 <Link
                   href="/example"
                   target="_blank"
-                  className="text-xs text-muted-foreground hover:text-foreground underline transition-colors"
+                  className="text-xs text-graphite-800 dark:text-graphite-400 hover:text-ink dark:hover:text-white underline transition-colors"
                 >
                   See a demo preview
                 </Link>
@@ -508,35 +533,35 @@ export function PaymentModal({
             </div>
 
             {/* Collapsed "Pay manually" section */}
-            <div className="border-t border-border/80 pt-3">
+            <div className="border-t border-graphite-100 dark:border-graphite-800 pt-3">
               <button
                 type="button"
                 onClick={() => setShowManualPay(!showManualPay)}
-                className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="flex w-full items-center justify-between text-xs font-semibold text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white transition-colors"
               >
                 <span>Pay manually (Direct Transfer)</span>
                 {showManualPay ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
               </button>
 
               {showManualPay && (
-                <div className="mt-3 space-y-2.5 rounded-lg border border-border/70 bg-muted/20 p-3 text-xs animate-in fade-in">
-                  <p className="text-[11px] text-muted-foreground">
-                    Transfer exactly <strong className="text-foreground">{celoAmount} CELO</strong> (${priceUsd} USDT/USD) to the agent address on Celo Mainnet:
+                <div className="mt-3 space-y-2.5 rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#111216] p-3.5 text-xs animate-in fade-in">
+                  <p className="text-[11px] text-graphite-800 dark:text-graphite-300">
+                    Transfer exactly <strong className="text-ink dark:text-white">{celoAmount} CELO</strong> (${priceUsd} USDT/USD) to the agent address on Celo Mainnet:
                   </p>
-                  <div className="flex items-center justify-between rounded-lg border border-border/70 bg-card px-3 py-2 font-mono text-[11px] min-w-0">
-                    <span className="truncate mr-2 text-foreground flex-1 min-w-0">{payToAddress}</span>
+                  <div className="flex items-center justify-between rounded-[32px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] px-3.5 py-2 font-mono text-[11px] min-w-0">
+                    <span className="truncate mr-2 text-ink dark:text-white flex-1 min-w-0">{payToAddress}</span>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(payToAddress)}
-                      className="inline-flex items-center gap-1 text-primary hover:underline shrink-0"
+                      className="inline-flex items-center gap-1 text-violet font-semibold hover:underline shrink-0"
                     >
-                      {copiedManual ? <Check className="size-3" /> : <Copy className="size-3" />}
+                      {copiedManual ? <Check className="size-3 text-emerald-600" /> : <Copy className="size-3" />}
                       <span>{copiedManual ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
 
                   <div className="pt-2">
-                    <label className="block text-[11px] text-muted-foreground mb-1">
+                    <label className="block text-[11px] font-semibold text-graphite-800 dark:text-graphite-300 mb-1">
                       Already sent? Enter your transaction hash:
                     </label>
                     <div className="flex flex-col sm:flex-row gap-2">
@@ -545,15 +570,15 @@ export function PaymentModal({
                         placeholder="0x..."
                         value={manualTxInput}
                         onChange={(e) => setManualTxInput(e.target.value)}
-                        className="flex-1 rounded-lg border border-border/70 bg-card px-3 py-2 text-xs font-mono text-foreground focus:outline-none focus:ring-1 focus:ring-primary min-w-0"
+                        className="flex-1 rounded-[32px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] px-3.5 py-2 text-xs font-mono text-ink dark:text-white placeholder:text-graphite-800/50 dark:placeholder:text-graphite-400/50 focus:outline-none focus:border-ink min-w-0"
                       />
                       <button
                         type="button"
                         onClick={handleVerifyManualTx}
                         disabled={manualVerifying}
-                        className="rounded-lg bg-primary/20 text-primary px-3 py-2 text-xs font-semibold hover:bg-primary/30 disabled:opacity-50 shrink-0"
+                        className="rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-4 py-2 text-xs font-semibold hover:opacity-90 disabled:opacity-50 shrink-0 shadow-sm"
                       >
-                        {manualVerifying ? <Loader2 className="size-3.5 animate-spin" /> : "I've sent it"}
+                        {manualVerifying ? <Loader2 className="size-3.5 animate-spin text-white dark:text-ink" /> : "I've sent it"}
                       </button>
                     </div>
                   </div>
@@ -562,27 +587,27 @@ export function PaymentModal({
             </div>
 
             {/* Collapsed "Payment details" expander */}
-            <div className="border-t border-border/80 pt-3">
+            <div className="border-t border-graphite-100 dark:border-graphite-800 pt-3">
               <button
                 type="button"
                 onClick={() => setShowDetails(!showDetails)}
-                className="flex w-full items-center justify-between text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                className="flex w-full items-center justify-between text-xs font-semibold text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white transition-colors"
               >
                 <span>Payment details & attribution</span>
                 {showDetails ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
               </button>
 
               {showDetails && (
-                <div className="mt-3 space-y-1.5 rounded-lg border border-border/70 bg-muted/20 p-3 text-[11px] text-muted-foreground animate-in fade-in">
+                <div className="mt-3 space-y-1.5 rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#111216] p-3 text-[11px] text-graphite-800 dark:text-graphite-300 animate-in fade-in">
                   <div className="flex justify-between">
                     <span>Network:</span>
-                    <strong className="text-foreground">Celo Mainnet (Chain ID: {CONFIG.CELO_CHAIN_ID})</strong>
+                    <strong className="text-ink dark:text-white">Celo Mainnet (Chain ID: {CELO_CHAIN_ID})</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>Attribution Tag:</span>
-                    <strong className="font-mono text-primary">{CONFIG.ATTRIBUTION_TAG}</strong>
+                    <strong className="font-mono text-violet">{ATTRIBUTION_TAG}</strong>
                   </div>
-                  <div className="pt-1 text-[10px] text-muted-foreground border-t border-border/40">
+                  <div className="pt-1.5 text-[10px] text-graphite-800/80 dark:text-graphite-400 border-t border-graphite-100 dark:border-graphite-800">
                     Settlements use the ERC-8021 calldata attribution standard for on-chain verification without custodial middlemen.
                   </div>
                 </div>
@@ -598,25 +623,25 @@ export function PaymentModal({
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <span
-                  className={`flex size-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
                     statusPhase !== 'wallet_confirm'
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-primary/20 text-primary border border-primary animate-pulse'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-ink text-white animate-pulse'
                   }`}
                 >
                   {statusPhase !== 'wallet_confirm' ? <Check className="size-3.5" /> : '1'}
                 </span>
-                <span className="text-xs font-medium text-foreground">Confirm in wallet</span>
+                <span className="text-xs font-semibold text-ink">Confirm in wallet</span>
               </div>
 
               <div className="flex items-center gap-3">
                 <span
-                  className={`flex size-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
                     statusPhase === 'running_audit' || statusPhase === 'ready'
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-emerald-600 text-white'
                       : statusPhase === 'onchain_confirm'
-                      ? 'bg-primary/20 text-primary border border-primary animate-pulse'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-ink text-white animate-pulse'
+                      : 'bg-[#e6e6e8] text-graphite-800'
                   }`}
                 >
                   {statusPhase === 'running_audit' || statusPhase === 'ready' ? (
@@ -625,55 +650,55 @@ export function PaymentModal({
                     '2'
                   )}
                 </span>
-                <span className="text-xs font-medium text-foreground">Confirming on-chain</span>
+                <span className="text-xs font-semibold text-ink">Confirming on-chain</span>
               </div>
 
               <div className="flex items-center gap-3">
                 <span
-                  className={`flex size-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
                     statusPhase === 'ready'
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-emerald-600 text-white'
                       : statusPhase === 'running_audit'
-                      ? 'bg-primary/20 text-primary border border-primary animate-pulse'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-ink text-white animate-pulse'
+                      : 'bg-[#e6e6e8] text-graphite-800'
                   }`}
                 >
                   {statusPhase === 'ready' ? <Check className="size-3.5" /> : '3'}
                 </span>
-                <span className="text-xs font-medium text-foreground">Running crawl & audit</span>
+                <span className="text-xs font-semibold text-ink">Running crawl & audit</span>
               </div>
 
               <div className="flex items-center gap-3">
                 <span
-                  className={`flex size-6 items-center justify-center rounded-full text-xs font-semibold ${
-                    statusPhase === 'ready' ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
+                    statusPhase === 'ready' ? 'bg-emerald-600 text-white' : 'bg-[#e6e6e8] text-graphite-800'
                   }`}
                 >
                   {statusPhase === 'ready' ? <Check className="size-3.5" /> : '4'}
                 </span>
-                <span className="text-xs font-medium text-foreground">Report ready</span>
+                <span className="text-xs font-semibold text-ink">Report ready</span>
               </div>
             </div>
 
             {/* Current Phase Message Box */}
-            <div className="rounded-xl border border-border/70 bg-muted/20 p-4 space-y-2">
+            <div className="rounded-[16px] border border-graphite-100 bg-[#f4f4f6] p-4 space-y-2">
               <div className="flex items-center gap-2">
                 {statusPhase !== 'ready' && statusPhase !== 'failed' && (
-                  <Loader2 className="size-4 animate-spin text-primary" />
+                  <Loader2 className="size-4 animate-spin text-ink" />
                 )}
-                {statusPhase === 'ready' && <Check className="size-4 text-emerald-400" />}
-                {statusPhase === 'failed' && <AlertCircle className="size-4 text-destructive" />}
-                <span className="text-xs font-semibold text-foreground">{statusMessage}</span>
+                {statusPhase === 'ready' && <Check className="size-4 text-emerald-600" />}
+                {statusPhase === 'failed' && <AlertCircle className="size-4 text-rose-600" />}
+                <span className="text-xs font-semibold text-ink">{statusMessage}</span>
               </div>
 
               {txHash && (
-                <div className="pt-2 border-t border-border/60 text-[11px] text-muted-foreground">
+                <div className="pt-2 border-t border-graphite-100 text-[11px] text-graphite-800">
                   <span>Transaction Hash: </span>
                   <a
                     href={`https://celoscan.io/tx/${txHash}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-mono text-primary hover:underline inline-flex items-center gap-1"
+                    className="font-mono text-violet hover:underline inline-flex items-center gap-1"
                   >
                     <span>{`${txHash.slice(0, 10)}...${txHash.slice(-8)}`}</span>
                     <ExternalLink className="size-2.5" />
@@ -693,30 +718,30 @@ export function PaymentModal({
                     setErrorMessage(null);
                     setIsPaying(false);
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground underline transition-colors cursor-pointer"
+                  className="text-xs text-graphite-800 hover:text-ink underline transition-colors cursor-pointer"
                 >
                   Cancel and return to review
                 </button>
               </div>
             )}
 
-            {/* After payment deduction: Run in background reassurance (never cancel) */}
+            {/* After payment deduction: Run in background reassurance */}
             {(statusPhase === 'onchain_confirm' || statusPhase === 'running_audit') && (
-              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs space-y-1.5 animate-in fade-in">
+              <div className="rounded-[16px] border border-emerald-200 bg-emerald-50 p-3.5 text-xs space-y-1.5 animate-in fade-in">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 font-semibold text-foreground text-[11px]">
-                    <ShieldCheck className="size-3.5 text-emerald-400 shrink-0" />
+                  <span className="flex items-center gap-1.5 font-bold text-emerald-800 text-[11px]">
+                    <ShieldCheck className="size-3.5 text-emerald-600 shrink-0" />
                     <span>Payment Verified on Celo</span>
                   </span>
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="text-primary hover:underline text-[11px] font-semibold cursor-pointer"
+                    className="text-emerald-800 hover:underline text-[11px] font-bold cursor-pointer"
                   >
                     Run in background
                   </button>
                 </div>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                <p className="text-[11px] text-emerald-700 leading-relaxed">
                   Your audit is executing. You can keep this dialog open or close it—your report will be saved to your Reports history automatically upon completion.
                 </p>
               </div>
@@ -733,7 +758,7 @@ export function PaymentModal({
                       router.push(`/app/reports/${createdReportId}`);
                     }
                   }}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md"
+                  className="w-full inline-flex h-[48px] items-center justify-center gap-2 rounded-[48px] bg-ink px-4 text-sm font-semibold text-white hover:opacity-90 transition-all shadow-sm"
                 >
                   <span>View Full Report & Fixes</span>
                   <ArrowRight className="size-4" />
@@ -744,8 +769,8 @@ export function PaymentModal({
             {/* Action when Failed: Never charge twice, offer free retry using txHash */}
             {statusPhase === 'failed' && (
               <div className="space-y-3">
-                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-                  <p className="font-semibold">Audit crawl failed</p>
+                <div className="rounded-[14px] border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+                  <p className="font-bold">Audit crawl failed</p>
                   <p className="mt-1">{errorMessage}</p>
                 </div>
 
@@ -753,7 +778,7 @@ export function PaymentModal({
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="flex-1 rounded-xl border border-border px-3 py-2 text-xs font-semibold hover:bg-accent transition-colors"
+                    className="flex-1 rounded-[48px] border border-graphite-100 bg-white px-3 py-2 text-xs font-semibold text-ink hover:bg-graphite-100/50 transition-colors"
                   >
                     Close
                   </button>
@@ -762,7 +787,7 @@ export function PaymentModal({
                       type="button"
                       onClick={() => executeAuditPipeline(txHash, connectedWallet || undefined)}
                       disabled={isPaying}
-                      className="flex-1 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                      className="flex-1 rounded-[48px] bg-ink px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition-colors disabled:opacity-50"
                     >
                       {isPaying ? 'Retrying...' : 'Retry Audit (No Extra Fee)'}
                     </button>
@@ -774,7 +799,7 @@ export function PaymentModal({
                         setStatusPhase('wallet_confirm');
                         setErrorMessage(null);
                       }}
-                      className="flex-1 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                      className="flex-1 rounded-[48px] bg-ink px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition-colors"
                     >
                       Return to Review
                     </button>
@@ -784,9 +809,9 @@ export function PaymentModal({
             )}
 
             {/* Failure Policy Note */}
-            <div className="text-[11px] text-muted-foreground text-center border-t border-border/80 pt-3">
+            <div className="text-[11px] text-graphite-800 text-center border-t border-graphite-100 pt-3">
               <span>Failure policy: if a crawl encounters an error after payment, it auto-retries once. If unresolved, contact support for a full refund. </span>
-              <Link href="/terms" target="_blank" className="text-primary hover:underline">
+              <Link href="/terms" target="_blank" className="text-violet font-semibold hover:underline">
                 Read our Refund Policy in Terms
               </Link>
             </div>

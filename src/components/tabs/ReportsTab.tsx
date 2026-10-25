@@ -196,10 +196,10 @@ export function ReportsTab({ onRecheck, onViewReport }: ReportsTabProps) {
                             type="button"
                             onClick={() => onRecheck(item.targetUrl, item.mode)}
                             className="inline-flex items-center gap-1 rounded bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
-                            title="Re-run audit on this site"
+                            title="Deploy fixes and re-audit on Celo Mainnet ($0.25)"
                           >
                             <RotateCcw className="size-3.5" />
-                            <span>Recheck</span>
+                            <span>Re-audit ($0.25)</span>
                           </button>
 
                           <button

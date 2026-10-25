@@ -16,6 +16,7 @@ import {
   Globe,
   Loader2,
   AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
 import { CheckEngineView } from '@/components/CheckEngineView';
 import { FullAuditReport } from '@/types/audit';
@@ -98,23 +99,23 @@ export default function SingleReportPage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-3">
-        <Loader2 className="size-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Loading audit report...</p>
+        <Loader2 className="size-8 animate-spin text-ink" />
+        <p className="text-sm font-medium text-graphite-800">Loading audit report...</p>
       </div>
     );
   }
 
   if (errorMsg || !report) {
     return (
-      <div className="mx-auto max-w-lg rounded-2xl border border-destructive/30 bg-destructive/10 p-8 text-center space-y-4">
-        <AlertCircle className="mx-auto size-8 text-destructive" />
-        <h2 className="text-base font-bold text-foreground">Report Not Found</h2>
-        <p className="text-xs text-muted-foreground">
+      <div className="mx-auto max-w-lg rounded-[20px] border border-rose-200 bg-rose-50/50 p-8 text-center space-y-4">
+        <AlertCircle className="mx-auto size-8 text-rose-600" />
+        <h2 className="text-base font-bold text-ink">Report Not Found</h2>
+        <p className="text-xs text-graphite-800">
           {errorMsg || 'The requested audit report could not be found or has expired.'}
         </p>
         <Link
           href="/app/reports"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+          className="inline-flex h-[42px] items-center gap-1.5 rounded-[48px] bg-ink px-5 text-xs font-semibold text-white hover:opacity-90"
         >
           <ArrowLeft className="size-3.5" />
           <span>Back to Reports</span>
@@ -126,28 +127,28 @@ export default function SingleReportPage() {
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-300">
       {/* Top Action Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-graphite-100 pb-6">
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => router.push('/app/reports')}
-            className="rounded-xl border border-border p-2 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            className="rounded-[12px] border border-graphite-100 bg-white p-2 text-graphite-800 hover:bg-[#f4f4f6] hover:text-ink transition-colors shadow-sm"
             title="Back to Reports"
           >
             <ArrowLeft className="size-4" />
           </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 min-w-0">
-              <Globe className="size-4 text-primary shrink-0" />
-              <h1 className="font-mono text-base sm:text-lg font-bold text-foreground truncate">{report.targetUrl}</h1>
+              <Globe className="size-4 text-violet shrink-0" />
+              <h1 className="font-mono text-base sm:text-lg font-bold text-ink truncate">{report.targetUrl}</h1>
             </div>
-            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-2 mt-0.5">
+            <p className="text-xs text-graphite-800 flex flex-wrap items-center gap-2 mt-0.5">
               <span className="flex items-center gap-1">
                 <Calendar className="size-3 shrink-0" />
                 <span>{new Date(report.auditTimestamp).toLocaleString()}</span>
               </span>
               <span>•</span>
-              <span className="font-mono text-[11px] text-muted-foreground">ID: {reportId}</span>
+              <span className="font-mono text-[11px] text-graphite-800">ID: {reportId}</span>
             </p>
           </div>
         </div>
@@ -157,35 +158,37 @@ export default function SingleReportPage() {
           <button
             type="button"
             onClick={copyShareLink}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors"
+            className="inline-flex h-[38px] items-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] px-3.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#20212b] transition-colors shadow-sm cursor-pointer"
           >
-            {copiedLink ? <Check className="size-3.5 text-primary" /> : <Share2 className="size-3.5" />}
+            {copiedLink ? <Check className="size-3.5 text-emerald-600" /> : <Share2 className="size-3.5 text-graphite-800 dark:text-graphite-400" />}
             <span>{copiedLink ? 'Link Copied!' : 'Share Link'}</span>
           </button>
 
           <button
             type="button"
             onClick={exportJson}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors"
+            className="inline-flex h-[38px] items-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] px-3.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#20212b] transition-colors shadow-sm cursor-pointer"
           >
-            <Download className="size-3.5" />
+            <Download className="size-3.5 text-graphite-800 dark:text-graphite-400" />
             <span>Export JSON</span>
           </button>
 
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent transition-colors"
+            className="inline-flex h-[38px] items-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] px-3.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#20212b] transition-colors shadow-sm cursor-pointer"
           >
-            <Printer className="size-3.5" />
+            <Printer className="size-3.5 text-graphite-800 dark:text-graphite-400" />
             <span>Print / PDF</span>
           </button>
 
           <Link
             href={`/app/audit?target=${encodeURIComponent(report.targetUrl)}`}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+            className="inline-flex h-[38px] items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-4 text-xs font-semibold text-white dark:text-ink hover:opacity-90 transition-opacity shadow-sm cursor-pointer shrink-0"
+            title="Deploy fixes and re-audit on Celo Mainnet ($0.25)"
           >
-            <span>Re-run Audit</span>
+            <RotateCcw className="size-3.5" />
+            <span>Re-audit Live ($0.25)</span>
           </Link>
         </div>
       </div>

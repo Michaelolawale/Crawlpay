@@ -6,17 +6,12 @@ import { usePathname } from 'next/navigation';
 import {
   Search,
   FileText,
-  Wallet,
   AlertTriangle,
-  ChevronDown,
-  Copy,
-  Check,
-  LogOut,
-  ExternalLink,
-  ShieldCheck,
 } from 'lucide-react';
 import { CrawlLogo } from '@/components/CrawlLogo';
-import { CONFIG } from '@/config';
+import { ThemeToggle } from '@/components/ThemeToggle';
+
+const PUBLIC_AGENT_ADDRESS = '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -80,67 +75,65 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isReportsActive = pathname.startsWith('/app/reports');
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground selection:bg-primary/20 selection:text-primary">
-      {/* Background Grid Pattern */}
-      <div className="pointer-events-none fixed inset-0 dot-grid opacity-20" aria-hidden="true" />
-
-      {/* App Top Bar */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 sm:h-16 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
-          {/* Left: Logo */}
-          <Link href="/" className="flex items-center gap-1.5 sm:gap-2.5 transition-opacity hover:opacity-90 shrink-0">
-            <span className="flex size-7 sm:size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
-              <CrawlLogo className="size-3.5 sm:size-5" />
+    <div className="flex min-h-screen flex-col bg-white dark:bg-[#0d0e12] text-ink dark:text-white font-system selection:bg-lavender-tint selection:text-ink overflow-x-hidden">
+      {/* 1. APP HEADER (64px tall, CrawlPay logo & tabs) */}
+      <header className="sticky top-0 z-40 h-[64px] border-b border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#121317] transition-colors">
+        <div className="mx-auto flex h-full max-w-[1176px] items-center justify-between px-4 sm:px-6">
+          {/* Left: Brand Identity */}
+          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90 shrink-0">
+            <span className="flex size-8 sm:size-9 items-center justify-center rounded-[10px] bg-ink dark:bg-white text-white dark:text-ink shadow-sm shrink-0">
+              <CrawlLogo className="size-4 sm:size-5" />
             </span>
-            <span className="font-display text-sm sm:text-lg font-bold tracking-tight">
-              crawl<span className="text-primary">pay</span>
+            <span className="font-sans font-[600] text-[18px] sm:text-[20px] text-ink dark:text-white tracking-tight">
+              CrawlPay
             </span>
           </Link>
 
-          {/* Middle: Exactly two tabs (Audit, Reports) */}
-          <nav className="flex items-center gap-0.5 sm:gap-1 rounded-xl border border-border bg-card/60 p-0.5 sm:p-1">
+          {/* Middle: Pill Navigation Tabs (Audit vs Reports) */}
+          <nav className="flex items-center gap-1 rounded-[48px] bg-[#f4f4f6] dark:bg-[#1a1b22] p-1 border border-graphite-100 dark:border-graphite-800">
             <Link
               href="/app/audit"
-              className={`flex items-center gap-1 sm:gap-2 rounded-lg px-2 sm:px-4 py-1 sm:py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 rounded-[48px] px-3 sm:px-4 py-1 sm:py-1.5 text-[13px] sm:text-[14px] font-medium transition-all ${
                 isAuditActive
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                  : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-200/50 dark:hover:bg-[#252631]'
               }`}
             >
-              <Search className="size-3 sm:size-3.5" />
+              <Search className="size-3.5 sm:size-4" />
               <span>Audit</span>
             </Link>
 
             <Link
               href="/app/reports"
-              className={`flex items-center gap-1 sm:gap-2 rounded-lg px-2 sm:px-4 py-1 sm:py-1.5 text-xs font-semibold transition-all ${
+              className={`flex items-center gap-1.5 sm:gap-2 rounded-[48px] px-3 sm:px-4 py-1 sm:py-1.5 text-[13px] sm:text-[14px] font-medium transition-all ${
                 isReportsActive
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                  ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                  : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-200/50 dark:hover:bg-[#252631]'
               }`}
             >
-              <FileText className="size-3 sm:size-3.5" />
+              <FileText className="size-3.5 sm:size-4" />
               <span>Reports</span>
             </Link>
           </nav>
 
-          {/* Right: Network Status Indicator */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Right: Theme Toggle & Network Status Indicator */}
+          <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle />
             {isWrongNetwork ? (
               <button
                 type="button"
                 onClick={switchToCelo}
-                className="flex items-center gap-1 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-amber-400 hover:bg-amber-500/20 transition-colors"
+                className="flex items-center gap-1.5 rounded-[48px] border border-amber-300 dark:border-amber-800/80 bg-amber-50 dark:bg-amber-950/40 px-3 py-1.5 text-[12px] font-medium text-amber-800 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60 transition-colors cursor-pointer"
                 title="Click to switch to Celo Mainnet"
               >
-                <AlertTriangle className="size-3 sm:size-3.5 text-amber-400 shrink-0" />
-                <span className="hidden sm:inline">Wrong Network — Switch to Celo</span>
+                <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="hidden sm:inline">Switch to Celo</span>
                 <span className="sm:hidden">Switch</span>
               </button>
             ) : (
-              <div className="flex items-center gap-1 rounded-lg border border-border bg-card px-2 sm:px-2.5 py-1 sm:py-1.5 text-[10px] sm:text-xs font-medium text-muted-foreground">
-                <span className="size-1.5 sm:size-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="hidden sm:inline">Celo Mainnet</span>
+              <div className="flex items-center gap-2 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] px-3 py-1.5 text-[12px] font-mono text-ink dark:text-graphite-200">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="hidden sm:inline">Celo Mainnet (42220)</span>
                 <span className="sm:hidden">Celo</span>
               </div>
             )}
@@ -148,43 +141,129 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 relative">
+      {/* 2. MAIN CONTENT AREA */}
+      <main className="flex-1 w-full max-w-[1176px] mx-auto px-4 sm:px-6 py-6 sm:py-10 relative">
         {children}
       </main>
 
-      {/* Unified App Footer */}
-      <footer className="border-t border-border bg-card/40 py-6 sm:py-8 text-xs text-muted-foreground">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-3 sm:px-6 lg:px-8 sm:flex-row text-center sm:text-left">
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <Link href="/docs" className="hover:text-foreground transition-colors">
-              Docs
-            </Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">
-              Terms & Policy
-            </Link>
-            <a
-              href="/api/status"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground transition-colors"
-            >
-              API Status
-            </a>
+      {/* 3. INK FOOTER */}
+      <footer className="w-full bg-ink border-t border-graphite-900 pt-[48px] sm:pt-[64px] pb-[36px] sm:pb-[48px] mt-16">
+        <div className="max-w-[1176px] mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-[32px] text-left">
+            <div className="space-y-[12px]">
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-8 items-center justify-center rounded-[8px] bg-white text-ink shadow-sm shrink-0">
+                  <CrawlLogo className="size-4" />
+                </span>
+                <span className="font-sans font-[600] text-[20px] text-white tracking-tight">
+                  CrawlPay
+                </span>
+              </div>
+              <p className="font-footer text-[14px] leading-[20px] text-graphite-200 font-normal">
+                Autonomous technical SEO and competitor intelligence audit agent settled per crawl on Celo mainnet.
+              </p>
+            </div>
+
+            <div className="space-y-[12px]">
+              <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 font-normal uppercase tracking-wider block">
+                NAVIGATION
+              </span>
+              <div className="space-y-[12px] font-footer text-[14px] leading-[20px]">
+                <div>
+                  <Link href="/" className="text-graphite-200 hover:text-white transition-colors">
+                    Home
+                  </Link>
+                </div>
+                <div>
+                  <Link href="/example" className="text-graphite-200 hover:text-white transition-colors">
+                    Verified Demo Preview
+                  </Link>
+                </div>
+                <div>
+                  <Link href="/app/audit" className="text-graphite-200 hover:text-white transition-colors">
+                    Site Audit
+                  </Link>
+                </div>
+                <div>
+                  <Link href="/app/reports" className="text-graphite-200 hover:text-white transition-colors">
+                    Reports Archive
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-[12px]">
+              <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 font-normal uppercase tracking-wider block">
+                DEVELOPERS
+              </span>
+              <div className="space-y-[12px] font-footer text-[14px] leading-[20px]">
+                <div>
+                  <Link href="/docs" className="text-graphite-200 hover:text-white transition-colors">
+                    Documentation &amp; API
+                  </Link>
+                </div>
+                <div>
+                  <Link href="/docs#mcp" className="text-graphite-200 hover:text-white transition-colors">
+                    MCP Agent Setup
+                  </Link>
+                </div>
+                <div>
+                  <a
+                    href="/api/status"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-graphite-200 hover:text-white transition-colors"
+                  >
+                    REST API Status
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-[12px]">
+              <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 font-normal uppercase tracking-wider block">
+                POLICIES
+              </span>
+              <div className="space-y-[12px] font-footer text-[14px] leading-[20px]">
+                <div>
+                  <Link href="/terms#about" className="text-graphite-200 hover:text-white transition-colors">
+                    Terms of Service
+                  </Link>
+                </div>
+                <div>
+                  <Link href="/terms#refund" className="text-graphite-200 hover:text-white transition-colors">
+                    Refund Guarantee Policy
+                  </Link>
+                </div>
+                <div>
+                  <Link href="/terms#security" className="text-graphite-200 hover:text-white transition-colors">
+                    SSRF Security Protections
+                  </Link>
+                </div>
+                <div>
+                  <Link href="/admin" className="text-graphite-200 hover:text-white transition-colors">
+                    Admin Console
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px]">
-            <span>Agent:</span>
-            <a
-              href={`https://celoscan.io/address/${CONFIG.AGENT_WALLET_ADDRESS}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-primary hover:underline"
-            >
-              {CONFIG.AGENT_WALLET_ADDRESS.slice(0, 8)}...{CONFIG.AGENT_WALLET_ADDRESS.slice(-6)}
-            </a>
-            <span>•</span>
-            <span>Chain ID: 42220 (Celo Mainnet)</span>
+          <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-graphite-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-footer text-[13px] sm:text-[14px] leading-[20px]">
+            <p className="text-graphite-300">
+              &copy; {new Date().getFullYear()} CrawlPay. All rights reserved. Zero subscriptions, on-demand execution.
+            </p>
+            <div className="flex items-center gap-2 text-graphite-300 text-[12px] font-mono">
+              <span>Agent:</span>
+              <a
+                href={`https://celoscan.io/address/${PUBLIC_AGENT_ADDRESS}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-graphite-200 hover:text-white hover:underline"
+              >
+                {PUBLIC_AGENT_ADDRESS.slice(0, 8)}...{PUBLIC_AGENT_ADDRESS.slice(-6)}
+              </a>
+            </div>
           </div>
         </div>
       </footer>

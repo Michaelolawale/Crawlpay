@@ -17,9 +17,9 @@ function LegacyAuditRedirectContent() {
   }, [router, searchParams]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+    <div className="flex min-h-screen items-center justify-center bg-[#fafafb] text-ink">
       <div className="text-center">
-        <p className="text-sm text-muted-foreground animate-pulse">Redirecting to Crawlpay App...</p>
+        <p className="text-sm font-medium text-graphite-600 animate-pulse">Redirecting to Crawlpay App...</p>
       </div>
     </div>
   );
@@ -29,9 +29,9 @@ export default function LegacyAuditRedirect() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <div className="flex min-h-screen items-center justify-center bg-[#fafafb] text-ink">
           <div className="text-center">
-            <p className="text-sm text-muted-foreground animate-pulse">Loading Crawlpay...</p>
+            <p className="text-sm font-medium text-graphite-600 animate-pulse">Loading Crawlpay...</p>
           </div>
         </div>
       }

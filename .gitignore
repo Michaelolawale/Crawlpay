@@ -12,3 +12,6 @@ dist/
 *.key
 .DS_Store
 
+# Database Schema & Migrations
+supabase/
+*.sql

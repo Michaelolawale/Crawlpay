@@ -10,6 +10,6 @@ export async function GET(req: NextRequest) {
   }
 
   await db.syncOnchainTransactions();
-  const jobs = db.listJobs(true);
+  const jobs = await db.listJobs(true);
   return NextResponse.json({ jobs });
 }
