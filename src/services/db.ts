@@ -314,14 +314,23 @@ class CrawlpayDatabase {
           .order('created_at', { ascending: false })
           .limit(100);
         if (!error && data) {
-          this.inMemoryData.payments = data as PaymentRecord[];
-          return this.inMemoryData.payments;
+          const records = data as PaymentRecord[];
+          for (const item of records) {
+            const idx = this.inMemoryData.payments.findIndex((p) => p.id === item.id);
+            if (idx >= 0) {
+              this.inMemoryData.payments[idx] = item;
+            } else {
+              this.inMemoryData.payments.push(item);
+            }
+          }
         }
       } catch (err) {
         console.warn('[DB] Supabase listPayments fallback:', err);
       }
     }
-    return this.inMemoryData.payments;
+    return [...this.inMemoryData.payments].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
   }
 
   // ==========================================
@@ -612,17 +621,28 @@ class CrawlpayDatabase {
       try {
         const { data, error } = await supabase.from('blocklist').select('*').order('created_at', { ascending: false });
         if (!error && data) {
-          this.inMemoryData.blocklist = data.map((b: any) => ({
+          const remoteItems = data.map((b: any) => ({
             type: b.type,
             value: b.value,
             reason: b.reason,
             created_at: b.created_at,
           }));
-          return this.inMemoryData.blocklist;
+          for (const item of remoteItems) {
+            const idx = this.inMemoryData.blocklist.findIndex(
+              (b) => b.type === item.type && b.value.toLowerCase() === item.value.toLowerCase()
+            );
+            if (idx >= 0) {
+              this.inMemoryData.blocklist[idx] = item;
+            } else {
+              this.inMemoryData.blocklist.push(item);
+            }
+          }
         }
       } catch { }
     }
-    return this.inMemoryData.blocklist;
+    return [...this.inMemoryData.blocklist].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
   }
 
   public async addBlocklist(entry: BlocklistRecord): Promise<void> {

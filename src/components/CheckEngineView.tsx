@@ -1025,20 +1025,34 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
       {/* GSC "Crawled - currently not indexed" Cross-Reference */}
       {gscAnalysis && (
-        <section className="rounded-[16px] border border-amber-200 bg-amber-50 p-4 sm:p-5 space-y-3">
-          <div className="flex items-center gap-2 text-sm font-bold text-amber-800">
-            <FileSpreadsheet className="size-4 text-amber-600" />
-            <span>Google Search Console: Unindexed Pages Detected ({gscAnalysis.unindexedUrls.length})</span>
+        <section className="rounded-[16px] border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-4 sm:p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-sm font-bold text-amber-900 dark:text-amber-300">
+              <FileSpreadsheet className="size-4 text-amber-600 dark:text-amber-400" />
+              <span>Google Search Console: Unindexed Pages ({gscAnalysis.unindexedUrls.length})</span>
+            </div>
+            {gscAnalysis.reasonsDetected.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {gscAnalysis.reasonsDetected.slice(0, 3).map((r, i) => (
+                  <span
+                    key={i}
+                    className="rounded-full bg-white dark:bg-[#1f2029] border border-amber-200 dark:border-amber-800/60 px-2 py-0.5 text-[10px] font-mono text-amber-800 dark:text-amber-300"
+                  >
+                    {r}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-          <p className="text-xs text-graphite-800 leading-relaxed">
-            Google crawled these URLs but withheld indexation. CrawlPay cross-referenced them with the crawler to pinpoint root causes (e.g. duplicate body copy, missing headings, or low content depth):
+          <p className="text-xs text-graphite-800 dark:text-graphite-300 leading-relaxed">
+            Google flagged these URLs in your Search Console export. CrawlPay cross-referenced them with the crawler to pinpoint root causes (e.g. duplicate body copy, missing canonicals, or low content depth):
           </p>
           <div className="space-y-1.5 max-h-48 overflow-y-auto pt-1">
             {gscAnalysis.unindexedUrls.map((url, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-2 rounded-[10px] border border-amber-200 bg-white px-3 py-2 text-xs font-mono min-w-0 shadow-sm">
-                <span className="truncate text-ink flex-1 min-w-0">{url}</span>
-                <span className="shrink-0 rounded-full bg-rose-50 border border-rose-200 text-rose-700 px-2 py-0.5 text-[10px] font-sans font-bold">
-                  Crawled - not indexed
+              <div key={idx} className="flex items-center justify-between gap-2 rounded-[10px] border border-amber-200 dark:border-amber-900/40 bg-white dark:bg-[#16171d] px-3 py-2 text-xs font-mono min-w-0 shadow-sm">
+                <span className="truncate text-ink dark:text-gray-200 flex-1 min-w-0">{url}</span>
+                <span className="shrink-0 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 px-2 py-0.5 text-[10px] font-sans font-bold">
+                  {gscAnalysis.reasonsDetected[0] || 'Crawled - not indexed'}
                 </span>
               </div>
             ))}

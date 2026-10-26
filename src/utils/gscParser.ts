@@ -156,7 +156,13 @@ export function parseGscExport(content: string, fileName: string): GscAnalysisRe
 
     // Process data rows
     if (urlColIndex >= 0 && cols[urlColIndex]) {
-      const rawUrl = cols[urlColIndex].trim();
+      let rawUrl = cols[urlColIndex].trim();
+      if (rawUrl.startsWith('//')) {
+        rawUrl = `https:${rawUrl}`;
+      } else if (/^www\./i.test(rawUrl) || (/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(rawUrl) && !rawUrl.includes(' '))) {
+        rawUrl = `https://${rawUrl}`;
+      }
+
       if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
         unindexedUrlsSet.add(rawUrl);
         if (reasonColIndex >= 0 && cols[reasonColIndex]) {

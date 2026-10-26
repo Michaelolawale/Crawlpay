@@ -495,6 +495,15 @@ export function AuditHomeTab({ initialTarget = '', loadedReport, onAuditComplete
         onClose={() => setIsModalOpen(false)}
         targetUrl={targetUrl}
         mode={mode}
+        onAuditReady={(completedReport) => {
+          setReport(completedReport);
+          if (onAuditCompleted) {
+            onAuditCompleted(completedReport);
+          }
+          setTimeout(() => {
+            resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 150);
+        }}
         onPaymentConfirmed={handlePaymentConfirmed}
       />
     </div>

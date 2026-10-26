@@ -210,8 +210,11 @@ export function PaymentModal({
 
       // Save report in localStorage history
       saveToHistory(auditData, generatedReportId, proofTxHash, mode, targetUrl, wallet);
-      onAuditReady?.(auditData, generatedReportId);
-      onPaymentConfirmed?.(proofTxHash);
+      if (onAuditReady) {
+        onAuditReady(auditData, generatedReportId);
+      } else if (onPaymentConfirmed) {
+        onPaymentConfirmed(proofTxHash);
+      }
     } catch (err: any) {
       console.error('[Audit Pipeline Error]', err);
       setStatusPhase('failed');
