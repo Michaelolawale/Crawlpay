@@ -17,6 +17,14 @@ export const metadata: Metadata = {
     description: 'On-demand, granular site audits—settled only when the agent crawls, not on a monthly subscription.',
     type: 'website',
   },
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/logo-dark.jpg',
+  },
 };
 
 export default function RootLayout({

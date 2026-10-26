@@ -1,5 +1,9 @@
 # CrawlPay 🕷️⚡
 
+<p align="center">
+  <img src="public/logo-dark.jpg" alt="CrawlPay Logo" width="128" style="border-radius: 28px;" />
+</p>
+
 > **Autonomous On-Demand Technical SEO & Competitor Intelligence on Celo Mainnet**  
 > *Submitted to the [Agents on Open Rails Hackathon](https://www.loops.house/agents-on-open-rails) · Track: **Build with buy***
 
