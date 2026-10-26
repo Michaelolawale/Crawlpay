@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { CrawlLogo } from '@/components/CrawlLogo';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { setAdminToken, clearAdminToken } from '@/utils/adminClient';
 
 const ADMIN_NAV = [
   { href: '/admin', label: 'Overview', shortLabel: 'Overview', icon: LayoutDashboard },
@@ -34,42 +35,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [authError, setAuthError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
+  // Avoid automatic login: operator must enter passkey on each visit
   useEffect(() => {
-    const authed =
-      typeof window !== 'undefined'
-        ? localStorage.getItem('crawlpay_admin_auth') || sessionStorage.getItem('crawlpay_admin_auth')
-        : null;
-
-    if (authed) {
-      localStorage.setItem('crawlpay_admin_auth', authed);
-      sessionStorage.setItem('crawlpay_admin_auth', authed);
-      fetch('/api/admin/auth', {
-        headers: { Authorization: `Bearer ${authed}` },
-      })
-        .then((res) => {
-          if (res.ok) {
-            setIsAuthenticated(true);
-            localStorage.setItem('crawlpay_admin_auth', authed);
-            sessionStorage.setItem('crawlpay_admin_auth', authed);
-          } else {
-            localStorage.removeItem('crawlpay_admin_auth');
-            sessionStorage.removeItem('crawlpay_admin_auth');
-            setIsAuthenticated(false);
-          }
-        })
-        .catch(() => {
-          localStorage.removeItem('crawlpay_admin_auth');
-          sessionStorage.removeItem('crawlpay_admin_auth');
-          setIsAuthenticated(false);
-        });
-    }
+    clearAdminToken();
+    setIsAuthenticated(false);
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const clean = passphrase.trim();
     if (!clean) {
-      setAuthError('Please enter the operator passphrase.');
+      setAuthError('Please enter the operator passkey.');
       return;
     }
 
@@ -85,12 +61,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const data = await res.json();
       if (res.ok && data.success) {
         const token = data.token || clean;
-        localStorage.setItem('crawlpay_admin_auth', token);
-        sessionStorage.setItem('crawlpay_admin_auth', token);
+        setAdminToken(token);
         setIsAuthenticated(true);
         setPassphrase('');
       } else {
-        setAuthError(data.error || 'Invalid credentials. Access denied.');
+        setAuthError(data.error || 'Invalid passkey. Access denied.');
       }
     } catch {
       setAuthError('Authentication service unreachable. Please try again.');
@@ -100,8 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('crawlpay_admin_auth');
-    sessionStorage.removeItem('crawlpay_admin_auth');
+    clearAdminToken();
     setIsAuthenticated(false);
   };
 
@@ -125,14 +99,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-graphite-800 dark:text-graphite-300 mb-1.5">
-                Operator Passphrase
+                Operator Passkey
               </label>
               <div className="relative">
                 <input
                   type="password"
                   value={passphrase}
                   onChange={(e) => setPassphrase(e.target.value)}
-                  placeholder="Enter operator key..."
+                  placeholder="Enter operator passkey..."
                   autoComplete="current-password"
                   required
                   disabled={loggingIn}
@@ -148,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className="w-full inline-flex h-[44px] items-center justify-center gap-2 rounded-[48px] bg-ink dark:bg-white px-4 text-xs font-bold text-white dark:text-ink hover:opacity-90 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <KeyRound className="size-3.5" />
-              <span>{loggingIn ? 'Authenticating...' : 'Unlock Admin Console'}</span>
+              <span>{loggingIn ? 'Authenticating...' : 'Authenticate with Passkey'}</span>
             </button>
           </form>
 
