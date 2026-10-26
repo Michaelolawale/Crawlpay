@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { ShieldBan, Trash2, Plus, AlertCircle, ShieldAlert } from 'lucide-react';
 import { BlocklistRecord } from '@/services/db';
+import { getAdminToken } from '@/utils/adminClient';
 
 export default function AdminAbusePage() {
   const [blocklist, setBlocklist] = useState<BlocklistRecord[]>([]);
@@ -14,8 +15,9 @@ export default function AdminAbusePage() {
   const fetchBlocklist = async () => {
     setLoading(true);
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
+      const authKey = getAdminToken();
       const res = await fetch('/api/admin/abuse', {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${authKey}` },
       });
       if (res.ok) {
@@ -38,7 +40,7 @@ export default function AdminAbusePage() {
     if (!value.trim()) return;
 
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
+      const authKey = getAdminToken();
       const res = await fetch('/api/admin/abuse', {
         method: 'POST',
         headers: {
@@ -59,7 +61,7 @@ export default function AdminAbusePage() {
 
   const handleRemove = async (bType: string, bValue: string) => {
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
+      const authKey = getAdminToken();
       const res = await fetch(`/api/admin/abuse?type=${encodeURIComponent(bType)}&value=${encodeURIComponent(bValue)}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${authKey}` },

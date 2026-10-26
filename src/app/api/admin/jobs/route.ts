@@ -11,5 +11,14 @@ export async function GET(req: NextRequest) {
 
   await db.syncOnchainTransactions();
   const jobs = await db.listJobs(true);
-  return NextResponse.json({ jobs });
+  return NextResponse.json(
+    { jobs },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    }
+  );
 }

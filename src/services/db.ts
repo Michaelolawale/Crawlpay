@@ -416,15 +416,19 @@ class CrawlpayDatabase {
               this.inMemoryData.jobs.push(item);
             }
           }
-          return records;
         }
       } catch (err) {
         console.warn('[DB] Supabase listJobs fallback:', err);
       }
     }
 
-    if (includeTest) return this.inMemoryData.jobs;
-    return this.inMemoryData.jobs.filter((j) => !j.is_test);
+    const filtered = includeTest
+      ? this.inMemoryData.jobs
+      : this.inMemoryData.jobs.filter((j) => !j.is_test);
+
+    return [...filtered].sort(
+      (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+    );
   }
 
   public async listJobsForWallet(wallet: string): Promise<JobRecord[]> {

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { CheckEngineView } from '../CheckEngineView';
 import { PaymentModal } from '../PaymentModal';
-import { parseGscExport, GscAnalysisResult } from '@/utils/gscParser';
+import { parseGscFile, parseGscExport, GscAnalysisResult } from '@/utils/gscParser';
 import { FullAuditReport } from '@/types/audit';
 
 interface AuditHomeTabProps {
@@ -60,24 +60,29 @@ export function AuditHomeTab({ initialTarget = '', loadedReport, onAuditComplete
   // Price shown plainly
   const currentPrice = mode === 'quick' ? '0.25' : '0.50';
 
-  // Handle Search Console export upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Search Console export upload (CSV, JSON, TSV, or ZIP)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (content) {
-        try {
-          const parsed = parseGscExport(content, file.name);
-          setGscAnalysis(parsed);
-        } catch {
-          setError('Failed to parse Google Search Console export file.');
+    setError(null);
+    try {
+      const parsed = await parseGscFile(file);
+      if (parsed.unindexedUrls.length === 0) {
+        setError(`No valid URLs found in "${file.name}". Please ensure your GSC export contains a URL or Page column.`);
+        setGscAnalysis(null);
+      } else {
+        setGscAnalysis(parsed);
+        // If targetUrl is currently empty, autofill with detected domain
+        if (!targetUrl.trim() && parsed.suggestedDomain) {
+          setTargetUrl(parsed.suggestedDomain);
         }
       }
-    };
-    reader.readAsText(file);
+    } catch (err: any) {
+      console.warn('GSC upload error:', err);
+      setError(`Failed to parse Search Console export: ${err?.message || 'Invalid format'}`);
+      setGscAnalysis(null);
+    }
   };
 
   const clearGscFile = () => {
@@ -329,7 +334,7 @@ export function AuditHomeTab({ initialTarget = '', loadedReport, onAuditComplete
                       name="gscFile"
                       ref={fileInputRef}
                       type="file"
-                      accept=".csv,.json"
+                      accept=".csv,.tsv,.json,.txt,.zip,application/zip"
                       onChange={handleFileUpload}
                       className="hidden"
                     />

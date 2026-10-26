@@ -64,7 +64,7 @@ export function getSupabaseClient(): SupabaseClient | null {
   if (cachedAnonClient) return cachedAnonClient;
 
   const url = getSupabaseUrl();
-  const anonKey = getSupabaseAnonKey() || getSupabaseServiceRoleKey();
+  const anonKey = getSupabaseAnonKey();
 
   if (!url || !anonKey || !isSupabaseConfigured()) {
     return null;

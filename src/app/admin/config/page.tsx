@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Sliders, Check, Loader2, Save } from 'lucide-react';
 import { DynamicConfig } from '@/services/db';
+import { getAdminToken } from '@/utils/adminClient';
 
 export default function AdminConfigPage() {
   const [config, setConfig] = useState<DynamicConfig>({
@@ -17,8 +18,9 @@ export default function AdminConfigPage() {
   const [savedFeedback, setSavedFeedback] = useState(false);
 
   useEffect(() => {
-    const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
+    const authKey = getAdminToken();
     fetch('/api/admin/config', {
+      cache: 'no-store',
       headers: { Authorization: `Bearer ${authKey}` },
     })
       .then((res) => res.json())
@@ -35,7 +37,7 @@ export default function AdminConfigPage() {
     setSavedFeedback(false);
 
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
+      const authKey = getAdminToken();
       const res = await fetch('/api/admin/config', {
         method: 'POST',
         headers: {

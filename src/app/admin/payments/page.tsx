@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CreditCard, ExternalLink, RefreshCw, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { PaymentRecord } from '@/services/db';
+import { getAdminToken } from '@/utils/adminClient';
 
 export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
@@ -12,8 +13,9 @@ export default function AdminPaymentsPage() {
   const fetchPayments = async () => {
     setLoading(true);
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
+      const authKey = getAdminToken();
       const res = await fetch('/api/admin/payments', {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${authKey}` },
       });
       if (res.ok) {

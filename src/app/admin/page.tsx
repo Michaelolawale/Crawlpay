@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 
 import { CONFIG } from '@/config';
+import { getAdminToken } from '@/utils/adminClient';
 
 const PUBLIC_AGENT_ADDRESS =
   process.env.NEXT_PUBLIC_AGENT_ADDRESS || CONFIG.AGENT_WALLET_ADDRESS;
@@ -26,8 +27,9 @@ export default function AdminOverviewPage() {
   const fetchData = async () => {
     setRefreshing(true);
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
+      const authKey = getAdminToken();
       const res = await fetch('/api/admin/overview', {
+        cache: 'no-store',
         headers: { Authorization: `Bearer ${authKey}` },
       });
       if (res.ok) {

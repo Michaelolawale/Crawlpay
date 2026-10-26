@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { CheckEngineView } from '@/components/CheckEngineView';
 import { FullAuditReport } from '@/types/audit';
+import { getAdminToken } from '@/utils/adminClient';
 
 export default function AdminSandboxPage() {
   const [targetUrl, setTargetUrl] = useState('');
@@ -32,7 +33,7 @@ export default function AdminSandboxPage() {
     setJobInfo(null);
 
     try {
-      const authKey = sessionStorage.getItem('crawlpay_admin_auth') || '';
+      const authKey = getAdminToken();
       const res = await fetch('/api/admin/sandbox', {
         method: 'POST',
         headers: {

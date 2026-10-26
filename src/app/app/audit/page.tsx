@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { PaymentModal } from '@/components/PaymentModal';
 import { CheckEngineView } from '@/components/CheckEngineView';
-import { parseGscExport, GscAnalysisResult } from '@/utils/gscParser';
+import { parseGscFile, parseGscExport, GscAnalysisResult } from '@/utils/gscParser';
 import { FullAuditReport } from '@/types/audit';
 
 function AuditPageContent() {
@@ -60,24 +60,29 @@ function AuditPageContent() {
   const isFormValid = isValidUrl(targetUrl);
   const currentPrice = depth === 'quick' ? '0.25' : '0.50';
 
-  // Handle Search Console export upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle Search Console export upload (CSV, JSON, TSV, or ZIP)
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (content) {
-        try {
-          const parsed = parseGscExport(content, file.name);
-          setGscAnalysis(parsed);
-        } catch {
-          setErrorMsg('Failed to parse Google Search Console export file.');
+    setErrorMsg(null);
+    try {
+      const parsed = await parseGscFile(file);
+      if (parsed.unindexedUrls.length === 0) {
+        setErrorMsg(`No valid URLs found in "${file.name}". Please ensure your GSC export contains a URL or Page column.`);
+        setGscAnalysis(null);
+      } else {
+        setGscAnalysis(parsed);
+        // Autofill target URL if empty
+        if (!targetUrl.trim() && parsed.suggestedDomain) {
+          setTargetUrl(parsed.suggestedDomain);
         }
       }
-    };
-    reader.readAsText(file);
+    } catch (err: any) {
+      console.warn('GSC upload error:', err);
+      setErrorMsg(`Failed to parse Search Console export: ${err?.message || 'Invalid format'}`);
+      setGscAnalysis(null);
+    }
   };
 
   const clearGscFile = () => {
@@ -311,7 +316,7 @@ function AuditPageContent() {
             </button>
           </div>
 
-          <CheckEngineView report={completedReport} />
+          <CheckEngineView report={completedReport} gscAnalysis={gscAnalysis} />
         </div>
       )}
     </div>

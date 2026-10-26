@@ -41,6 +41,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         : null;
 
     if (authed) {
+      localStorage.setItem('crawlpay_admin_auth', authed);
+      sessionStorage.setItem('crawlpay_admin_auth', authed);
       fetch('/api/admin/auth', {
         headers: { Authorization: `Bearer ${authed}` },
       })
