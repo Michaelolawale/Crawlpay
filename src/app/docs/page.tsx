@@ -393,30 +393,25 @@ console.log('Mined payment tx:', txHash);`}</pre>
               </div>
             </div>
 
-            {/* Column 2: Audit Engine */}
+            {/* Column 2: Navigation */}
             <div className="space-y-[12px]">
               <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 font-normal uppercase tracking-wider block">
-                AUDIT ENGINE
+                NAVIGATION
               </span>
               <div className="space-y-[12px] font-footer text-[14px] leading-[20px]">
                 <div>
                   <Link href="/app/audit" className="text-graphite-200 hover:text-white transition-colors">
-                    Launch Site Audit
+                    Site Audit
                   </Link>
                 </div>
                 <div>
                   <Link href="/app/reports" className="text-graphite-200 hover:text-white transition-colors">
-                    Audit Reports Archive
+                    Reports Archive
                   </Link>
                 </div>
                 <div>
                   <Link href="/example" className="text-graphite-200 hover:text-white transition-colors">
-                    Verified Audit Demo
-                  </Link>
-                </div>
-                <div>
-                  <Link href="/docs#endpoints" className="text-graphite-200 hover:text-white transition-colors">
-                    10-Check Engine Specs
+                    Verified Demo Preview
                   </Link>
                 </div>
               </div>
@@ -448,23 +443,13 @@ console.log('Mined payment tx:', txHash);`}</pre>
                     REST API Status
                   </a>
                 </div>
-                <div>
-                  <a
-                    href={`https://celoscan.io/address/${PUBLIC_AGENT_ADDRESS}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-graphite-200 hover:text-white transition-colors"
-                  >
-                    Agent Wallet on Celoscan
-                  </a>
-                </div>
               </div>
             </div>
 
-            {/* Column 4: Trust & Policies */}
+            {/* Column 4: Policies */}
             <div className="space-y-[12px]">
               <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 font-normal uppercase tracking-wider block">
-                TRUST &amp; POLICIES
+                POLICIES
               </span>
               <div className="space-y-[12px] font-footer text-[14px] leading-[20px]">
                 <div>
@@ -475,11 +460,6 @@ console.log('Mined payment tx:', txHash);`}</pre>
                 <div>
                   <Link href="/terms#refund" className="text-graphite-200 hover:text-white transition-colors">
                     Refund Guarantee Policy
-                  </Link>
-                </div>
-                <div>
-                  <Link href="/terms#privacy" className="text-graphite-200 hover:text-white transition-colors">
-                    Report Access &amp; Privacy
                   </Link>
                 </div>
                 <div>
