@@ -1,5 +1,5 @@
 async function runTests() {
-  const baseUrl = 'http://localhost:3000';
+  const baseUrl = process.env.TEST_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
   const results: Array<{ name: string; endpoint: string; method: string; status: number; ok: boolean; sampleResponse: string }> = [];
 
   console.log(`Starting automated API test suite against ${baseUrl}...\n`);

@@ -236,12 +236,17 @@ function AuditPageContent() {
               )}
             </div>
 
+            <label htmlFor="gsc-file-upload" className="sr-only">
+              Upload Google Search Console Export File
+            </label>
             <input
+              id="gsc-file-upload"
               ref={fileInputRef}
               type="file"
               accept=".csv,.zip,.tsv"
               onChange={handleFileUpload}
               className="hidden"
+              aria-label="Upload Google Search Console export file"
             />
 
             {gscAnalysis && (

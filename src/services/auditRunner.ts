@@ -73,8 +73,8 @@ export async function runAuditPipeline(
 
   const $ = cheerio.load(rootPage.html);
 
-  // 2. Run the 10 Checks in deterministic order per spec
-  const { findings, notChecked } = await runAllChecks(pages, metadata, robotsParser);
+  // 2. Run the deterministic checks (including mobile performance)
+  const { findings, notChecked, mobileMetrics } = await runAllChecks(pages, metadata, robotsParser);
 
   // 3. Group by root cause, compute page importance & priorities, attach stackFix
   const { groups, whatPassed } = groupAndPrioritizeFindings(findings, pages, metadata);
@@ -87,7 +87,7 @@ export async function runAuditPipeline(
   const technical = parseTechnicalSeo($, normalizedUrl);
   const semantics = auditSemantics($, archetype.type, technical.headings.h1s, technical.title);
   const performance = auditSpeedVitals($, rootPage.html.length);
-  const codePatches = generateCodePatches(normalizedUrl, technical, archetype);
+  const codePatches = generateCodePatches(normalizedUrl, technical, archetype, metadata.detectedStack);
 
   // 6. Upstream x402 payment & receipt via buy coordinator on Celo Mainnet (concurrent for low latency)
   const [browserReceipt, socialReceipt] = await Promise.all([
@@ -109,6 +109,9 @@ export async function runAuditPipeline(
 
   let contentScore = 100 - (findings.filter((f) => f.checkId.startsWith('titles') || f.checkId.startsWith('headings') || f.checkId.startsWith('descriptions')).length * 12);
   contentScore = Math.max(40, Math.min(100, contentScore));
+
+  const mobileFindingsCount = findings.filter((f) => f.checkId.startsWith('mobile')).length;
+  const mobileScore = mobileMetrics?.mobileScore ?? Math.max(35, 100 - mobileFindingsCount * 15);
 
   // 8. Map Top Needle Movers directly from highest priority FindingGroups
   const topNeedleMovers: Array<{ priority: 'Critical' | 'High' | 'Quick Win'; title: string; description: string; action: string }> = [];
@@ -143,8 +146,10 @@ export async function runAuditPipeline(
       technical: technicalScore,
       content: contentScore,
       performance: performance.score,
+      mobile: mobileScore,
       social: 90,
     },
+    mobileMetrics,
     archetype,
     topNeedleMovers,
     prioritizedGroups: groups,

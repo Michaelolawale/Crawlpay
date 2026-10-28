@@ -5,6 +5,7 @@ import { PerformanceVitals } from '../analyzer/speedVitals';
 import { CodePatches } from '../analyzer/fixGenerator';
 import { CrawlExecutionLog } from '../services/buyClient';
 import { Finding, FindingGroup, PriorityItem, SeoAuditReport } from '../engine/types';
+import { MobileAuditMetrics } from '../engine/checks/mobilePerformance';
 
 export interface FullAuditReport {
   targetUrl: string;
@@ -16,6 +17,7 @@ export interface FullAuditReport {
     content: number;
     performance: number;
     social: number;
+    mobile?: number;
   };
   archetype: ArchetypeProfile;
   topNeedleMovers: Array<{
@@ -38,6 +40,7 @@ export interface FullAuditReport {
   technical: SeoTechnicalData;
   semantics: SemanticAnalysis;
   performance: PerformanceVitals;
+  mobileMetrics?: MobileAuditMetrics;
   codePatches: CodePatches;
   onchainReceipt: CrawlExecutionLog;
   checkEngineReport?: SeoAuditReport;

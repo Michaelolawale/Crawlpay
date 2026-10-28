@@ -10,14 +10,16 @@ import { checkDuplicateContent } from './duplicateContent';
 import { checkImages } from './images';
 import { checkPerformance } from './performance';
 import { checkStructuredData } from './structuredData';
+import { checkMobilePerformance, MobileAuditMetrics } from './mobilePerformance';
 
 export interface CheckSuiteResult {
   findings: Finding[];
   notChecked: string[];
+  mobileMetrics?: MobileAuditMetrics;
 }
 
 /**
- * Runs the 10 checks in strict deterministic order per spec:
+ * Runs the deterministic checks in strict order:
  * 1. indexability
  * 2. canonical
  * 3. titles_and_descriptions
@@ -28,6 +30,7 @@ export interface CheckSuiteResult {
  * 8. images
  * 9. performance
  * 10. structured_data
+ * 11. mobile_performance
  */
 export async function runAllChecks(
   pages: PageCrawlData[],
@@ -87,8 +90,13 @@ export async function runAllChecks(
   const structuredDataFindings = checkStructuredData(pages);
   allFindings.push(...structuredDataFindings);
 
+  // 11. Mobile SEO & Responsiveness
+  const { findings: mobileFindings, metrics: mobileMetrics } = checkMobilePerformance(pages, metadata);
+  allFindings.push(...mobileFindings);
+
   return {
     findings: allFindings,
     notChecked,
+    mobileMetrics,
   };
 }

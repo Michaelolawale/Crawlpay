@@ -31,19 +31,23 @@ export function buildDeterministicSummary(
   const topGroups = groups.slice(0, 3);
   const criticalCount = groups.filter((g) => g.severity === 'critical').length;
   const highCount = groups.filter((g) => g.severity === 'high').length;
+  const mobileIssueCount = groups.filter((g) => g.checkId.startsWith('mobile')).length;
 
-  let summary = `Audit analyzed ${groups[0].totalPagesChecked} page(s) for ${metadata.hostname} (${metadata.detectedStack.cms || 'Static'} stack). `;
+  let summary = `Executive Technical Audit for ${metadata.hostname} (${metadata.detectedStack.cms || 'Static Web'} stack) across ${groups[0].totalPagesChecked} page(s). `;
   if (criticalCount > 0 || highCount > 0) {
-    summary += `Found ${criticalCount} critical and ${highCount} high-severity issue group(s) impacting indexability and search visibility. `;
-    summary += `Primary fixes required in ${topGroups.map((g) => g.checkId).join(', ')}.`;
+    summary += `Identified ${criticalCount} critical and ${highCount} high-priority roadblock(s) impacting Google Mobile-First indexing and search visibility. `;
+    if (mobileIssueCount > 0) {
+      summary += `${mobileIssueCount} mobile usability/performance issue(s) detected. `;
+    }
+    summary += `Priority remedies: ${topGroups.map((g) => g.checkId.replace(/_/g, ' ')).join(', ')}.`;
   } else {
-    summary += `Found ${groups.length} actionable optimization group(s) across metadata, structure, and media assets.`;
+    summary += `Found ${groups.length} technical optimization(s). Core indexing and mobile viewports are sound; recommended enhancements focus on speed vitals and structured data.`;
   }
 
-  // Ensure summary is <= 120 words
+  // Ensure summary is concise
   const words = summary.split(/\s+/);
-  if (words.length > 120) {
-    summary = words.slice(0, 120).join(' ') + '.';
+  if (words.length > 130) {
+    summary = words.slice(0, 130).join(' ') + '.';
   }
 
   const priorities: PriorityItem[] = topGroups.map((group) => {
@@ -51,7 +55,10 @@ export function buildDeterministicSummary(
     let fix = group.stackFix || 'Resolve the observed issue on affected templates.';
     let effort: 'low' | 'medium' | 'high' = 'medium';
 
-    if (group.checkId.startsWith('indexability')) {
+    if (group.checkId.startsWith('mobile')) {
+      whyItMatters = 'Directly impacts Google Mobile-First Indexing and smartphone user retention.';
+      effort = 'low';
+    } else if (group.checkId.startsWith('indexability')) {
       whyItMatters = 'Prevents search bots from crawling or indexing key revenue pages.';
       effort = 'low';
     } else if (group.checkId.startsWith('canonical')) {

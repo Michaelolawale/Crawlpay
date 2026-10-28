@@ -12,31 +12,30 @@ import {
   ChevronDown,
   ChevronUp,
   Layers,
-  Wrench,
   Globe,
   HelpCircle,
   ExternalLink,
-  FileSpreadsheet,
   Gauge,
   Zap,
-  TrendingUp,
   TrendingDown,
   Swords,
   Activity,
-  ArrowRight,
   Sparkles,
-  Loader2,
-  BarChart3,
-  Flame,
   Clock,
   Image as ImageIcon,
   Code2,
   CheckCircle,
+  Smartphone,
+  Terminal,
+  CheckCheck,
+  Flame,
 } from 'lucide-react';
 import { FindingGroup, Severity } from '../engine/types';
 import { GscAnalysisResult } from '../utils/gscParser';
 import { FullAuditReport } from '../types/audit';
 import { CompetitorComparison } from '../analyzer/competitorComparator';
+import { generateCodePatches } from '../analyzer/fixGenerator';
+import { getSuggestedContentFix } from '../analyzer/contentFixes';
 
 interface CheckEngineViewProps {
   groups?: FindingGroup[];
@@ -60,16 +59,30 @@ export function CheckEngineView(props: CheckEngineViewProps) {
   const pagesChecked = props.pagesChecked ?? props.report?.pagesChecked ?? 1;
   const targetUrl = props.targetUrl || props.report?.targetUrl || '';
   const detectedStack = props.detectedStack || props.report?.detectedStack;
-  const gscAnalysis = props.gscAnalysis;
   const report = props.report;
 
-  // Active issue filter tab (Semrush style: All / Errors / Warnings / Notices)
+  // Workspace Main Navigation Tab (Executive Command Center)
+  const [activeMainTab, setActiveMainTab] = useState<'issues' | 'vitals' | 'patches' | 'competitor'>('issues');
+
+  // Issue Filtering & State
   const [filterTab, setFilterTab] = useState<'all' | 'errors' | 'warnings' | 'notices'>('all');
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showJson, setShowJson] = useState(false);
 
-  // Competitor Analysis state
+  // Active Code Patch Tab
+  const [activeCodeTab, setActiveCodeTab] = useState<'nextjs' | 'wordpress' | 'shopify' | 'astro' | 'html' | 'schema'>('nextjs');
+
+  // Auto-sync code tab with detected stack
+  useEffect(() => {
+    const cms = detectedStack?.cms?.toLowerCase() || '';
+    if (cms.includes('wordpress')) setActiveCodeTab('wordpress');
+    else if (cms.includes('shopify')) setActiveCodeTab('shopify');
+    else if (cms.includes('astro')) setActiveCodeTab('astro');
+    else if (cms.includes('next')) setActiveCodeTab('nextjs');
+  }, [detectedStack]);
+
+  // Competitor Analysis State
   const [competitorUrl, setCompetitorUrl] = useState('');
   const [compLoading, setCompLoading] = useState(false);
   const [compError, setCompError] = useState<string | null>(null);
@@ -85,7 +98,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Group categorization like Semrush (Errors, Warnings, Notices)
+  // Group Categorization
   const errorGroups = groups.filter((g) => g.severity === 'critical' || g.severity === 'high');
   const warningGroups = groups.filter((g) => g.severity === 'medium');
   const noticeGroups = groups.filter((g) => g.severity === 'low' || g.severity === 'info');
@@ -95,7 +108,6 @@ export function CheckEngineView(props: CheckEngineViewProps) {
   const warningCount = warningGroups.reduce((acc, g) => acc + g.affectedCount, 0);
   const noticeCount = noticeGroups.reduce((acc, g) => acc + g.affectedCount, 0);
 
-  // Filtered issues to display
   const displayedGroups = groups.filter((g) => {
     if (filterTab === 'errors') return g.severity === 'critical' || g.severity === 'high';
     if (filterTab === 'warnings') return g.severity === 'medium';
@@ -103,86 +115,53 @@ export function CheckEngineView(props: CheckEngineViewProps) {
     return true;
   });
 
-  // Calculate scores
+  // Health Scores
   const overallScore = report?.scores?.overall ?? Math.max(35, Math.min(100, 100 - (errorGroups.length * 15 + warningGroups.length * 6 + noticeGroups.length * 2)));
   const technicalScore = report?.scores?.technical ?? Math.max(40, 100 - (groups.filter((g) => g.checkId.includes('canonical') || g.checkId.includes('indexability') || g.checkId.includes('sitemap')).length * 15));
   const contentScore = report?.scores?.content ?? Math.max(45, 100 - (groups.filter((g) => g.checkId.includes('titles') || g.checkId.includes('headings') || g.checkId.includes('descriptions')).length * 12));
   const performanceScore = report?.scores?.performance ?? report?.performance?.score ?? 82;
+  const mobileScore = report?.scores?.mobile ?? report?.performance?.mobile?.mobileScore ?? Math.max(40, 100 - (groups.filter((g) => g.checkId.includes('mobile')).length * 15));
   const socialScore = report?.scores?.social ?? (report?.technical?.openGraph?.hasCompleteOg ? 95 : 65);
 
-  // Health Score Color & Rating
+  const mobileMetrics = report?.mobileMetrics || report?.performance?.mobile;
+
+  // Code Patches
+  const generatedPatches = (targetUrl || report?.targetUrl) ? generateCodePatches(
+    targetUrl || report?.targetUrl || '',
+    report?.technical || { headings: { h1s: [] }, title: '', metaDescription: '', openGraph: {} } as any,
+    report?.archetype || { type: 'saas', label: 'Website', confidence: 90, detectedSignals: [], primarySchemaNeeded: '', keyAuditFocus: '' },
+    detectedStack
+  ) : null;
+
+  const effectivePatches = {
+    ...generatedPatches,
+    ...report?.codePatches,
+    wordPressPhp: report?.codePatches?.wordPressPhp || generatedPatches?.wordPressPhp || '',
+    astroSeo: report?.codePatches?.astroSeo || generatedPatches?.astroSeo || '',
+    nextJsMetadata: report?.codePatches?.nextJsMetadata || generatedPatches?.nextJsMetadata || '',
+    shopifyLiquid: report?.codePatches?.shopifyLiquid || generatedPatches?.shopifyLiquid || '',
+    htmlHeadBlock: report?.codePatches?.htmlHeadBlock || generatedPatches?.htmlHeadBlock || '',
+    schemaJsonLd: report?.codePatches?.schemaJsonLd || generatedPatches?.schemaJsonLd || '',
+  };
+
+  // Top Action Items / Needle Movers
+  const topActionItems = report?.topNeedleMovers && report.topNeedleMovers.length > 0
+    ? report.topNeedleMovers
+    : groups.slice(0, 3).map((g) => ({
+        priority: (g.severity === 'critical' ? 'Critical' : g.severity === 'high' ? 'High' : 'Quick Win') as 'Critical' | 'High' | 'Quick Win',
+        title: g.checkId.replace(/_/g, ' '),
+        description: g.findings[0]?.evidence?.observed || `Affects ${g.affectedCount} page(s).`,
+        action: g.stackFix || g.findings[0]?.evidence?.expected || 'Review affected template code.',
+      }));
+
+  // Health Rating Metadata
   const getHealthColor = (val: number) => {
-    if (val >= 80) return { stroke: '#10b981', text: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', label: 'Good Health' };
-    if (val >= 60) return { stroke: '#f59e0b', text: 'text-amber-800', bg: 'bg-amber-50', border: 'border-amber-200', label: 'Needs Improvement' };
-    return { stroke: '#ef4444', text: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200', label: 'Critical Attention' };
+    if (val >= 80) return { stroke: '#10b981', text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/40', border: 'border-emerald-200 dark:border-emerald-800', label: 'Good Health' };
+    if (val >= 60) return { stroke: '#f59e0b', text: 'text-amber-800 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/40', border: 'border-amber-200 dark:border-amber-800', label: 'Needs Improvement' };
+    return { stroke: '#ef4444', text: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-50 dark:bg-rose-950/40', border: 'border-rose-200 dark:border-rose-800', label: 'Critical Attention' };
   };
 
   const healthMeta = getHealthColor(overallScore);
-
-  // Audit Re-Run Delta Detection (Compares with previous audit for same website if available)
-  const [auditDelta, setAuditDelta] = useState<{
-    hasPrevious: boolean;
-    previousDate: string;
-    previousScore: number;
-    scoreDelta: number;
-    fixedCheckIds: string[];
-    newIssuesCount: number;
-  } | null>(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const effectiveUrl = targetUrl || report?.targetUrl;
-    if (!effectiveUrl) return;
-
-    try {
-      const stored = localStorage.getItem('crawlpay_reports');
-      if (!stored) return;
-      const history = JSON.parse(stored);
-      if (!Array.isArray(history)) return;
-
-      const norm = (u: string) =>
-        u.toLowerCase().replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '');
-      const currentNorm = norm(effectiveUrl);
-
-      // Find prior audits for the exact same domain
-      const prior = history.filter((item: any) => {
-        if (!item?.targetUrl) return false;
-        const isSame = norm(item.targetUrl) === currentNorm;
-        // Make sure it's an earlier audit
-        const isOlder = report?.auditTimestamp
-          ? new Date(item.date).getTime() < new Date(report.auditTimestamp).getTime() - 500
-          : true;
-        return isSame && isOlder;
-      });
-
-      if (prior.length > 0) {
-        const prev = prior[0]; // Most recent previous audit
-        const prevScore =
-          prev.reportData?.scores?.overall ??
-          Math.max(30, 100 - (prev.issuesCount?.total || 0) * 12);
-        const prevCheckIds: string[] =
-          prev.reportData?.prioritizedGroups?.map((g: any) => g.checkId) || [];
-        const currCheckIds: string[] = groups.map((g) => g.checkId);
-
-        const fixed = prevCheckIds.filter((id) => !currCheckIds.includes(id));
-        const newIssues = currCheckIds.filter((id) => !prevCheckIds.includes(id));
-
-        setAuditDelta({
-          hasPrevious: true,
-          previousDate: prev.date,
-          previousScore: prevScore,
-          scoreDelta: overallScore - prevScore,
-          fixedCheckIds: Array.from(new Set(fixed)),
-          newIssuesCount: newIssues.length,
-        });
-      }
-    } catch {}
-  }, [targetUrl, report, groups, overallScore]);
-
-  // SVG Circle calculations (radius 48 -> circumference ~301.6)
-  const radius = 48;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (overallScore / 100) * circumference;
 
   // Performance data extraction
   const performance = report?.performance || {
@@ -192,21 +171,15 @@ export function CheckEngineView(props: CheckEngineViewProps) {
     heavyAssetCount: 0,
     renderBlockingScriptsCount: 0,
     usesModernImageFormats: true,
-    opportunities: [
-      {
-        title: 'Optimize image payloads and delivery formats',
-        impact: 'High' as const,
-        savingEstimate: '~0.6s faster LCP',
-      },
-      {
-        title: 'Defer non-critical third-party JavaScript tags',
-        impact: 'Medium' as const,
-        savingEstimate: '~200ms DOM interactive',
-      },
-    ],
+    opportunities: [],
   };
 
-  // Run Competitor Comparison
+  // SVG Gauge calculations (radius 48 -> circumference ~301.6)
+  const radius = 48;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference - (overallScore / 100) * circumference;
+
+  // Competitor Run
   const handleRunCompetitor = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!competitorUrl.trim()) return;
@@ -225,10 +198,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
       });
 
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to compare competitor');
-      }
-
+      if (!res.ok) throw new Error(data.error || 'Failed to compare competitor');
       setComparison(data.comparison);
     } catch (err: any) {
       setCompError(err?.message || 'Comparison request failed.');
@@ -237,110 +207,19 @@ export function CheckEngineView(props: CheckEngineViewProps) {
     }
   };
 
-  const getSeverityBadge = (sev: Severity) => {
-    switch (sev) {
-      case 'critical':
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 px-2.5 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200">
-            <ShieldAlert className="size-3 text-rose-600" />
-            CRITICAL
-          </span>
-        );
-      case 'high':
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-0.5 text-[11px] font-bold text-orange-700 border border-orange-200">
-            <AlertTriangle className="size-3 text-orange-600" />
-            HIGH
-          </span>
-        );
-      case 'medium':
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200">
-            <AlertTriangle className="size-3 text-amber-700" />
-            WARNING
-          </span>
-        );
-      case 'low':
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-bold text-blue-700 border border-blue-200">
-            <Info className="size-3 text-blue-600" />
-            NOTICE
-          </span>
-        );
-      case 'info':
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#f4f4f6] px-2.5 py-0.5 text-[11px] font-bold text-graphite-800 border border-graphite-100">
-            <Info className="size-3 text-graphite-800" />
-            NOTICE
-          </span>
-        );
-    }
-  };
+  const cleanDomain = targetUrl ? targetUrl.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/.*$/, '') : 'Target Domain';
 
   return (
-    <div className="space-y-6">
-      {/* Re-Run Comparison Banner */}
-      {auditDelta && auditDelta.hasPrevious && (
-        <div className="rounded-[20px] border border-emerald-200 bg-emerald-50 p-5 space-y-3 animate-in fade-in">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className="flex size-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold">
-                ✓
-              </span>
-              <div>
-                <h4 className="font-display text-sm font-bold text-ink">
-                  {auditDelta.scoreDelta > 0
-                    ? `Audit Updated: +${auditDelta.scoreDelta} Point Health Score Improvement!`
-                    : auditDelta.scoreDelta === 0
-                    ? 'Audit Re-Run: Health Score Unchanged'
-                    : `Audit Re-Run: Score Shifted by ${auditDelta.scoreDelta} Points`}
-                </h4>
-                <p className="text-xs text-graphite-800">
-                  Compared against prior audit run on {new Date(auditDelta.previousDate).toLocaleString()} (Prior Score: {auditDelta.previousScore}%)
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-white border border-emerald-200 px-3 py-1 font-mono text-xs font-bold text-emerald-700 shadow-sm">
-                {auditDelta.fixedCheckIds.length} Issue{auditDelta.fixedCheckIds.length !== 1 ? 's' : ''} Resolved
-              </span>
-            </div>
-          </div>
-
-          {auditDelta.fixedCheckIds.length > 0 && (
-            <div className="pt-2 border-t border-emerald-200 space-y-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 block">
-                Verified Fixes Detected on Live Re-Run:
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {auditDelta.fixedCheckIds.map((checkId) => (
-                  <span
-                    key={checkId}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-white border border-emerald-200 px-3 py-1 text-xs font-mono text-emerald-800 font-semibold shadow-sm"
-                  >
-                    <CheckCircle className="size-3 text-emerald-600" />
-                    <span>{checkId.replace(/_/g, ' ')}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
+    <div className="w-full space-y-6">
       {/* =========================================================================
-          SECTION 1: SEMRUSH-STYLE SITE AUDIT HERO
-          Circular Progress Bar + Issue Distribution Bar Charts
+          COMMAND CENTER: EXECUTIVE HEALTH & SUMMARY (DEDUPLICATED & STREAMLINED)
           ========================================================================= */}
-      <div className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm">
+      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-6">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          {/* Circular Site Health Gauge */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-5">
+          {/* Left: Overall Health Gauge & Domain Context */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
             <div className="relative flex size-28 shrink-0 items-center justify-center">
               <svg className="size-full -rotate-90" viewBox="0 0 110 110">
-                {/* Background Ring Track */}
                 <circle
                   cx="55"
                   cy="55"
@@ -350,7 +229,6 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                   className="stroke-[#e6e6e8] dark:stroke-[#252631]"
                   strokeWidth="8"
                 />
-                {/* Animated Fill Circle */}
                 <circle
                   cx="55"
                   cy="55"
@@ -364,7 +242,6 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                   className="transition-all duration-1000 ease-out"
                 />
               </svg>
-              {/* Inner Percentage Readout */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
                 <span className="font-display text-2xl font-bold tracking-tight text-ink dark:text-white">
                   {overallScore}%
@@ -375,41 +252,53 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               </div>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <span className="font-display text-base font-bold text-ink dark:text-white">
-                  Site Audit Health
-                </span>
-                <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${healthMeta.bg} ${healthMeta.text} ${healthMeta.border}`}>
+                <h2 className="font-display text-lg font-bold text-ink dark:text-white break-words sm:truncate max-w-full">
+                  {cleanDomain}
+                </h2>
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold border shrink-0 ${healthMeta.bg} ${healthMeta.text} ${healthMeta.border}`}>
                   {healthMeta.label}
                 </span>
               </div>
-              <p className="text-xs text-graphite-800 dark:text-graphite-400 max-w-xs leading-relaxed mx-auto sm:mx-0">
-                Benchmark against top 10% web assets (avg 82%). Evaluated via {pagesChecked} page crawl.
-              </p>
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-0.5 text-[11px] text-graphite-800 dark:text-graphite-400 font-mono">
-                <span>{pagesChecked} Page{pagesChecked > 1 ? 's' : ''} Crawled</span>
-                <span>•</span>
-                <span>Stack: {detectedStack?.cms || 'Custom'}</span>
+
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 text-xs text-graphite-800 dark:text-graphite-400 font-mono">
+                <span className="inline-flex items-center gap-1.5 bg-[#f4f4f6] dark:bg-[#202129] px-2.5 py-0.5 rounded-full border border-graphite-100 dark:border-graphite-800">
+                  <Globe className="size-3 text-violet" />
+                  <span>{pagesChecked} Page{pagesChecked > 1 ? 's' : ''} Crawled</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-violet/10 dark:bg-violet/20 px-2.5 py-0.5 rounded-full border border-violet/20 text-violet font-semibold">
+                  <span>Stack: {detectedStack?.cms || 'Detected Web Stack'}</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60 font-semibold">
+                  <Smartphone className="size-3" />
+                  <span>Mobile: {mobileScore}%</span>
+                </span>
               </div>
+
+              <p className="text-xs text-graphite-800 dark:text-graphite-400 max-w-md leading-relaxed pt-0.5">
+                Evaluated against Google Mobile-First search standards and deterministic engine specifications.
+              </p>
             </div>
           </div>
 
-          {/* Tri-Color Semrush Issues Breakdown (Errors, Warnings, Notices) */}
-          <div className="flex-1 max-w-xl space-y-3">
-            <div className="grid grid-cols-3 gap-1.5 sm:gap-2.5">
-              {/* Errors Card */}
+          {/* Right: Interactive Tri-Color Issue Badges */}
+          <div className="flex-1 max-w-md space-y-3">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
-                onClick={() => setFilterTab(filterTab === 'errors' ? 'all' : 'errors')}
-                className={`flex flex-col rounded-[14px] border p-2.5 sm:p-3 text-left transition-all ${
+                onClick={() => {
+                  setFilterTab(filterTab === 'errors' ? 'all' : 'errors');
+                  setActiveMainTab('issues');
+                }}
+                className={`flex flex-col rounded-[14px] border p-2.5 sm:p-3 text-left transition-all cursor-pointer ${
                   filterTab === 'errors'
                     ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 ring-1 ring-rose-300 dark:ring-rose-800 shadow-sm'
-                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] hover:bg-rose-50/60 dark:hover:bg-rose-950/30 hover:border-rose-200'
+                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] hover:bg-rose-50/50'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-1">
                     <ShieldAlert className="size-3 shrink-0 text-rose-600 dark:text-rose-400" />
                     <span>Errors</span>
                   </span>
@@ -418,23 +307,25 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                 <span className="mt-1 font-display text-lg sm:text-xl font-bold text-rose-700 dark:text-rose-300">
                   {errorCount || errorGroups.length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-graphite-800 dark:text-graphite-400 truncate block">
-                  {errorGroups.length} critical issue{errorGroups.length !== 1 ? 's' : ''}
+                <span className="text-[10px] text-graphite-800 dark:text-graphite-400 leading-tight">
+                  {errorGroups.length} issue{errorGroups.length !== 1 ? 's' : ''}
                 </span>
               </button>
 
-              {/* Warnings Card */}
               <button
                 type="button"
-                onClick={() => setFilterTab(filterTab === 'warnings' ? 'all' : 'warnings')}
-                className={`flex flex-col rounded-[14px] border p-2.5 sm:p-3 text-left transition-all ${
+                onClick={() => {
+                  setFilterTab(filterTab === 'warnings' ? 'all' : 'warnings');
+                  setActiveMainTab('issues');
+                }}
+                className={`flex flex-col rounded-[14px] border p-2.5 sm:p-3 text-left transition-all cursor-pointer ${
                   filterTab === 'warnings'
                     ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 ring-1 ring-amber-300 dark:ring-amber-800 shadow-sm'
-                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] hover:bg-amber-50/60 dark:hover:bg-amber-950/30 hover:border-amber-200'
+                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] hover:bg-amber-50/50'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 flex items-center gap-1">
                     <AlertTriangle className="size-3 shrink-0 text-amber-600 dark:text-amber-400" />
                     <span>Warns</span>
                   </span>
@@ -443,23 +334,25 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                 <span className="mt-1 font-display text-lg sm:text-xl font-bold text-amber-800 dark:text-amber-300">
                   {warningCount || warningGroups.length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-graphite-800 dark:text-graphite-400 truncate block">
-                  {warningGroups.length} medium issue{warningGroups.length !== 1 ? 's' : ''}
+                <span className="text-[10px] text-graphite-800 dark:text-graphite-400 leading-tight">
+                  {warningGroups.length} issue{warningGroups.length !== 1 ? 's' : ''}
                 </span>
               </button>
 
-              {/* Notices Card */}
               <button
                 type="button"
-                onClick={() => setFilterTab(filterTab === 'notices' ? 'all' : 'notices')}
-                className={`flex flex-col rounded-[14px] border p-2.5 sm:p-3 text-left transition-all ${
+                onClick={() => {
+                  setFilterTab(filterTab === 'notices' ? 'all' : 'notices');
+                  setActiveMainTab('issues');
+                }}
+                className={`flex flex-col rounded-[14px] border p-2.5 sm:p-3 text-left transition-all cursor-pointer ${
                   filterTab === 'notices'
                     ? 'border-blue-300 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/40 ring-1 ring-blue-300 dark:ring-blue-800 shadow-sm'
-                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] hover:bg-blue-50/60 dark:hover:bg-blue-950/30 hover:border-blue-200'
+                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] hover:bg-blue-50/50'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-400 flex items-center gap-1">
                     <Info className="size-3 shrink-0 text-blue-600 dark:text-blue-400" />
                     <span>Notices</span>
                   </span>
@@ -468,792 +361,917 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                 <span className="mt-1 font-display text-lg sm:text-xl font-bold text-blue-700 dark:text-blue-300">
                   {noticeCount || noticeGroups.length}
                 </span>
-                <span className="text-[9px] sm:text-[10px] text-graphite-800 dark:text-graphite-400 truncate block">
-                  {noticeGroups.length} notice item{noticeGroups.length !== 1 ? 's' : ''}
+                <span className="text-[10px] text-graphite-800 dark:text-graphite-400 leading-tight">
+                  {noticeGroups.length} item{noticeGroups.length !== 1 ? 's' : ''}
                 </span>
               </button>
             </div>
 
-            {/* Stacked Proportional Issues Bar Chart */}
+            {/* Proportional Factor Distribution Meter */}
             <div className="space-y-1">
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#e6e6e8] dark:bg-[#252631] flex">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[#e6e6e8] dark:bg-[#252631] flex">
                 {totalIssuesCount > 0 ? (
                   <>
-                    <div
-                      style={{ width: `${(errorGroups.length / totalIssuesCount) * 100}%` }}
-                      className="bg-rose-500 transition-all duration-500"
-                      title={`Errors: ${errorGroups.length}`}
-                    />
-                    <div
-                      style={{ width: `${(warningGroups.length / totalIssuesCount) * 100}%` }}
-                      className="bg-amber-500 transition-all duration-500"
-                      title={`Warnings: ${warningGroups.length}`}
-                    />
-                    <div
-                      style={{ width: `${(noticeGroups.length / totalIssuesCount) * 100}%` }}
-                      className="bg-blue-500 transition-all duration-500"
-                      title={`Notices: ${noticeGroups.length}`}
-                    />
+                    <div style={{ width: `${(errorGroups.length / totalIssuesCount) * 100}%` }} className="bg-rose-500 transition-all duration-500" />
+                    <div style={{ width: `${(warningGroups.length / totalIssuesCount) * 100}%` }} className="bg-amber-500 transition-all duration-500" />
+                    <div style={{ width: `${(noticeGroups.length / totalIssuesCount) * 100}%` }} className="bg-blue-500 transition-all duration-500" />
                   </>
                 ) : (
-                  <div className="w-full bg-emerald-500" title="Zero Issues Clean" />
+                  <div className="w-full bg-emerald-500" />
                 )}
               </div>
               <div className="flex items-center justify-between text-[10px] text-graphite-800 dark:text-graphite-400">
                 <span>Distribution of detected factors</span>
                 {filterTab !== 'all' && (
-                  <button
-                    type="button"
-                    onClick={() => setFilterTab('all')}
-                    className="text-violet hover:underline font-semibold"
-                  >
-                    Reset Filter (Showing {displayedGroups.length}/{groups.length})
+                  <button type="button" onClick={() => setFilterTab('all')} className="text-violet hover:underline font-semibold cursor-pointer">
+                    Reset Filter ({displayedGroups.length}/{groups.length})
                   </button>
                 )}
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* =========================================================================
-          SECTION 2: THEMATIC HEALTH PILLARS (SEMRUSH THEMATIC BARS)
-          ========================================================================= */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Crawlability & Indexability */}
-        <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-2 shadow-sm">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-ink dark:text-white flex items-center gap-1.5">
-              <Globe className="size-3.5 text-violet" />
-              Crawlability & Indexing
-            </span>
-            <span className="font-bold text-ink dark:text-white font-mono">{technicalScore}%</span>
+        {/* AI Executive Summary Callout */}
+        <div className="rounded-[16px] border border-violet/20 bg-violet/5 dark:bg-violet/10 p-4 sm:p-5 text-xs sm:text-sm space-y-2">
+          <div className="flex items-center gap-2 font-bold text-violet dark:text-violet">
+            <Sparkles className="size-4" />
+            <span>AI Executive Overview</span>
           </div>
-          <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                technicalScore >= 80 ? 'bg-emerald-500' : technicalScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'
-              }`}
-              style={{ width: `${technicalScore}%` }}
-            />
-          </div>
-          <p className="text-[11px] text-graphite-800 dark:text-graphite-400">Canonicals, robots.txt, and sitemap coverage</p>
+          <p className="text-graphite-800 dark:text-graphite-200 leading-relaxed font-normal">
+            {report?.summary || `Audit completed across ${pagesChecked} page(s) for ${cleanDomain}. Core indexability, mobile responsiveness, and technical metadata have been evaluated. Review the prioritized roadmap and code patches below.`}
+          </p>
         </div>
 
-        {/* Site Performance & Vitals */}
-        <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-2 shadow-sm">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-ink dark:text-white flex items-center gap-1.5">
-              <Zap className="size-3.5 text-amber-500" />
-              Site Performance
-            </span>
-            <span className="font-bold text-ink dark:text-white font-mono">{performanceScore}%</span>
-          </div>
-          <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                performanceScore >= 80 ? 'bg-emerald-500' : performanceScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'
-              }`}
-              style={{ width: `${performanceScore}%` }}
-            />
-          </div>
-          <p className="text-[11px] text-graphite-800 dark:text-graphite-400">LCP ~{performance.lcpEstimateSeconds}s · CLS {performance.clsEstimate}</p>
-        </div>
-
-        {/* Content & On-Page SEO */}
-        <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-2 shadow-sm">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-ink dark:text-white flex items-center gap-1.5">
-              <Layers className="size-3.5 text-blue-500" />
-              On-Page Content
-            </span>
-            <span className="font-bold text-ink dark:text-white font-mono">{contentScore}%</span>
-          </div>
-          <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                contentScore >= 80 ? 'bg-emerald-500' : contentScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'
-              }`}
-              style={{ width: `${contentScore}%` }}
-            />
-          </div>
-          <p className="text-[11px] text-graphite-800 dark:text-graphite-400">H1 hierarchy, title tags, & meta descriptions</p>
-        </div>
-
-        {/* Structured Data & Social */}
-        <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-2 shadow-sm">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-ink dark:text-white flex items-center gap-1.5">
-              <Sparkles className="size-3.5 text-violet" />
-              Structured Data & Social
-            </span>
-            <span className="font-bold text-ink dark:text-white font-mono">{socialScore}%</span>
-          </div>
-          <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                socialScore >= 80 ? 'bg-emerald-500' : socialScore >= 60 ? 'bg-amber-500' : 'bg-rose-500'
-              }`}
-              style={{ width: `${socialScore}%` }}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* =========================================================================
-          SECTION 3: SITE PERFORMANCE & CORE WEB VITALS DASHBOARD
-          ========================================================================= */}
-      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-[10px] bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60">
-              <Gauge className="size-4" />
+        {/* 5 Thematic Health Pillar Meters */}
+        <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-5 pt-1">
+          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
+                <Globe className="size-3 text-violet" />
+                Indexing
+              </span>
+              <span className="font-bold text-ink dark:text-white font-mono">{technicalScore}%</span>
             </div>
-            <div>
-              <h3 className="font-display text-base font-bold text-ink dark:text-white">
-                Site Performance & Core Web Vitals
-              </h3>
-              <p className="text-xs text-graphite-800 dark:text-graphite-400">
-                Computed via deterministic asset parsing, render-blocking scripts, and DOM transfer telemetry.
-              </p>
+            <div className="h-1.5 w-full rounded-full bg-[#e6e6e8] dark:bg-[#252631] overflow-hidden">
+              <div className={`h-full rounded-full ${technicalScore >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${technicalScore}%` }} />
             </div>
           </div>
+
+          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
+                <Zap className="size-3 text-amber-500" />
+                Performance
+              </span>
+              <span className="font-bold text-ink dark:text-white font-mono">{performanceScore}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-[#e6e6e8] dark:bg-[#252631] overflow-hidden">
+              <div className={`h-full rounded-full ${performanceScore >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${performanceScore}%` }} />
+            </div>
+          </div>
+
+          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
+                <Smartphone className="size-3 text-emerald-600" />
+                Mobile SEO
+              </span>
+              <span className="font-bold text-ink dark:text-white font-mono">{mobileScore}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-[#e6e6e8] dark:bg-[#252631] overflow-hidden">
+              <div className={`h-full rounded-full ${mobileScore >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${mobileScore}%` }} />
+            </div>
+          </div>
+
+          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
+                <Layers className="size-3 text-blue-500" />
+                Content
+              </span>
+              <span className="font-bold text-ink dark:text-white font-mono">{contentScore}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-[#e6e6e8] dark:bg-[#252631] overflow-hidden">
+              <div className={`h-full rounded-full ${contentScore >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${contentScore}%` }} />
+            </div>
+          </div>
+
+          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-3 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
+                <Sparkles className="size-3 text-violet" />
+                Schema &amp; Social
+              </span>
+              <span className="font-bold text-ink dark:text-white font-mono">{socialScore}%</span>
+            </div>
+            <div className="h-1.5 w-full rounded-full bg-[#e6e6e8] dark:bg-[#252631] overflow-hidden">
+              <div className={`h-full rounded-full ${socialScore >= 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} style={{ width: `${socialScore}%` }} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          TOP ACTION ROADMAP: 3 HIGHEST PRIORITY FIXES (INSTANT VALUE)
+          ========================================================================= */}
+      {topActionItems.length > 0 && (
+        <section className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-bold text-ink dark:text-white bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-3 py-1 rounded-full">
-              Speed Score: {performance.score}/100
-            </span>
+            <Flame className="size-4 text-amber-500" />
+            <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
+              Top Priority Needle Movers
+            </h3>
           </div>
-        </div>
-
-        {/* Core Web Vitals Metrics Grid */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {/* LCP Metric */}
-          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] p-4 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1">
-                <Clock className="size-3 text-violet" />
-                LCP (Largest Contentful)
-              </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                  performance.lcpEstimateSeconds <= 2.5
-                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
-                    : performance.lcpEstimateSeconds <= 4.0
-                    ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
-                    : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
-                }`}
-              >
-                {performance.lcpEstimateSeconds <= 2.5 ? 'Good (<2.5s)' : performance.lcpEstimateSeconds <= 4.0 ? 'Needs Work' : 'Poor'}
-              </span>
-            </div>
-            <div className="font-mono text-2xl font-bold text-ink dark:text-white">
-              {performance.lcpEstimateSeconds}s
-            </div>
-            <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-tight">
-              Main content rendering benchmark for Google mobile ranking.
-            </p>
-          </div>
-
-          {/* CLS Metric */}
-          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] p-4 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1">
-                <Activity className="size-3 text-blue-600" />
-                CLS (Layout Shift)
-              </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                  performance.clsEstimate <= 0.1
-                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
-                    : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
-                }`}
-              >
-                {performance.clsEstimate <= 0.1 ? 'Stable (<0.1)' : 'Shifting'}
-              </span>
-            </div>
-            <div className="font-mono text-2xl font-bold text-ink dark:text-white">
-              {performance.clsEstimate}
-            </div>
-            <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-tight">
-              Visual page stability during DOM parsing and resource load.
-            </p>
-          </div>
-
-          {/* Render-Blocking Scripts */}
-          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] p-4 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1">
-                <Code2 className="size-3 text-violet" />
-                Render-Blocking Scripts
-              </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                  performance.renderBlockingScriptsCount === 0
-                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
-                    : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
-                }`}
-              >
-                {performance.renderBlockingScriptsCount === 0 ? 'Optimal' : `${performance.renderBlockingScriptsCount} Blocking`}
-              </span>
-            </div>
-            <div className="font-mono text-2xl font-bold text-ink dark:text-white">
-              {performance.renderBlockingScriptsCount}
-            </div>
-            <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-tight">
-              Synchronous &lt;script&gt; tags lacking async/defer attributes.
-            </p>
-          </div>
-
-          {/* Image Asset Modern Formats */}
-          <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] p-4 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1">
-                <ImageIcon className="size-3 text-emerald-600" />
-                Asset Formats
-              </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                  performance.usesModernImageFormats
-                    ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
-                    : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
-                }`}
-              >
-                {performance.usesModernImageFormats ? 'Modern WebP/AVIF' : `${performance.heavyAssetCount} Legacy`}
-              </span>
-            </div>
-            <div className="font-mono text-lg font-bold text-ink dark:text-white truncate">
-              {performance.usesModernImageFormats ? 'WebP / AVIF' : `${performance.heavyAssetCount} PNG/JPEGs`}
-            </div>
-            <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-tight">
-              High-efficiency next-gen image compression status.
-            </p>
-          </div>
-        </div>
-
-        {/* Performance Opportunities List */}
-        {performance.opportunities && performance.opportunities.length > 0 && (
-          <div className="space-y-2 pt-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-graphite-800 dark:text-graphite-400 block">
-              High-Impact Speed Opportunities ({performance.opportunities.length})
-            </span>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {performance.opportunities.map((opp, idx) => (
+          <div className="grid gap-3 sm:grid-cols-3">
+            {topActionItems.map((item, idx) => {
+              const topFix = getSuggestedContentFix(item.title, item.description, cleanDomain);
+              return (
                 <div
                   key={idx}
-                  className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-3 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-3 text-xs shadow-sm"
+                  className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-2.5 shadow-sm flex flex-col justify-between"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0 ${
-                          opp.impact === 'High'
+                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                          item.priority === 'Critical'
                             ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60'
-                            : opp.impact === 'Medium'
+                            : item.priority === 'High'
                             ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60'
-                            : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60'
+                            : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60'
                         }`}
                       >
-                        {opp.impact} Impact
+                        {item.priority}
                       </span>
-                      <span className="font-semibold text-ink dark:text-white">{opp.title}</span>
+                      <span className="font-mono text-[11px] text-graphite-800 dark:text-graphite-400">#0{idx + 1}</span>
                     </div>
+                    <h4 className="text-xs font-bold text-ink dark:text-white capitalize line-clamp-2">{item.title}</h4>
+                    <p className="text-[11px] text-graphite-800 dark:text-graphite-400 line-clamp-2 leading-relaxed">
+                      {item.description}
+                    </p>
                   </div>
-                  <span className="shrink-0 self-start sm:self-auto rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-2.5 py-0.5 font-mono text-[11px] font-bold text-ink dark:text-white">
-                    {opp.savingEstimate}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
 
-      {/* =========================================================================
-          SECTION 4: COMPETITOR ANALYSIS BENCHMARK
-          ========================================================================= */}
-      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-[10px] bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shrink-0">
-              <Swords className="size-4" />
-            </div>
-            <div>
-              <h3 className="font-display text-base font-bold text-ink dark:text-white">
-                Competitor Intelligence Benchmark
-              </h3>
-              <p className="text-xs text-graphite-800 dark:text-graphite-400">
-                Compare your technical SEO and speed vitals head-to-head against any competing domain.
-              </p>
-            </div>
-          </div>
-          {comparison && (
-            <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300">
-              Head-to-Head Active
-            </span>
-          )}
-        </div>
+                  <div className="pt-2 border-t border-graphite-100 dark:border-graphite-800 space-y-2">
+                    <div className="text-[11px] text-violet dark:text-violet font-medium line-clamp-2">
+                      <span className="font-semibold text-ink dark:text-white">Remedy: </span>
+                      {item.action}
+                    </div>
 
-        {/* Competitor Input Form */}
-        <form onSubmit={handleRunCompetitor} className="flex flex-col sm:flex-row gap-2.5">
-          <div className="relative flex-1">
-            <Globe className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 text-graphite-800/60 dark:text-graphite-400" />
-            <input
-              type="text"
-              value={competitorUrl}
-              onChange={(e) => setCompetitorUrl(e.target.value)}
-              placeholder="Enter competitor domain (e.g. semrush.com or ahrefs.com)"
-              className="h-11 w-full rounded-[32px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] pl-11 pr-4 text-xs font-mono text-ink dark:text-white placeholder:text-graphite-800/50 dark:placeholder:text-graphite-400/50 focus:border-ink dark:focus:border-violet focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-violet"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={compLoading || !competitorUrl.trim()}
-            className="inline-flex h-11 items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 text-xs font-bold text-white dark:text-ink hover:opacity-90 disabled:opacity-50 transition-all shadow-sm shrink-0"
-          >
-            {compLoading ? (
-              <>
-                <Loader2 className="size-3.5 animate-spin text-white dark:text-ink" />
-                <span>Auditing Competitor...</span>
-              </>
-            ) : (
-              <>
-                <Swords className="size-3.5" />
-                <span>Compare Head-to-Head</span>
-              </>
-            )}
-          </button>
-        </form>
-
-        {compError && (
-          <div className="flex items-center gap-2 rounded-[14px] border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-3 text-xs text-rose-700 dark:text-rose-300">
-            <AlertTriangle className="size-4 shrink-0 text-rose-600 dark:text-rose-400" />
-            <span>{compError}</span>
-          </div>
-        )}
-
-        {/* Competitor Results View */}
-        {comparison ? (
-          <div className="space-y-5 rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#14151b] p-4 sm:p-5 animate-in fade-in">
-            {/* Winner Badge Banner */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 shadow-sm">
-              <div className="flex items-center gap-2.5">
-                {comparison.winner === 'target' ? (
-                  <span className="flex size-8 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold shrink-0">
-                    🏆
-                  </span>
-                ) : comparison.winner === 'competitor' ? (
-                  <span className="flex size-8 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 font-bold shrink-0">
-                    ⚡
-                  </span>
-                ) : (
-                  <span className="flex size-8 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold shrink-0">
-                    🤝
-                  </span>
-                )}
-                <div>
-                  <h4 className="font-display text-sm font-bold text-ink dark:text-white">
-                    {comparison.winner === 'target'
-                      ? 'Your Website Wins the Technical Benchmark!'
-                      : comparison.winner === 'competitor'
-                      ? `Competitor Leads by +${Math.abs(comparison.scoreDelta)} Points`
-                      : 'Technical Tie between Target & Competitor'}
-                  </h4>
-                  <p className="text-xs text-graphite-800 dark:text-graphite-400">{comparison.speedAdvantage}</p>
-                </div>
-              </div>
-              <div className="text-left sm:text-right">
-                <span className="font-mono text-xs font-bold text-ink dark:text-white bg-[#f4f4f6] dark:bg-[#22232c] px-3 py-1 rounded-full border border-graphite-100 dark:border-graphite-800">
-                  Score Delta: {comparison.scoreDelta > 0 ? `+${comparison.scoreDelta}` : comparison.scoreDelta}
-                </span>
-              </div>
-            </div>
-
-            {/* Side-by-Side Comparison Bars */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              {/* Target Card */}
-              <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 space-y-3 shadow-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-ink dark:text-white font-mono truncate max-w-[140px] sm:max-w-[200px]">
-                    {comparison.target.url}
-                  </span>
-                  <span className="rounded-full bg-violet/10 dark:bg-violet/20 border border-violet/20 dark:border-violet/40 px-2.5 py-0.5 text-[10px] font-bold text-violet shrink-0">
-                    Your Site
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-graphite-800 dark:text-graphite-400">SEO Health Score</span>
-                    <strong className="text-ink dark:text-white font-mono">{comparison.target.score}/100</strong>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
-                    <div className="h-full bg-ink dark:bg-violet rounded-full" style={{ width: `${comparison.target.score}%` }} />
+                    {topFix && (
+                      <div className="pt-1.5 flex items-center justify-between gap-2 border-t border-dashed border-graphite-100 dark:border-graphite-800">
+                        <span className="text-[10px] text-emerald-800 dark:text-emerald-400 font-semibold truncate flex-1">
+                          Fix: {topFix.text}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(topFix.text, `topfix-${idx}`)}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-[48px] bg-emerald-700 dark:bg-emerald-600 hover:bg-emerald-800 dark:hover:bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white transition-all cursor-pointer shadow-xs"
+                        >
+                          {copiedKey === `topfix-${idx}` ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
+                          <span>{copiedKey === `topfix-${idx}` ? 'Copied' : `Copy ${topFix.actionLabel}`}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-100 dark:border-graphite-800">
-                  <div>
-                    <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">LCP Speed</span>
-                    <strong className="text-ink dark:text-white font-mono">{comparison.target.lcpSeconds}s</strong>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">Schemas</span>
-                    <strong className="text-ink dark:text-white font-mono">{comparison.target.schemaCount} tags</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Competitor Card */}
-              <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 space-y-3 shadow-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-ink dark:text-white font-mono truncate max-w-[140px] sm:max-w-[200px]">
-                    {comparison.competitor.url}
-                  </span>
-                  <span className="rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-2.5 py-0.5 text-[10px] font-bold text-graphite-800 dark:text-graphite-300 shrink-0">
-                    Competitor
-                  </span>
-                </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-graphite-800 dark:text-graphite-400">SEO Health Score</span>
-                    <strong className="text-ink dark:text-white font-mono">{comparison.competitor.score}/100</strong>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-[#f4f4f6] dark:bg-[#252631] overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${comparison.competitor.score}%` }} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-100 dark:border-graphite-800">
-                  <div>
-                    <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">LCP Speed</span>
-                    <strong className="text-ink dark:text-white font-mono">{comparison.competitor.lcpSeconds}s</strong>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">Schemas</span>
-                    <strong className="text-ink dark:text-white font-mono">{comparison.competitor.schemaCount} tags</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Strategic Playbook to Beat Them */}
-            <div className="grid gap-3 sm:grid-cols-2 pt-1 text-xs">
-              <div className="rounded-[14px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/30 p-3.5 space-y-2">
-                <span className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
-                  <TrendingDown className="size-3.5" />
-                  Why They Are Gaining Edge:
-                </span>
-                <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
-                  {comparison.whyTheyAreWinning.map((item, idx) => (
-                    <li key={idx} className="flex items-start gap-1.5">
-                      <span className="text-rose-500 mt-0.5">•</span>
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="rounded-[14px] border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/30 p-3.5 space-y-2">
-                <span className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
-                  <CheckCircle className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-                  3 Action Steps to Outrank Them:
-                </span>
-                <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
-                  {comparison.threeStepsToBeatThem.map((step, idx) => (
-                    <li key={idx} className="flex items-start gap-1.5">
-                      <span className="text-emerald-700 dark:text-emerald-400 font-bold">{idx + 1}.</span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-[16px] border border-dashed border-graphite-200 dark:border-graphite-800 p-5 text-center text-xs text-graphite-800 dark:text-graphite-400 bg-[#f4f4f6] dark:bg-[#1a1b22]">
-            <p>Enter any rival website URL above to inspect side-by-side Page Speed, Schema tags, and 3 steps to beat them.</p>
-          </div>
-        )}
-      </section>
-
-      {/* Meta Bar & Raw Agent JSON */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-3.5 sm:p-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-3 py-1 text-ink dark:text-white font-semibold">
-            <Globe className="size-3.5 text-violet" />
-            <span>{pagesChecked} Page{pagesChecked > 1 ? 's' : ''} Checked</span>
-          </span>
-
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-3 py-1 text-graphite-800 dark:text-graphite-300 font-semibold">
-            <Layers className="size-3.5 text-violet" />
-            <span>
-              Stack: {detectedStack?.cms || 'Custom HTML'}
-              {detectedStack?.seoPlugin && detectedStack.seoPlugin !== 'None' ? ` (${detectedStack.seoPlugin})` : ''}
-            </span>
-          </span>
-
-          <span className="inline-flex items-center gap-1 rounded-full bg-violet/10 dark:bg-violet/20 border border-violet/20 dark:border-violet/40 px-3 py-1 text-violet font-semibold">
-            <span>{groups.length} Issue Group{groups.length !== 1 ? 's' : ''}</span>
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowJson(!showJson)}
-          className="inline-flex items-center justify-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#22232c] px-4 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#2a2b36] transition-colors shadow-sm"
-        >
-          <FileCode className="size-3.5 text-violet" />
-          <span>{showJson ? 'Hide Agent JSON' : 'Export Agent JSON'}</span>
-        </button>
-      </div>
-
-      {/* Raw Agent JSON Export */}
-      {showJson && (
-        <div className="relative rounded-[16px] border border-graphite-800 bg-graphite-900 p-4 shadow-md text-gray-100">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-mono text-gray-400">Deterministic Agent FindingGroup Schema</span>
-            <button
-              onClick={() => handleCopy(JSON.stringify(groups, null, 2), 'raw-json')}
-              className="inline-flex items-center gap-1 rounded-[48px] border border-graphite-700 bg-graphite-800 px-3 py-1 text-xs text-gray-200 hover:text-white"
-            >
-              {copiedKey === 'raw-json' ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
-              <span>{copiedKey === 'raw-json' ? 'Copied' : 'Copy JSON'}</span>
-            </button>
-          </div>
-          <pre className="max-h-72 overflow-y-auto text-[11px] font-mono text-gray-300 bg-black/40 p-3 rounded-[10px] break-all max-w-full">
-            {JSON.stringify({ scores: report?.scores, performance, prioritizedGroups: groups, whatPassed, notChecked }, null, 2)}
-          </pre>
-        </div>
-      )}
-
-      {/* GSC "Crawled - currently not indexed" Cross-Reference */}
-      {gscAnalysis && (
-        <section className="rounded-[16px] border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/30 p-4 sm:p-5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm font-bold text-amber-900 dark:text-amber-300">
-              <FileSpreadsheet className="size-4 text-amber-600 dark:text-amber-400" />
-              <span>Google Search Console: Unindexed Pages ({gscAnalysis.unindexedUrls.length})</span>
-            </div>
-            {gscAnalysis.reasonsDetected.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {gscAnalysis.reasonsDetected.slice(0, 3).map((r, i) => (
-                  <span
-                    key={i}
-                    className="rounded-full bg-white dark:bg-[#1f2029] border border-amber-200 dark:border-amber-800/60 px-2 py-0.5 text-[10px] font-mono text-amber-800 dark:text-amber-300"
-                  >
-                    {r}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          <p className="text-xs text-graphite-800 dark:text-graphite-300 leading-relaxed">
-            Google flagged these URLs in your Search Console export. CrawlPay cross-referenced them with the crawler to pinpoint root causes (e.g. duplicate body copy, missing canonicals, or low content depth):
-          </p>
-          <div className="space-y-1.5 max-h-48 overflow-y-auto pt-1">
-            {gscAnalysis.unindexedUrls.map((url, idx) => (
-              <div key={idx} className="flex items-center justify-between gap-2 rounded-[10px] border border-amber-200 dark:border-amber-900/40 bg-white dark:bg-[#16171d] px-3 py-2 text-xs font-mono min-w-0 shadow-sm">
-                <span className="truncate text-ink dark:text-gray-200 flex-1 min-w-0">{url}</span>
-                <span className="shrink-0 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 px-2 py-0.5 text-[10px] font-sans font-bold">
-                  {gscAnalysis.reasonsDetected[0] || 'Crawled - not indexed'}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
 
       {/* =========================================================================
-          SECTION 5: PRIORITIZED ISSUE GROUPS WITH EVIDENCE
+          WORKSPACE NAVIGATION BAR (TABBED ARCHITECTURE PREVENTING INFINITE SCROLL)
           ========================================================================= */}
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <h3 className="font-display text-sm font-bold text-ink tracking-tight">
-              Root-Cause Finding Groups ({displayedGroups.length})
-            </h3>
-            {filterTab !== 'all' && (
-              <span className="rounded-full bg-violet/10 border border-violet/20 text-violet px-2.5 py-0.5 text-[10px] font-bold uppercase">
-                Filtered: {filterTab}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-graphite-100 dark:border-graphite-800 pb-2 gap-2">
+        <nav className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto -mx-1 px-1 sm:mx-0 sm:px-0 py-1">
+          <button
+            type="button"
+            onClick={() => setActiveMainTab('issues')}
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+              activeMainTab === 'issues'
+                ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
+            }`}
+          >
+            <ShieldAlert className="size-3.5 shrink-0" />
+            <span className="shrink-0 whitespace-nowrap">Issues Explorer</span>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'issues' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-graphite-200 dark:bg-graphite-800 text-graphite-800 dark:text-graphite-300'}`}>
+              {totalIssuesCount}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMainTab('vitals')}
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+              activeMainTab === 'vitals'
+                ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
+            }`}
+          >
+            <Smartphone className="size-3.5 shrink-0" />
+            <span className="shrink-0 whitespace-nowrap">Mobile &amp; Vitals</span>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'vitals' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-graphite-200 dark:bg-graphite-800 text-graphite-800 dark:text-graphite-300'}`}>
+              {mobileScore}%
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMainTab('patches')}
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+              activeMainTab === 'patches'
+                ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
+            }`}
+          >
+            <Code2 className="size-3.5 shrink-0" />
+            <span className="shrink-0 whitespace-nowrap">AI Code Patches</span>
+            <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveMainTab('competitor')}
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+              activeMainTab === 'competitor'
+                ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
+            }`}
+          >
+            <Swords className="size-3.5 shrink-0" />
+            <span className="shrink-0 whitespace-nowrap">Competitor Bench</span>
+          </button>
+        </nav>
+
+        <button
+          type="button"
+          onClick={() => setShowJson(!showJson)}
+          className="hidden sm:inline-flex shrink-0 items-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#202129] px-3.5 py-1.5 text-xs font-semibold text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white transition-colors cursor-pointer whitespace-nowrap"
+        >
+          <FileCode className="size-3.5 text-violet" />
+          <span>{showJson ? 'Hide JSON' : 'Export JSON'}</span>
+        </button>
+      </div>
+
+      {/* Raw Agent JSON Modal/Drawer */}
+      {showJson && (
+        <div className="rounded-[16px] border border-graphite-800 bg-[#0d0e12] p-4 shadow-md text-gray-100 space-y-2">
+          <div className="flex items-center justify-between pb-2 border-b border-graphite-800">
+            <span className="text-xs font-mono text-gray-400">Deterministic Agent Schema Output</span>
+            <button
+              onClick={() => handleCopy(JSON.stringify(groups, null, 2), 'raw-json')}
+              className="inline-flex items-center gap-1.5 rounded-[48px] bg-graphite-800 px-3 py-1 text-xs text-gray-200 hover:text-white cursor-pointer"
+            >
+              {copiedKey === 'raw-json' ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+              <span>{copiedKey === 'raw-json' ? 'Copied' : 'Copy Payload'}</span>
+            </button>
+          </div>
+          <pre className="max-h-64 overflow-y-auto text-[11px] font-mono text-gray-300 select-all p-2 bg-black/40 rounded-lg">
+            {JSON.stringify(groups, null, 2)}
+          </pre>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 1: ISSUES EXPLORER
+          ========================================================================= */}
+      {activeMainTab === 'issues' && (
+        <div className="space-y-4">
+          {displayedGroups.length === 0 ? (
+            <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-8 text-center space-y-2">
+              <CheckCircle2 className="mx-auto size-8 text-emerald-500" />
+              <h4 className="font-display text-base font-bold text-ink dark:text-white">Zero Issues in Filter</h4>
+              <p className="text-xs text-graphite-800 dark:text-graphite-400">
+                No issues match the selected &quot;{filterTab}&quot; category.
+              </p>
+            </div>
+          ) : (
+            displayedGroups.map((group) => {
+              const isExpanded = !!expandedKeys[group.rootCauseKey];
+              const sampleFinding = group.findings[0];
+              const contentFix = getSuggestedContentFix(
+                group.checkId,
+                sampleFinding?.evidence?.observed,
+                cleanDomain,
+                sampleFinding?.evidence?.snippet
+              );
+
+              return (
+                <div
+                  key={group.rootCauseKey}
+                  className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] shadow-sm overflow-hidden transition-all"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(group.rootCauseKey)}
+                    className="w-full flex flex-col sm:flex-row sm:items-center justify-between p-4 sm:p-5 text-left gap-3 hover:bg-[#fafafb] dark:hover:bg-[#1b1c23] transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-start sm:items-center gap-3 min-w-0">
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                          group.severity === 'critical'
+                            ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60'
+                            : group.severity === 'high'
+                            ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60'
+                            : group.severity === 'medium'
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60'
+                            : 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60'
+                        }`}
+                      >
+                        {group.severity}
+                      </span>
+                      <div className="min-w-0">
+                        <span className="font-display text-sm font-bold text-ink dark:text-white capitalize block break-words sm:truncate">
+                          {group.checkId.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs text-graphite-800 dark:text-graphite-400">
+                          Affects {group.affectedCount} page{group.affectedCount !== 1 ? 's' : ''} &middot; Priority Score {group.priority}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                      {contentFix && (
+                        <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 text-[10px] font-bold">
+                          <Sparkles className="size-2.5 text-emerald-600 dark:text-emerald-400" />
+                          <span>Fix Ready</span>
+                        </span>
+                      )}
+                      <span className="text-xs text-violet font-medium">{isExpanded ? 'Hide Details' : 'View Action'}</span>
+                      {isExpanded ? <ChevronUp className="size-4 text-violet" /> : <ChevronDown className="size-4 text-violet" />}
+                    </div>
+                  </button>
+
+                  {/* Expanded Issue Action Drawer */}
+                  {isExpanded && (
+                    <div className="border-t border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#14151a] p-4 sm:p-5 space-y-4">
+                      {/* Ready-to-Paste AI Content Fix Callout */}
+                      {contentFix && (
+                        <div className="rounded-[14px] border border-emerald-300 dark:border-emerald-800 bg-emerald-50/80 dark:bg-emerald-950/40 p-4 space-y-2.5 shadow-xs">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                              <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                              <span>1-Click Ready Solution: {contentFix.label}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(contentFix.text, `fix-${group.rootCauseKey}`)}
+                              className="inline-flex items-center gap-1.5 rounded-[48px] bg-emerald-700 dark:bg-emerald-600 hover:bg-emerald-800 dark:hover:bg-emerald-500 px-3 py-1 text-xs font-semibold text-white transition-all cursor-pointer shadow-xs shrink-0"
+                            >
+                              {copiedKey === `fix-${group.rootCauseKey}` ? (
+                                <>
+                                  <Check className="size-3" />
+                                  <span>Copied to Clipboard!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="size-3" />
+                                  <span>Copy {contentFix.actionLabel}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+
+                          <div className="rounded-[10px] bg-white dark:bg-[#0c0d10] border border-emerald-200 dark:border-emerald-900/60 p-3 text-xs text-ink dark:text-white font-mono leading-relaxed select-all break-words">
+                            {contentFix.text}
+                          </div>
+
+                          <div className="flex flex-wrap items-center justify-between text-[11px] text-graphite-800 dark:text-graphite-400 gap-1">
+                            <span className="italic">Draft suggestion: review before use{contentFix.charCount ? ` · ${contentFix.charCount} characters` : ''}</span>
+                            <span className="font-semibold text-emerald-800 dark:text-emerald-400">{contentFix.recommendation}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {group.stackFix && (
+                        <div className="rounded-[12px] border border-violet/20 bg-violet/5 dark:bg-violet/10 p-3.5 space-y-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-violet block">
+                            Direct Solution for {detectedStack?.cms || 'Your Stack'}:
+                          </span>
+                          <p className="text-xs text-ink dark:text-white font-medium leading-relaxed">
+                            {group.stackFix}
+                          </p>
+                        </div>
+                      )}
+
+                      {sampleFinding && (
+                        <div className="grid gap-3 sm:grid-cols-2 text-xs">
+                          <div className="rounded-[12px] border border-rose-200 dark:border-rose-900/50 bg-rose-50/40 dark:bg-rose-950/20 p-3 space-y-1">
+                            <span className="text-[10px] font-bold uppercase text-rose-700 dark:text-rose-400">Observed Defect:</span>
+                            <p className="text-ink dark:text-white font-medium">{sampleFinding.evidence.observed}</p>
+                            {sampleFinding.evidence.snippet && (
+                              <pre className="mt-2 text-[10px] font-mono text-gray-200 bg-graphite-900 p-2 rounded overflow-x-auto whitespace-pre-wrap break-all">
+                                {sampleFinding.evidence.snippet}
+                              </pre>
+                            )}
+                          </div>
+
+                          <div className="rounded-[12px] border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/40 dark:bg-emerald-950/20 p-3 space-y-1">
+                            <span className="text-[10px] font-bold uppercase text-emerald-800 dark:text-emerald-400">Expected Standard:</span>
+                            <p className="text-ink dark:text-white font-medium">{sampleFinding.evidence.expected}</p>
+                            {group.exampleUrls.length > 0 && (
+                              <div className="pt-2">
+                                <span className="text-[10px] font-semibold text-graphite-800 dark:text-graphite-400 block mb-0.5">Sample URLs:</span>
+                                {group.exampleUrls.slice(0, 2).map((u, i) => (
+                                  <a key={i} href={u} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-mono text-violet hover:underline truncate">
+                                    <ExternalLink className="size-2.5 shrink-0" />
+                                    <span className="truncate">{u}</span>
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+
+          {/* Clean Verification Summary */}
+          <div className="rounded-[16px] border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 text-xs space-y-1">
+            <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-400">
+              <CheckCheck className="size-4" />
+              <span>Verified Standards Passed Cleanly</span>
+            </div>
+            <p className="text-graphite-800 dark:text-graphite-200 leading-relaxed">
+              {whatPassed || 'All checked SEO and accessibility guidelines passed validation.'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 2: MOBILE & CORE WEB VITALS
+          ========================================================================= */}
+      {activeMainTab === 'vitals' && (
+        <div className="space-y-6">
+          {/* Mobile Telemetry Grid */}
+          <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Smartphone className="size-4 text-emerald-600" />
+                <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
+                  Mobile-First Indexing Telemetry (375px–414px)
+                </h3>
+              </div>
+              <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 text-xs font-mono font-bold">
+                Mobile Score: {mobileScore}/100
+              </span>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-graphite-800 dark:text-graphite-300">Viewport Meta</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    mobileMetrics?.hasViewportTag !== false ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
+                  }`}>
+                    {mobileMetrics?.hasViewportTag !== false ? 'Passed' : 'Missing Tag'}
+                  </span>
+                </div>
+                <div className="font-mono text-[11px] font-bold text-ink dark:text-white break-all leading-tight">
+                  {mobileMetrics?.viewportContent || 'width=device-width, initial-scale=1'}
+                </div>
+                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">
+                  {mobileMetrics?.isUserScalableDisabled ? 'Zoom disabled (WCAG warning)' : 'Permits user pinch-to-zoom'}
+                </p>
+              </div>
+
+              <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-graphite-800 dark:text-graphite-300">Tap Targets (48px)</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    mobileMetrics?.tapTargetsOptimal !== false ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                  }`}>
+                    {mobileMetrics?.tapTargetsOptimal !== false ? 'Optimal' : `${mobileMetrics?.smallTapTargetCount || 0} Tight Targets`}
+                  </span>
+                </div>
+                <div className="font-mono text-sm font-bold text-ink dark:text-white">
+                  {mobileMetrics?.tapTargetsOptimal !== false ? '48×48px Standard' : 'Spacing Needed'}
+                </div>
+                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">
+                  Finger touch spacing between buttons &amp; links.
+                </p>
+              </div>
+
+              <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-graphite-800 dark:text-graphite-300">Layout Shifts (CLS)</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    (mobileMetrics?.imagesMissingDimensionsCount || 0) <= 2 ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                  }`}>
+                    {(mobileMetrics?.imagesMissingDimensionsCount || 0) <= 2 ? 'CLS Protected' : 'Shifts Detected'}
+                  </span>
+                </div>
+                <div className="font-mono text-sm font-bold text-ink dark:text-white">
+                  {(mobileMetrics?.imagesMissingDimensionsCount || 0) <= 2 ? 'Zero Shift Risk' : `${mobileMetrics?.imagesMissingDimensionsCount} Undimensioned`}
+                </div>
+                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">
+                  Explicit aspect-ratios prevent sudden mobile jumps.
+                </p>
+              </div>
+
+              <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-graphite-800 dark:text-graphite-300">Mobile LCP (4G)</span>
+                  <span className="rounded-full px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300">
+                    ~{mobileMetrics?.mobileLcpSeconds || 1.8}s
+                  </span>
+                </div>
+                <div className="font-mono text-sm font-bold text-ink dark:text-white">
+                  Good (&lt;2.5s)
+                </div>
+                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">
+                  Simulated Largest Contentful Paint on mobile cellular.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Desktop Core Web Vitals */}
+          <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Gauge className="size-4 text-amber-500" />
+                <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
+                  Core Web Vitals &amp; Page Speed Engine
+                </h3>
+              </div>
+              <span className="font-mono text-xs font-bold text-ink dark:text-white">
+                Speed Score: {performance.score}/100
+              </span>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1">
+                <span className="text-xs text-graphite-800 dark:text-graphite-400 flex items-center gap-1">
+                  <Clock className="size-3 text-violet" />
+                  LCP (Largest Contentful)
+                </span>
+                <div className="font-mono text-xl font-bold text-ink dark:text-white">{performance.lcpEstimateSeconds}s</div>
+                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">Desktop main content rendering mark.</p>
+              </div>
+
+              <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1">
+                <span className="text-xs text-graphite-800 dark:text-graphite-400 flex items-center gap-1">
+                  <Activity className="size-3 text-blue-500" />
+                  CLS (Cumulative Shift)
+                </span>
+                <div className="font-mono text-xl font-bold text-ink dark:text-white">{performance.clsEstimate}</div>
+                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">Visual DOM stability threshold.</p>
+              </div>
+
+              <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1">
+                <span className="text-xs text-graphite-800 dark:text-graphite-400 flex items-center gap-1">
+                  <Code2 className="size-3 text-rose-500" />
+                  Render-Blocking Scripts
+                </span>
+                <div className="font-mono text-xl font-bold text-ink dark:text-white">{performance.renderBlockingScriptsCount}</div>
+                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">Synchronous &lt;script&gt; tags lacking async/defer.</p>
+              </div>
+
+              <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1">
+                <span className="text-xs text-graphite-800 dark:text-graphite-400 flex items-center gap-1">
+                  <ImageIcon className="size-3 text-emerald-500" />
+                  Asset Delivery
+                </span>
+                <div className="font-mono text-sm font-bold text-ink dark:text-white truncate pt-1">
+                  {performance.usesModernImageFormats ? 'WebP / AVIF' : `${performance.heavyAssetCount} Legacy PNG/JPEGs`}
+                </div>
+                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">Next-gen media compression rating.</p>
+              </div>
+            </div>
+
+            {performance.opportunities && performance.opportunities.length > 0 && (
+              <div className="pt-2 space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-graphite-800 dark:text-graphite-400 block">
+                  Actionable Speed Opportunities
+                </span>
+                <div className="grid gap-2 sm:grid-cols-2 text-xs">
+                  {performance.opportunities.map((opp, idx) => (
+                    <div key={idx} className="flex items-center justify-between gap-2 p-3 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]">
+                      <span className="font-medium text-ink dark:text-white">{opp.title}</span>
+                      <span className="font-mono text-[11px] font-bold text-violet shrink-0">{opp.savingEstimate}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {/* =========================================================================
+          TAB 3: AI STACK CODE PATCHES
+          ========================================================================= */}
+      {activeMainTab === 'patches' && (
+        <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Code2 className="size-4 text-violet" />
+                <h3 className="font-display text-base font-bold text-ink dark:text-white">
+                  Stack-Tailored Implementation Patches
+                </h3>
+                <span className="rounded-full bg-violet/10 border border-violet/20 px-2.5 py-0.5 text-[10px] font-bold text-violet uppercase">
+                  {detectedStack?.cms || 'Detected Stack'}
+                </span>
+              </div>
+              <p className="text-xs text-graphite-800 dark:text-graphite-400">
+                Ready-to-deploy code snippets eliminating mobile CLS and optimizing indexability.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const codeToCopy =
+                  activeCodeTab === 'nextjs'
+                    ? effectivePatches?.nextJsMetadata
+                    : activeCodeTab === 'wordpress'
+                    ? effectivePatches?.wordPressPhp
+                    : activeCodeTab === 'shopify'
+                    ? effectivePatches?.shopifyLiquid
+                    : activeCodeTab === 'astro'
+                    ? effectivePatches?.astroSeo
+                    : activeCodeTab === 'schema'
+                    ? effectivePatches?.schemaJsonLd
+                    : effectivePatches?.htmlHeadBlock;
+                if (codeToCopy) {
+                  handleCopy(codeToCopy, `patch-${activeCodeTab}`);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-4 py-2 text-xs font-semibold text-white dark:text-ink hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+            >
+              {copiedKey === `patch-${activeCodeTab}` ? (
+                <>
+                  <Check className="size-3.5 text-emerald-400 dark:text-emerald-600" />
+                  <span>Copied to Clipboard!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="size-3.5" />
+                  <span>Copy Active Patch</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Framework Tab Switcher */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 border-b border-graphite-100 dark:border-graphite-800">
+            {[
+              { id: 'nextjs', label: 'Next.js App Router', icon: Code2, match: detectedStack?.cms === 'Next.js' },
+              { id: 'wordpress', label: 'WordPress / PHP', icon: FileCode, match: detectedStack?.cms === 'WordPress' },
+              { id: 'shopify', label: 'Shopify Liquid', icon: Globe, match: detectedStack?.cms === 'Shopify' },
+              { id: 'astro', label: 'Astro Layout', icon: Sparkles, match: detectedStack?.cms === 'Astro' },
+              { id: 'schema', label: 'JSON-LD Schema', icon: Layers, match: false },
+              { id: 'html', label: 'Standard HTML', icon: Terminal, match: false },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeCodeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveCodeTab(tab.id as any)}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-[48px] px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                      : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#252631]'
+                  }`}
+                >
+                  <Icon className="size-3.5" />
+                  <span>{tab.label}</span>
+                  {tab.match && <span className={`size-1.5 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-emerald-500'}`} />}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Target File Instruction & Monospaced Code Viewer */}
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between text-xs text-graphite-800 dark:text-graphite-400 px-1 gap-2">
+              <span className="font-mono flex items-center gap-1.5">
+                <span className="font-semibold text-ink dark:text-white">Target File:</span>
+                <code className="bg-[#f4f4f6] dark:bg-[#22232c] px-2 py-0.5 rounded text-violet font-bold">
+                  {activeCodeTab === 'nextjs'
+                    ? 'src/app/layout.tsx (or src/app/[slug]/page.tsx)'
+                    : activeCodeTab === 'wordpress'
+                    ? 'wp-content/themes/your-theme/functions.php'
+                    : activeCodeTab === 'shopify'
+                    ? 'layout/theme.liquid (inside <head>)'
+                    : activeCodeTab === 'astro'
+                    ? 'src/layouts/Layout.astro'
+                    : activeCodeTab === 'schema'
+                    ? 'Insert inside <head> on root template'
+                    : 'index.html (inside <head>)'}
+                </code>
+              </span>
+              <span className="text-[11px] font-mono">
+                Auto-configured for {cleanDomain}
+              </span>
+            </div>
+
+            <div className="relative rounded-[16px] border border-graphite-800 bg-[#0d0e12] p-4 text-gray-100 shadow-md">
+              <pre className="text-xs font-mono overflow-x-auto max-h-[360px] leading-relaxed select-all">
+                {activeCodeTab === 'nextjs'
+                  ? effectivePatches?.nextJsMetadata
+                  : activeCodeTab === 'wordpress'
+                  ? effectivePatches?.wordPressPhp
+                  : activeCodeTab === 'shopify'
+                  ? effectivePatches?.shopifyLiquid
+                  : activeCodeTab === 'astro'
+                  ? effectivePatches?.astroSeo
+                  : activeCodeTab === 'schema'
+                  ? effectivePatches?.schemaJsonLd
+                  : effectivePatches?.htmlHeadBlock}
+              </pre>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* =========================================================================
+          TAB 4: COMPETITOR BENCHMARK
+          ========================================================================= */}
+      {activeMainTab === 'competitor' && (
+        <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Swords className="size-4 text-blue-500" />
+                <h3 className="font-display text-base font-bold text-ink dark:text-white">
+                  Head-to-Head Competitor Intelligence
+                </h3>
+              </div>
+              <p className="text-xs text-graphite-800 dark:text-graphite-400">
+                Benchmark your technical SEO and speed vitals directly against any rival domain.
+              </p>
+            </div>
+            {comparison && (
+              <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300">
+                Comparison Active
               </span>
             )}
           </div>
-          <span className="text-[11px] text-graphite-800">
-            Ranked by priority formula: severity × log(1 + count) × (1 + importance/5)
-          </span>
-        </div>
 
-        {displayedGroups.length === 0 ? (
-          <div className="rounded-[16px] border border-dashed border-graphite-200 bg-[#f4f4f6] p-6 sm:p-8 text-center">
-            <CheckCircle2 className="mx-auto size-8 text-emerald-600 mb-2" />
-            <p className="text-sm font-bold text-ink">
-              {filterTab === 'all'
-                ? 'Zero Technical Issues Detected'
-                : `No issues detected in "${filterTab}" category`}
-            </p>
-            <p className="text-xs text-graphite-800 mt-1">
-              All inspected criteria passed without indexing blockers.
-            </p>
-          </div>
-        ) : (
-          displayedGroups.map((group, idx) => {
-            const isExpanded = expandedKeys[group.rootCauseKey] ?? (idx < 3);
-            const firstFinding = group.findings[0];
+          <form onSubmit={handleRunCompetitor} className="flex flex-col sm:flex-row gap-2.5">
+            <div className="relative flex-1">
+              <Globe className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 text-graphite-800/60 dark:text-graphite-400" />
+              <input
+                id="competitor-domain-input"
+                type="text"
+                aria-label="Enter rival website domain to compare"
+                value={competitorUrl}
+                onChange={(e) => setCompetitorUrl(e.target.value)}
+                placeholder="Enter rival domain (e.g. semrush.com or ahrefs.com)"
+                className="w-full rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-graphite-800/60 focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-white"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={compLoading}
+              className="inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer shrink-0"
+            >
+              {compLoading ? (
+                <>
+                  <Activity className="size-3.5 animate-spin" />
+                  <span>Crawling Rival...</span>
+                </>
+              ) : (
+                <>
+                  <Swords className="size-3.5" />
+                  <span>Run Comparison</span>
+                </>
+              )}
+            </button>
+          </form>
 
-            return (
-              <div
-                key={group.rootCauseKey}
-                className="overflow-hidden rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] shadow-sm transition-all"
-              >
-                {/* Group Header */}
-                <div
-                  onClick={() => toggleExpand(group.rootCauseKey)}
-                  className="flex cursor-pointer flex-wrap items-center justify-between gap-2 sm:gap-3 p-3.5 sm:p-4 hover:bg-[#f4f4f6] dark:hover:bg-[#1f2027] transition-colors"
-                >
-                  <div className="flex flex-wrap items-center gap-2 min-w-0">
-                    {getSeverityBadge(group.severity)}
-                    <span className="font-mono text-xs font-bold text-ink dark:text-white truncate max-w-[150px] sm:max-w-none">
-                      {group.checkId}
-                    </span>
-                    <span className="rounded-full bg-[#f4f4f6] dark:bg-[#22232c] border border-graphite-100 dark:border-graphite-800 px-2.5 py-0.5 text-[10px] sm:text-[11px] text-graphite-800 dark:text-graphite-300 font-semibold shrink-0">
-                      {group.affectedCount} page{group.affectedCount > 1 ? 's' : ''} affected
-                    </span>
-                    <span className="text-[10px] text-graphite-800 dark:text-graphite-300 font-mono shrink-0">
-                      (Priority: {group.priority})
-                    </span>
+          {compError && (
+            <div className="rounded-[12px] border border-rose-200 bg-rose-50/50 p-3 text-xs text-rose-700">
+              {compError}
+            </div>
+          )}
+
+          {comparison ? (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink dark:text-white font-mono">{cleanDomain}</span>
+                    <span className="rounded-full bg-violet/10 text-violet px-2.5 py-0.5 text-[10px] font-bold">Your Site</span>
                   </div>
-
-                  <div className="flex items-center gap-2 text-xs text-graphite-800 dark:text-graphite-300 shrink-0">
-                    <span className="text-[11px] font-mono truncate max-w-[120px] sm:max-w-[200px] text-graphite-800/80 dark:text-graphite-300/80 hidden sm:inline">
-                      {group.rootCauseKey}
-                    </span>
-                    {isExpanded ? <ChevronUp className="size-4 text-ink dark:text-white" /> : <ChevronDown className="size-4 text-ink dark:text-white" />}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-graphite-800 dark:text-graphite-400">Health Score</span>
+                    <strong className="font-mono text-ink dark:text-white">{comparison.target.score}/100</strong>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-100 dark:border-graphite-800">
+                    <div>
+                      <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">LCP Speed</span>
+                      <strong className="font-mono text-ink dark:text-white">{comparison.target.lcpSeconds}s</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">Schemas</span>
+                      <strong className="font-mono text-ink dark:text-white">{comparison.target.schemaCount} tags</strong>
+                    </div>
                   </div>
                 </div>
 
-                {/* Expanded Details */}
-                {isExpanded && (
-                  <div className="border-t border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#111216] p-3.5 sm:p-4 space-y-4">
-                    {/* Stack Tailored Fix */}
-                    {group.stackFix && (
-                      <div className="rounded-[12px] border border-violet/20 dark:border-violet/40 bg-violet/5 dark:bg-violet/10 p-3">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-violet mb-1">
-                          <Wrench className="size-3.5" />
-                          <span>Stack-Tailored Fix ({detectedStack?.cms || 'Detected Stack'})</span>
-                        </div>
-                        <p className="text-xs text-ink dark:text-white leading-relaxed font-sans">
-                          {group.stackFix}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Evidence Card */}
-                    {firstFinding && (
-                      <div className="grid gap-3 sm:grid-cols-2 text-xs">
-                        <div className="rounded-[12px] border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/30 p-3 min-w-0">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400">
-                            Observed State
-                          </span>
-                          <p className="mt-1 text-ink dark:text-white font-semibold leading-relaxed break-words">
-                            {firstFinding.evidence.observed}
-                          </p>
-                          {firstFinding.evidence.snippet && (
-                            <pre className="mt-2 text-[10px] font-mono text-gray-200 bg-graphite-900 dark:bg-black/60 border border-graphite-800 dark:border-graphite-700 p-2.5 rounded-[8px] overflow-x-auto whitespace-pre-wrap break-all max-w-full">
-                              {firstFinding.evidence.snippet}
-                            </pre>
-                          )}
-                        </div>
-
-                        <div className="rounded-[12px] border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/30 p-3 min-w-0">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
-                            Expected Benchmark
-                          </span>
-                          <p className="mt-1 text-ink dark:text-white font-semibold leading-relaxed break-words">
-                            {firstFinding.evidence.expected}
-                          </p>
-                          <div className="mt-3">
-                            <span className="text-[10px] font-semibold text-graphite-800 dark:text-graphite-300 block mb-1">Sample URLs:</span>
-                            <div className="space-y-1">
-                              {group.exampleUrls.slice(0, 3).map((url, uidx) => (
-                                <a
-                                  key={uidx}
-                                  href={url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-[11px] font-mono text-violet hover:underline truncate max-w-full font-medium"
-                                >
-                                  <ExternalLink className="size-3 shrink-0" />
-                                  <span className="truncate">{url}</span>
-                                </a>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-ink dark:text-white font-mono">{comparison.competitor.url}</span>
+                    <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-2.5 py-0.5 text-[10px] font-bold">Competitor</span>
                   </div>
-                )}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-graphite-800 dark:text-graphite-400">Health Score</span>
+                    <strong className="font-mono text-ink dark:text-white">{comparison.competitor.score}/100</strong>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-100 dark:border-graphite-800">
+                    <div>
+                      <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">LCP Speed</span>
+                      <strong className="font-mono text-ink dark:text-white">{comparison.competitor.lcpSeconds}s</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">Schemas</span>
+                      <strong className="font-mono text-ink dark:text-white">{comparison.competitor.schemaCount} tags</strong>
+                    </div>
+                  </div>
+                </div>
               </div>
-            );
-          })
-        )}
-      </section>
 
-      {/* What Passed Section */}
-      <section className="rounded-[16px] border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/30 p-4 text-xs">
-        <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-400 mb-1">
-          <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
-          <span>What Passed (Clean Verification)</span>
-        </div>
-        <p className="text-ink dark:text-white leading-relaxed">
-          {whatPassed || 'All checked pages and technical guidelines passed validation.'}
-        </p>
-      </section>
+              {/* Strategic Playbook */}
+              <div className="grid gap-3 sm:grid-cols-2 pt-1 text-xs">
+                <div className="rounded-[14px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20 p-3.5 space-y-2">
+                  <span className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+                    <TrendingDown className="size-3.5" />
+                    <span>Why They Are Winning Search Ground:</span>
+                  </span>
+                  <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
+                    {comparison.whyTheyAreWinning.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-1.5">
+                        <span className="text-rose-500 mt-0.5">&bull;</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-      {/* Scope Transparency */}
+                <div className="rounded-[14px] border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 space-y-2">
+                  <span className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
+                    <CheckCircle className="size-3.5" />
+                    <span>3 Steps to Leapfrog Them:</span>
+                  </span>
+                  <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
+                    {(comparison.threeStepsToBeatThem || []).map((step, idx) => (
+                      <li key={idx} className="flex items-start gap-1.5">
+                        <span className="text-emerald-700 dark:text-emerald-400 font-bold">{idx + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-[16px] border border-dashed border-graphite-200 dark:border-graphite-800 p-6 text-center text-xs text-graphite-800 dark:text-graphite-400 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]">
+              <p>Enter any rival website URL above to inspect side-by-side Page Speed, Schema tags, and 3 steps to beat them.</p>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* =========================================================================
+          SCOPE TRANSPARENCY
+          ========================================================================= */}
       <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 text-xs space-y-3 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
           <div className="flex items-center gap-2 font-bold text-ink dark:text-white">
             <HelpCircle className="size-4 text-violet" />
-            <span>Scope Transparency: What Was Not Checked</span>
+            <span>Audit Scope &amp; Transparency</span>
           </div>
           <span className="text-[11px] text-graphite-800 dark:text-graphite-400">
-            Areas requiring private credentials or off-page web indexes
+            Factors requiring private credentials or off-page web indexes
           </span>
         </div>
 
-        <p className="text-[11px] text-graphite-800 dark:text-graphite-400 leading-relaxed">
-          CrawlPay autonomously inspects all public on-page technical factors, metadata, and Core Web Vitals. The following categories require private account access (like Google OAuth), password authentication, or multi-terabyte search indexes:
-        </p>
-
         <div className="grid gap-2 sm:grid-cols-2">
-          {notChecked.map((item, idx) => {
-            let tag = 'External Scope';
-            let tagColor = 'bg-[#f4f4f6] dark:bg-[#22232c] text-graphite-800 dark:text-graphite-300 border border-graphite-100 dark:border-graphite-800';
-
-            if (item.toLowerCase().includes('google search console')) {
-              tag = 'Upload CSV Above';
-              tagColor = 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900/60';
-            } else if (item.toLowerCase().includes('google analytics') || item.toLowerCase().includes('google business') || item.toLowerCase().includes('authentication') || item.toLowerCase().includes('paywalls')) {
-              tag = 'Requires Private Login';
-              tagColor = 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900/60';
-            } else if (item.toLowerCase().includes('backlinks') || item.toLowerCase().includes('keyword')) {
-              tag = 'Off-Page Index';
-              tagColor = 'bg-violet/10 dark:bg-violet/20 text-violet border border-violet/20 dark:border-violet/40';
-            } else if (item.toLowerCase().includes('pagespeed') || item.toLowerCase().includes('psi')) {
-              tag = 'Speed Vitals Substituted';
-              tagColor = 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60';
-            }
-
-            return (
-              <div
-                key={idx}
-                className="flex items-center justify-between gap-2 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2.5 text-[11px] min-w-0"
-              >
-                <span className="text-ink dark:text-white font-medium truncate flex-1 min-w-0">{item}</span>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${tagColor}`}>
-                  {tag}
-                </span>
-              </div>
-            );
-          })}
+          {notChecked.map((item, idx) => (
+            <div
+              key={idx}
+              className="flex items-start sm:items-center justify-between gap-3 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2.5 text-[11px]"
+            >
+              <span className="text-ink dark:text-white font-medium leading-snug flex-1 break-words">{item}</span>
+              <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold bg-[#f4f4f6] dark:bg-[#22232c] text-graphite-800 dark:text-graphite-300 border border-graphite-100 dark:border-graphite-800 whitespace-nowrap mt-0.5 sm:mt-0">
+                External Scope
+              </span>
+            </div>
+          ))}
         </div>
       </section>
     </div>

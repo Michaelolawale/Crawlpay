@@ -89,7 +89,7 @@ export interface SiteMetadata {
   baseUrl: string;
   hostname: string;
   detectedStack: {
-    cms?: 'WordPress' | 'Shopify' | 'Wix' | 'Squarespace' | 'Next.js' | 'Unknown';
+    cms?: 'WordPress' | 'Shopify' | 'Wix' | 'Squarespace' | 'Next.js' | 'Astro' | 'Unknown';
     seoPlugin?: 'Yoast' | 'RankMath' | 'None';
     framework?: string;
   };

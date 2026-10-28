@@ -131,6 +131,7 @@ export function groupAndPrioritizeFindings(
     { prefix: 'duplicate_content', name: 'Near-duplicate body content' },
     { prefix: 'images', name: 'Image alt tags & dimensions' },
     { prefix: 'structured_data', name: 'JSON-LD schema markup' },
+    { prefix: 'mobile', name: 'Mobile viewport, touch targets & responsiveness' },
   ];
 
   for (const item of checkPrefixes) {

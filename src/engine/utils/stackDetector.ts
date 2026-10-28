@@ -43,6 +43,12 @@ export function detectStackFromHtml(html: string, $: cheerio.CheerioAPI): SiteMe
     framework = 'Next.js App/Pages Router';
   }
 
+  // Astro detection
+  if (htmlLower.includes('astro') || htmlLower.includes('_astro/') || $('meta[name="generator"][content*="Astro"]').length > 0) {
+    cms = 'Astro';
+    framework = 'Astro Static/SSR';
+  }
+
   // Wix detection
   if (
     htmlLower.includes('wix.com') ||
@@ -71,6 +77,9 @@ export function getStackFix(checkId: string, stack: SiteMetadata['detectedStack'
   const { cms, seoPlugin } = stack;
 
   if (cms === 'WordPress') {
+    if (checkId.startsWith('mobile')) {
+      return "Ensure your theme header.php includes '<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">' and set explicit width/height on all media in Media Library to prevent mobile CLS.";
+    }
     if (seoPlugin === 'Yoast') {
       return "Edit under the page's Yoast SEO box, or navigate to Yoast > Settings > Search appearance for site-wide template rules.";
     }
@@ -81,6 +90,9 @@ export function getStackFix(checkId: string, stack: SiteMetadata['detectedStack'
   }
 
   if (cms === 'Shopify') {
+    if (checkId.startsWith('mobile')) {
+      return "In Shopify Admin, go to Online Store > Themes > Edit code (layout/theme.liquid) and verify `<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">` is present without zoom restrictions.";
+    }
     if (checkId.startsWith('titles_and_descriptions') || checkId.startsWith('canonical')) {
       return "In Shopify Admin, go to Online Store > Preferences for homepage meta tags, or Online Store > Themes > Actions > Edit code (theme.liquid) for canonical tags.";
     }
@@ -91,6 +103,9 @@ export function getStackFix(checkId: string, stack: SiteMetadata['detectedStack'
   }
 
   if (cms === 'Next.js') {
+    if (checkId.startsWith('mobile')) {
+      return "In Next.js 14/15 App Router `layout.tsx`, export a `viewport: Viewport = { width: 'device-width', initialScale: 1 }` object and use `next/image` with responsive `sizes` to resolve mobile CLS.";
+    }
     if (checkId.startsWith('titles_and_descriptions') || checkId.startsWith('canonical')) {
       return "Export a dynamic or static `metadata` object in your App Router `page.tsx` / `layout.tsx` (e.g. `export const metadata: Metadata = { title, description, alternates: { canonical } }`).";
     }
@@ -101,6 +116,13 @@ export function getStackFix(checkId: string, stack: SiteMetadata['detectedStack'
       return "Use the `next/image` component with explicit `width`, `height`, and `alt` properties to prevent CLS and auto-serve AVIF/WebP.";
     }
     return "Configure in your Next.js App Router `layout.tsx` or `next.config.js`.";
+  }
+
+  if (cms === 'Astro') {
+    if (checkId.startsWith('mobile')) {
+      return "In your `src/layouts/Layout.astro`, ensure `<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />` is included in `<head>` and use `<Image>` from `astro:assets`.";
+    }
+    return "Update the frontmatter metadata and `<head>` tags in `src/layouts/Layout.astro` or your page components.";
   }
 
   if (cms === 'Wix') {
