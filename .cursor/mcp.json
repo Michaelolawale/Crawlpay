@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "crawlpay": {
+      "command": "node",
+      "args": ["node_modules/tsx/dist/cli.mjs", "scripts/mcp-server.ts"],
+      "env": {
+        "CELO_RPC_URL": "https://forno.celo.org",
+        "AGENT_WALLET_ADDRESS": "0xf06c2b754d07cba299751f0985a48f8013bb6b39",
+        "ATTRIBUTION_TAG": "celo_757c2ac3b70c"
+      }
+    }
+  }
+}
+

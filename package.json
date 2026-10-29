@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "mcp": "tsx scripts/mcp-server.ts",
     "test:api": "node --experimental-strip-types scripts/test-endpoints.ts",
     "ops:status": "node --experimental-strip-types scripts/mainnet-ops.ts status",
     "ops:register": "node --experimental-strip-types scripts/mainnet-ops.ts register",
@@ -27,6 +28,7 @@
   "dependencies": {
     "@celo/attribution-tags": "^0.5.0",
     "@celo/buy": "^0.8.3",
+    "@modelcontextprotocol/sdk": "^1.32.1",
     "@supabase/supabase-js": "^2.118.0",
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.7",

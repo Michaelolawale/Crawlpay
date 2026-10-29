@@ -304,23 +304,55 @@ console.log('Mined payment tx:', txHash);`}</pre>
 
           <div className="rounded-[16px] border border-graphite-100 bg-white p-6 space-y-4 shadow-sm">
             <p className="text-[14px] text-graphite-800 leading-relaxed font-normal">
-              Add CrawlPay as an MCP tool inside Claude Desktop, Cursor, or your custom AI assistant by appending this block to your{' '}
-              <code className="text-violet font-mono text-[13px]">claude_desktop_config.json</code>:
+              Connect CrawlPay as an autonomous MCP agent inside Cursor, Claude Desktop, or Windsurf. Settled natively on <strong className="text-ink font-medium">Celo Mainnet (Chain ID 42220)</strong> with ERC-8021 attribution tag <code className="text-violet font-mono text-[13px]">celo_757c2ac3b70c</code>. Zero third-party API keys required.
             </p>
 
-            <div className="rounded-[8px] bg-graphite-900 p-4 font-mono text-[12px] text-graphite-200 overflow-x-auto">
-              <pre>{`{
+            <div className="space-y-2">
+              <span className="text-[12px] font-mono text-graphite-500 font-semibold uppercase tracking-wider">Cursor Configuration (.cursor/mcp.json)</span>
+              <div className="rounded-[8px] bg-graphite-900 p-4 font-mono text-[12px] text-graphite-200 overflow-x-auto">
+                <pre>{`{
   "mcpServers": {
     "crawlpay": {
-      "command": "npx",
-      "args": ["-y", "@crawlpay/mcp-server"],
+      "command": "node",
+      "args": ["node_modules/tsx/dist/cli.mjs", "scripts/mcp-server.ts"],
       "env": {
         "CELO_RPC_URL": "https://forno.celo.org",
-        "AGENT_WALLET_ADDRESS": "${PUBLIC_AGENT_ADDRESS}"
+        "AGENT_WALLET_ADDRESS": "${PUBLIC_AGENT_ADDRESS}",
+        "ATTRIBUTION_TAG": "celo_757c2ac3b70c"
       }
     }
   }
 }`}</pre>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <span className="text-[12px] font-mono text-graphite-500 font-semibold uppercase tracking-wider">Claude Desktop (claude_desktop_config.json)</span>
+              <div className="rounded-[8px] bg-graphite-900 p-4 font-mono text-[12px] text-graphite-200 overflow-x-auto">
+                <pre>{`{
+  "mcpServers": {
+    "crawlpay": {
+      "command": "node",
+      "args": ["/path/to/Crawlpay/node_modules/tsx/dist/cli.mjs", "/path/to/Crawlpay/scripts/mcp-server.ts"],
+      "env": {
+        "CELO_RPC_URL": "https://forno.celo.org",
+        "AGENT_WALLET_ADDRESS": "${PUBLIC_AGENT_ADDRESS}",
+        "ATTRIBUTION_TAG": "celo_757c2ac3b70c"
+      }
+    }
+  }
+}`}</pre>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <h4 className="text-[14px] font-semibold text-ink mb-2">Exposed Celo Native MCP Tools:</h4>
+              <ul className="text-[13px] text-graphite-700 space-y-1.5 list-disc list-inside">
+                <li><code className="text-violet font-mono text-[12px]">crawlpay_audit_site</code>: Runs technical SEO audit, CWV metrics, copywriting fixes, and returns Celo receipt.</li>
+                <li><code className="text-violet font-mono text-[12px]">crawlpay_compare_competitor</code>: Head-to-head competitor audit with gap analysis and 3 action steps.</li>
+                <li><code className="text-violet font-mono text-[12px]">crawlpay_agent_status</code>: Real-time Celo block height, gas prices, wallet balances, and ERC-8004 identity status.</li>
+                <li><code className="text-violet font-mono text-[12px]">handle_payment_required</code>: Automatic x402 payment resolution on Celo Mainnet.</li>
+              </ul>
             </div>
           </div>
         </section>
