@@ -11,7 +11,7 @@ import {
   X,
   Home,
   BookOpen,
-  Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 import { CrawlLogo } from '@/components/CrawlLogo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -206,7 +206,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-2.5 py-2 rounded-[8px] text-[14px] font-medium text-graphite-800 dark:text-graphite-200 hover:bg-graphite-100/60 dark:hover:bg-[#1a1b22] transition-colors"
             >
-              <Sparkles className="size-4 text-graphite-500" />
+              <CheckCircle2 className="size-4 text-graphite-500" />
               <span>Verified Demo Preview</span>
             </Link>
             <Link

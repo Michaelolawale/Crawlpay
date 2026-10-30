@@ -18,6 +18,8 @@ export interface CodePatches {
   astroSeo: string;
   htmlHeadBlock: string;
   schemaJsonLd: string;
+  aeoFaqSchema?: string;
+  geoRobotsBlock?: string;
   stackSummary: string;
   suggestedAiFixes: SuggestedAiFix[];
 }
@@ -294,7 +296,66 @@ const {
 ${JSON.stringify(schemaObj, null, 2)}
 <\/script>`;
 
-  // 7. Structured Suggested AI Fixes Tailored to Stack
+  // 7. AEO Visible FAQ Section & Machine-Readable Schema (Google Visible Content Policy Compliant)
+  const aeoFaqSchema = `<!-- Google Compliance: Schema markup must strictly mirror visible text on page -->
+<section id="faq" class="py-8">
+  <h2>Frequently Asked Questions</h2>
+  <div class="faq-item">
+    <h3>What is ${escapeHtml(brandName)}?</h3>
+    <p>${escapeHtml(description)}</p>
+  </div>
+  <div class="faq-item">
+    <h3>How do I get started with ${escapeHtml(brandName)}?</h3>
+    <p>Visit ${escapeHtml(pageUrl)} to access services and review technical documentation.</p>
+  </div>
+</section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is ${escapeQuotes(brandName)}?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "${escapeQuotes(description)}"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I get started with ${escapeQuotes(brandName)}?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Visit ${escapeQuotes(pageUrl)} to access services and review technical documentation."
+      }
+    }
+  ]
+}
+<\/script>`;
+
+  // 8. GEO AI-Friendly robots.txt configuration (RFC 9309 Compliant)
+  const geoRobotsBlock = `# CrawlPay Recommended robots.txt (RFC 9309 Compliant)
+User-agent: *
+Allow: /
+
+# Explicitly permit AI Search and Answer Engine bots
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://${hostname}/sitemap.xml`;
+
+  // 9. Structured Suggested AI Fixes Tailored to Stack
   const suggestedAiFixes: SuggestedAiFix[] = [];
 
   if (cms === 'Next.js') {
@@ -383,6 +444,8 @@ export function OptimizedHeroImage() {
     astroSeo,
     htmlHeadBlock,
     schemaJsonLd,
+    aeoFaqSchema,
+    geoRobotsBlock,
     stackSummary,
     suggestedAiFixes,
   };

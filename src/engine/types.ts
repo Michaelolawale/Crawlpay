@@ -98,6 +98,8 @@ export interface SiteMetadata {
   sitemapUrls: string[];
   robotsTxtFound: boolean;
   robotsTxtContent?: string;
+  wafProbe?: { accessible: boolean; status: number; blockedReason?: string };
+  llmsTxtFound?: boolean;
 }
 
 export interface PriorityItem {

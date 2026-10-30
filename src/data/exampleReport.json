@@ -24,21 +24,21 @@
   "topNeedleMovers": [
     {
       "priority": "Quick Win",
-      "title": "links.empty anchor (7 pages)",
-      "description": "Internal/external link to 'https://www.instagram.com/theecnglobal/' has no anchor text.",
-      "action": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins."
+      "title": "links.empty_anchor",
+      "description": "Internal or social links lack descriptive anchor text (e.g., empty icon buttons).",
+      "action": "In the WordPress Block Editor, select the link and add descriptive text, or add aria-label='Description' to icon links in your navigation or templates."
     },
     {
       "priority": "Quick Win",
-      "title": "images.missing dimensions (5 pages)",
-      "description": "Image lacks explicit width/height dimensions (width: missing, height: missing).",
-      "action": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins."
+      "title": "images.missing_dimensions",
+      "description": "Images lack explicit width/height dimensions, triggering mobile Cumulative Layout Shift (CLS).",
+      "action": "Insert media using WordPress Core Image blocks to automatically include responsive width, height, and srcset attributes to prevent CLS."
     },
     {
       "priority": "Quick Win",
-      "title": "titles.too long (1 page)",
+      "title": "titles.too_long",
       "description": "Title is too long (61 characters) and will truncate in Google search: \"ECN Global | Evangel Carriers Network — Telling of His Return\".",
-      "action": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins."
+      "action": "Configure page titles in the WordPress page editor or install Yoast SEO / Rank Math to customize title tags under 60 characters."
     }
   ],
   "prioritizedGroups": [
@@ -52,7 +52,7 @@
       "exampleUrls": [
         "https://evangelcarriersnetwork.org/"
       ],
-      "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "stackFix": "In the WordPress Block Editor, select the link and add descriptive text, or add aria-label='Description' to icon links in your navigation or templates.",
       "findings": [
         {
           "id": "links.empty_anchor.f925c17102a0",
@@ -150,7 +150,7 @@
       "exampleUrls": [
         "https://evangelcarriersnetwork.org/"
       ],
-      "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "stackFix": "Insert media using WordPress Core Image blocks to automatically include responsive width, height, and srcset attributes to prevent CLS.",
       "findings": [
         {
           "id": "images.missing_dimensions.dd5bb0200bc7",
@@ -224,7 +224,7 @@
       "exampleUrls": [
         "https://evangelcarriersnetwork.org/"
       ],
-      "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "stackFix": "Configure page titles in the WordPress page editor or install Yoast SEO / Rank Math to customize title tags under 60 characters.",
       "findings": [
         {
           "id": "titles.too_long.ddec1fdf3858",
@@ -244,20 +244,20 @@
   "prioritiesFromLlm": [
     {
       "rootCauseKey": "links.empty_anchor",
-      "whyItMatters": "Directly impacts how search engines crawl and index pages.",
-      "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
-      "effort": "medium"
+      "whyItMatters": "Empty link text fails to transfer PageRank authority and violates WCAG 2.1 screen reader accessibility.",
+      "fix": "In the WordPress Block Editor, select the link and add descriptive text, or add aria-label='Description' to icon links in your navigation or templates.",
+      "effort": "low"
     },
     {
       "rootCauseKey": "images.missing_dimensions::/root",
-      "whyItMatters": "Directly impacts how search engines crawl and index pages.",
-      "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
-      "effort": "medium"
+      "whyItMatters": "Images without explicit dimensions cause Cumulative Layout Shift (CLS) on mobile devices.",
+      "fix": "Insert media using WordPress Core Image blocks to automatically include responsive width, height, and srcset attributes to prevent CLS.",
+      "effort": "low"
     },
     {
       "rootCauseKey": "titles.too_long",
-      "whyItMatters": "Reduces organic click-through rate (CTR) and keyword relevancy signals.",
-      "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+      "whyItMatters": "Titles over 60 characters get truncated in Google search results, lowering organic click-through rate (CTR).",
+      "fix": "Configure page titles in the WordPress page editor or install Yoast SEO / Rank Math to customize title tags under 60 characters.",
       "effort": "low"
     }
   ],
@@ -585,7 +585,7 @@
         "exampleUrls": [
           "https://evangelcarriersnetwork.org/"
         ],
-        "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "stackFix": "In the WordPress Block Editor, select the link and add descriptive text, or add aria-label='Description' to icon links in your navigation or templates.",
         "findings": [
           {
             "id": "links.empty_anchor.f925c17102a0",
@@ -683,7 +683,7 @@
         "exampleUrls": [
           "https://evangelcarriersnetwork.org/"
         ],
-        "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "stackFix": "Insert media using WordPress Core Image blocks to automatically include responsive width, height, and srcset attributes to prevent CLS.",
         "findings": [
           {
             "id": "images.missing_dimensions.dd5bb0200bc7",
@@ -757,7 +757,7 @@
         "exampleUrls": [
           "https://evangelcarriersnetwork.org/"
         ],
-        "stackFix": "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "stackFix": "Configure page titles in the WordPress page editor or install Yoast SEO / Rank Math to customize title tags under 60 characters.",
         "findings": [
           {
             "id": "titles.too_long.ddec1fdf3858",
@@ -777,20 +777,20 @@
     "prioritiesFromLlm": [
       {
         "rootCauseKey": "links.empty_anchor",
-        "whyItMatters": "Directly impacts how search engines crawl and index pages.",
-        "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
-        "effort": "medium"
+        "whyItMatters": "Empty link text fails to transfer PageRank authority and violates WCAG 2.1 screen reader accessibility.",
+        "fix": "In the WordPress Block Editor, select the link and add descriptive text, or add aria-label='Description' to icon links in your navigation or templates.",
+        "effort": "low"
       },
       {
         "rootCauseKey": "images.missing_dimensions::/root",
-        "whyItMatters": "Directly impacts how search engines crawl and index pages.",
-        "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
-        "effort": "medium"
+        "whyItMatters": "Images without explicit dimensions cause Cumulative Layout Shift (CLS) on mobile devices.",
+        "fix": "Insert media using WordPress Core Image blocks to automatically include responsive width, height, and srcset attributes to prevent CLS.",
+        "effort": "low"
       },
       {
         "rootCauseKey": "titles.too_long",
-        "whyItMatters": "Reduces organic click-through rate (CTR) and keyword relevancy signals.",
-        "fix": "Draft suggestion: review before use. Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.",
+        "whyItMatters": "Titles over 60 characters get truncated in Google search results, lowering organic click-through rate (CTR).",
+        "fix": "Configure page titles in the WordPress page editor or install Yoast SEO / Rank Math to customize title tags under 60 characters.",
         "effort": "low"
       }
     ],

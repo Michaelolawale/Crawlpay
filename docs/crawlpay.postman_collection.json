@@ -1,0 +1,238 @@
+{
+  "info": {
+    "_postman_id": "c7f9984a-7182-4ef9-8581-crawlpay-celo-v2",
+    "name": "CrawlPay Celo Mainnet API (AEO & GEO Enabled)",
+    "description": "Complete Postman API test collection for CrawlPay: Autonomous Technical SEO, AEO (Answer Engine Optimization), GEO (Generative Engine Optimization), Competitor Intelligence, and Celo Mainnet settlement (Chain ID: 42220, ERC-8021 tag: celo_757c2ac3b70c).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "targetUrl",
+      "value": "https://example.com",
+      "type": "string"
+    },
+    {
+      "key": "competitorUrl",
+      "value": "https://celopulse.org",
+      "type": "string"
+    },
+    {
+      "key": "sampleTxHash",
+      "value": "0x7a4ff5b91534dcf91f06232eedca6be300caf0defbde451a34eaa298b82f618a",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Core Audits & Intelligence (AEO & GEO)",
+      "item": [
+        {
+          "name": "POST /api/audit (Quick Mode with AEO & GEO)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{targetUrl}}\",\n  \"mode\": \"quick\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "audit"]
+            },
+            "description": "Executes a fast deterministic single-page audit evaluating technical SEO, Core Web Vitals, AEO (Answer Engine Optimization), and GEO (Generative Engine Optimization) with RFC 9309 bot evaluation and on-chain Celo attribution."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/audit (Full Multi-Page Crawl)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{targetUrl}}\",\n  \"mode\": \"full\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/audit",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "audit"]
+            },
+            "description": "Executes deep multi-page BFS crawl (up to 50 pages) discovering subpages, internal canonical mismatches, sitemaps, duplicate content simhashes, and sitewide AEO/GEO signals."
+          },
+          "response": []
+        },
+        {
+          "name": "POST /api/compare (Head-to-Head Competitor Intelligence)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"targetUrl\": \"{{targetUrl}}\",\n  \"competitorUrl\": \"{{competitorUrl}}\",\n  \"mode\": \"quick\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/compare",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "compare"]
+            },
+            "description": "Benchmarks primary domain against a rival domain: calculates score delta, estimated LCP speed advantage, side-by-side AEO & GEO scores, and produces a 3-step actionable win plan."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Celo Mainnet & Agent Identity",
+      "item": [
+        {
+          "name": "GET /api/agent/status (Live Celo Telemetry & Balances)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/agent/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "agent", "status"]
+            },
+            "description": "Queries live Celo Mainnet RPC (https://forno.celo.org): returns current block number, gas price in Gwei, CELO / USD₮ / cUSD balances, and ERC-8004 identity status."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/status (General Agent & Attribution Metadata)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "status"]
+            },
+            "description": "Returns operational status, agent wallet address (0xf06c2b...), chain ID (42220), attribution tag (celo_757c2ac3b70c), and ERC-8021 data suffix."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/agent-registration (ERC-8004 Registration Document)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/agent-registration",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "agent-registration"]
+            },
+            "description": "Returns machine-readable JSON metadata stored in ERC-8004 registry contract on Celo Mainnet."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /.well-known/agent-card.json (A2A Discovery)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/.well-known/agent-card.json",
+              "host": ["{{baseUrl}}"],
+              "path": [".well-known", "agent-card.json"]
+            },
+            "description": "Standard Agent-to-Agent (A2A) discovery document describing CrawlPay capabilities, endpoints, and payment methods."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/x402-bazaar (HTTP 402 Machine Discovery Schema)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/x402-bazaar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "x402-bazaar"]
+            },
+            "description": "HTTP 402 Machine-readable schema catalog for agent discovery on 8004scan.io and agent402.tools."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Settlement & On-Chain Verification",
+      "item": [
+        {
+          "name": "POST /api/payment/verify (Verify Celo Transaction Hash)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"txHash\": \"{{sampleTxHash}}\",\n  \"url\": \"{{targetUrl}}\",\n  \"mode\": \"quick\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payment/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payment", "verify"]
+            },
+            "description": "Verifies an attributed payment transaction directly on Celo Mainnet: confirms block confirmation, recipient address, calldata attribution tag, and records confirmed status."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/activity (Live Crawl & Settlement Feeds)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/activity",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "activity"]
+            },
+            "description": "Returns recent audit activity and settlement events across the network."
+          },
+          "response": []
+        },
+        {
+          "name": "GET /api/reports (Historical Audit Reports Feed)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports"]
+            },
+            "description": "Fetches indexed historical audit reports with scores and timestamps."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
+

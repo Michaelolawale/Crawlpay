@@ -8,11 +8,12 @@
     "start": "next start",
     "lint": "next lint",
     "mcp": "tsx scripts/mcp-server.ts",
-    "test:api": "node --experimental-strip-types scripts/test-endpoints.ts",
-    "ops:status": "node --experimental-strip-types scripts/mainnet-ops.ts status",
-    "ops:register": "node --experimental-strip-types scripts/mainnet-ops.ts register",
-    "ops:ping": "node --experimental-strip-types scripts/mainnet-ops.ts ping",
-    "ops:verify": "node --experimental-strip-types scripts/mainnet-ops.ts verify"
+    "test:api": "tsx scripts/test-endpoints.ts",
+    "test:mcp": "tsx scripts/test-mcp-x402.ts",
+    "ops:status": "tsx scripts/mainnet-ops.ts status",
+    "ops:register": "tsx scripts/mainnet-ops.ts register",
+    "ops:ping": "tsx scripts/mainnet-ops.ts ping",
+    "ops:verify": "tsx scripts/mainnet-ops.ts verify"
   },
   "keywords": [
     "celo",

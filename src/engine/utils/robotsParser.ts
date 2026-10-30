@@ -1,107 +1,243 @@
+export type BotAccessStatus = 'allowed' | 'blocked' | 'unknown';
+
 export interface RobotsRule {
   path: string;
   allow: boolean;
+  patternRegex?: RegExp;
 }
 
-export interface ParsedRobotsTxt {
-  raw: string;
-  sitemaps: string[];
+export interface UserAgentRecord {
+  userAgents: string[];
   rules: RobotsRule[];
-  disallowAll: boolean;
 }
 
-export class RobotsParser {
-  private rules: RobotsRule[] = [];
-  private sitemaps: string[] = [];
-  private raw: string = '';
+export interface BotRuleEvaluation {
+  bot: string;
+  status: BotAccessStatus;
+  matchedRule?: string;
+  rulePrecedence: 'specific_user_agent' | 'wildcard_fallback' | 'default_allow' | 'fetch_failed';
+}
 
-  constructor(robotsTxtContent?: string, userAgent: string = 'CrawlPayBot') {
-    if (robotsTxtContent) {
+/**
+ * RFC 9309 Compliant Robots.txt Parser
+ * - Record grouping (User-agent blocks)
+ * - Most specific user-agent group matching
+ * - Longest-match path precedence (Allow takes precedence on ties)
+ * - Wildcard (*) and end-of-string ($) matching
+ */
+export class RobotsParser {
+  private records: UserAgentRecord[] = [];
+  private sitemaps: string[] = [];
+  private raw?: string;
+  private isFetchFailed: boolean = false;
+  private defaultUa: string;
+
+  constructor(robotsTxtContent?: string, defaultUserAgent: string = 'CrawlPayBot', isFetchFailed: boolean = false) {
+    this.defaultUa = defaultUserAgent;
+    this.isFetchFailed = isFetchFailed;
+    if (robotsTxtContent !== undefined) {
       this.raw = robotsTxtContent;
-      this.parse(robotsTxtContent, userAgent);
+      this.parse(robotsTxtContent);
     }
   }
 
-  private parse(content: string, targetUa: string): void {
+  private parse(content: string): void {
     const lines = content.split(/\r?\n/);
-    const uaLower = targetUa.toLowerCase();
+    this.records = [];
+    this.sitemaps = [];
 
-    let currentUaMatches = false;
-    const specificRules: RobotsRule[] = [];
-    const wildcardRules: RobotsRule[] = [];
+    let currentUserAgents: string[] = [];
+    let currentRules: RobotsRule[] = [];
 
-    for (let line of lines) {
+    for (let rawLine of lines) {
       // Remove comments
-      const commentIndex = line.indexOf('#');
-      if (commentIndex >= 0) {
-        line = line.substring(0, commentIndex);
-      }
-      line = line.trim();
+      const commentIdx = rawLine.indexOf('#');
+      const line = (commentIdx >= 0 ? rawLine.substring(0, commentIdx) : rawLine).trim();
       if (!line) continue;
 
-      const colonIndex = line.indexOf(':');
-      if (colonIndex === -1) continue;
+      const colonIdx = line.indexOf(':');
+      if (colonIdx === -1) continue;
 
-      const field = line.substring(0, colonIndex).trim().toLowerCase();
-      const value = line.substring(colonIndex + 1).trim();
+      const field = line.substring(0, colonIdx).trim().toLowerCase();
+      const value = line.substring(colonIdx + 1).trim();
 
-      if (field === 'user-agent') {
-        const ua = value.toLowerCase();
-        if (ua === '*' || ua === uaLower) {
-          currentUaMatches = true;
-        } else {
-          currentUaMatches = false;
-        }
-      } else if (field === 'sitemap') {
+      if (field === 'sitemap') {
         if (value && !this.sitemaps.includes(value)) {
           this.sitemaps.push(value);
         }
-      } else if (currentUaMatches && (field === 'disallow' || field === 'allow')) {
+        continue;
+      }
+
+      if (field === 'user-agent') {
+        // If we were collecting rules and encounter a new user-agent, save previous record
+        if (currentRules.length > 0 && currentUserAgents.length > 0) {
+          this.records.push({
+            userAgents: [...currentUserAgents],
+            rules: [...currentRules],
+          });
+          currentUserAgents = [];
+          currentRules = [];
+        }
+        if (value) {
+          currentUserAgents.push(value.toLowerCase());
+        }
+      } else if (field === 'disallow' || field === 'allow') {
+        if (currentUserAgents.length === 0) continue; // Directive outside a user-agent block is ignored per RFC 9309
         const isAllow = field === 'allow';
-        const rule: RobotsRule = {
+        currentRules.push({
           path: value,
           allow: isAllow,
-        };
-        specificRules.push(rule);
+          patternRegex: this.pathToRegex(value),
+        });
       }
     }
 
-    this.rules = specificRules.length > 0 ? specificRules : wildcardRules;
+    // Flush last record
+    if (currentUserAgents.length > 0) {
+      this.records.push({
+        userAgents: [...currentUserAgents],
+        rules: [...currentRules],
+      });
+    }
   }
 
-  public isAllowed(pathname: string): boolean {
-    if (this.rules.length === 0) return true;
+  /**
+   * Converts RFC 9309 path pattern with * and $ to RegExp
+   */
+  private pathToRegex(pattern: string): RegExp | undefined {
+    if (!pattern) return undefined;
+    // Escape regex special chars except * and $
+    let escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+    escaped = escaped.replace(/\*/g, '.*');
+    if (escaped.endsWith('\\$')) {
+      // It had an actual $, replace with end anchor
+      escaped = escaped.slice(0, -2) + '$';
+    } else {
+      escaped = escaped + '.*';
+    }
+    return new RegExp(`^${escaped}`);
+  }
 
-    // Check longest matching rule
+  /**
+   * RFC 9309 Group Matching:
+   * 1. Look for record matching target UA explicitly.
+   * 2. If found, evaluate against rules in that record.
+   * 3. Else fallback to User-agent: * record.
+   * 4. Else default allow.
+   */
+  public evaluateBot(botName: string, pathname: string = '/'): BotRuleEvaluation {
+    if (this.isFetchFailed || this.raw === undefined) {
+      return {
+        bot: botName,
+        status: 'unknown',
+        rulePrecedence: 'fetch_failed',
+      };
+    }
+
+    const target = botName.toLowerCase();
+
+    // 1. Check for specific UA match
+    const specificRecord = this.records.find((rec) =>
+      rec.userAgents.some((ua) => ua === target || target.includes(ua) || ua.includes(target))
+    );
+
+    if (specificRecord) {
+      return this.matchRules(specificRecord.rules, pathname, botName, 'specific_user_agent');
+    }
+
+    // 2. Check for wildcard * match
+    const wildcardRecord = this.records.find((rec) =>
+      rec.userAgents.some((ua) => ua === '*')
+    );
+
+    if (wildcardRecord) {
+      return this.matchRules(wildcardRecord.rules, pathname, botName, 'wildcard_fallback');
+    }
+
+    // 3. Default allow
+    return {
+      bot: botName,
+      status: 'allowed',
+      rulePrecedence: 'default_allow',
+    };
+  }
+
+  /**
+   * RFC 9309 Rule Evaluation:
+   * Longest match takes precedence.
+   * If allow and disallow have identical length, Allow takes precedence.
+   */
+  private matchRules(
+    rules: RobotsRule[],
+    pathname: string,
+    botName: string,
+    precedence: 'specific_user_agent' | 'wildcard_fallback'
+  ): BotRuleEvaluation {
+    let longestMatchLen = -1;
     let matchedRule: RobotsRule | null = null;
-    let maxMatchLen = -1;
 
-    for (const rule of this.rules) {
-      if (!rule.path) continue; // Empty Disallow: means allow all
-      if (pathname.startsWith(rule.path)) {
-        if (rule.path.length > maxMatchLen) {
-          maxMatchLen = rule.path.length;
+    for (const rule of rules) {
+      if (!rule.path) {
+        // Disallow: with empty value means allow everything
+        if (longestMatchLen < 0) {
+          longestMatchLen = 0;
+          matchedRule = { path: '', allow: true };
+        }
+        continue;
+      }
+
+      const isMatch = rule.patternRegex
+        ? rule.patternRegex.test(pathname)
+        : pathname.startsWith(rule.path);
+
+      if (isMatch) {
+        const matchLen = rule.path.length;
+        if (matchLen > longestMatchLen) {
+          longestMatchLen = matchLen;
+          matchedRule = rule;
+        } else if (matchLen === longestMatchLen && rule.allow && matchedRule && !matchedRule.allow) {
+          // RFC 9309 tie-breaker: Allow overrides Disallow on identical match lengths
           matchedRule = rule;
         }
       }
     }
 
     if (matchedRule) {
-      return matchedRule.allow;
+      return {
+        bot: botName,
+        status: matchedRule.allow ? 'allowed' : 'blocked',
+        matchedRule: `${matchedRule.allow ? 'Allow' : 'Disallow'}: ${matchedRule.path}`,
+        rulePrecedence: precedence,
+      };
     }
 
-    return true;
+    return {
+      bot: botName,
+      status: 'allowed',
+      rulePrecedence: precedence,
+    };
+  }
+
+  public isAllowed(pathname: string, userAgent: string = this.defaultUa): boolean {
+    const res = this.evaluateBot(userAgent, pathname);
+    return res.status !== 'blocked';
   }
 
   public getSitemaps(): string[] {
     return this.sitemaps;
   }
 
-  public getRaw(): string {
+  public getRaw(): string | undefined {
     return this.raw;
   }
 
   public getDisallowedRules(): string[] {
-    return this.rules.filter((r) => !r.allow && r.path).map((r) => r.path);
+    const rules: string[] = [];
+    for (const rec of this.records) {
+      for (const r of rec.rules) {
+        if (!r.allow && r.path) rules.push(r.path);
+      }
+    }
+    return rules;
   }
 }

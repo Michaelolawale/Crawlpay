@@ -11,11 +11,15 @@ import { checkImages } from './images';
 import { checkPerformance } from './performance';
 import { checkStructuredData } from './structuredData';
 import { checkMobilePerformance, MobileAuditMetrics } from './mobilePerformance';
+import { checkAEO, AeoAnalysisSignals } from './aeo';
+import { checkGEO, GeoAnalysisSignals } from './geo';
 
 export interface CheckSuiteResult {
   findings: Finding[];
   notChecked: string[];
   mobileMetrics?: MobileAuditMetrics;
+  aeoSignals?: AeoAnalysisSignals;
+  geoSignals?: GeoAnalysisSignals;
 }
 
 /**
@@ -94,9 +98,25 @@ export async function runAllChecks(
   const { findings: mobileFindings, metrics: mobileMetrics } = checkMobilePerformance(pages, metadata);
   allFindings.push(...mobileFindings);
 
+  // 12. AEO (Answer Engine Optimization)
+  const { findings: aeoFindings, signals: aeoSignals } = checkAEO(pages, metadata);
+  allFindings.push(...aeoFindings);
+
+  // 13. GEO (Generative Engine Optimization)
+  const { findings: geoFindings, signals: geoSignals } = checkGEO(
+    pages,
+    metadata,
+    robotsParser,
+    metadata.wafProbe,
+    metadata.llmsTxtFound
+  );
+  allFindings.push(...geoFindings);
+
   return {
     findings: allFindings,
     notChecked,
     mobileMetrics,
+    aeoSignals,
+    geoSignals,
   };
 }

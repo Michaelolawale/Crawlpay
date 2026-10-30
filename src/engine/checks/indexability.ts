@@ -24,7 +24,7 @@ export function checkIndexability(
         evidence: {
           observed: `robots.txt contains 'Disallow: /', blocking all web crawlers from indexing the entire website.`,
           expected: 'Allow crawlers to access public indexable pages, only disallowing private or admin routes.',
-          snippet: sanitizeSnippet(robotsParser.getRaw(), 250),
+          snippet: sanitizeSnippet(robotsParser.getRaw() || '', 250),
         },
         rootCauseKey: 'indexability.robots_disallow_all',
       });
@@ -39,7 +39,7 @@ export function checkIndexability(
             evidence: {
               observed: `robots.txt contains 'Disallow: ${rule}', blocking search crawlers from accessing important section '${prefix}'.`,
               expected: `Ensure important public pathways like '${prefix}' are crawlable.`,
-              snippet: sanitizeSnippet(robotsParser.getRaw(), 250),
+              snippet: sanitizeSnippet(robotsParser.getRaw() || '', 250),
             },
             rootCauseKey: `indexability.robots_disallow::${rule}`,
           });

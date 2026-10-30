@@ -73,20 +73,42 @@ export function detectStackFromHtml(html: string, $: cheerio.CheerioAPI): SiteMe
 /**
  * Returns a tailored stack fix instruction based on the detected CMS and SEO plugins
  */
-export function getStackFix(checkId: string, stack: SiteMetadata['detectedStack']): string {
-  const { cms, seoPlugin } = stack;
+export function getStackFix(
+  checkId: string,
+  stack?: Partial<SiteMetadata['detectedStack']> | { cms?: string; seoPlugin?: string; framework?: string } | null
+): string {
+  const cms = stack?.cms || 'Unknown';
+  const seoPlugin = stack?.seoPlugin || 'None';
 
   if (cms === 'WordPress') {
+    if (checkId.startsWith('links')) {
+      return "In the WordPress Block Editor, select the link and add descriptive text, or add aria-label='Description' to icon links in your navigation or templates.";
+    }
+    if (checkId.startsWith('images')) {
+      return "Insert media using WordPress Core Image blocks to automatically include responsive width, height, and srcset attributes to prevent CLS.";
+    }
     if (checkId.startsWith('mobile')) {
       return "Ensure your theme header.php includes '<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">' and set explicit width/height on all media in Media Library to prevent mobile CLS.";
     }
-    if (seoPlugin === 'Yoast') {
-      return "Edit under the page's Yoast SEO box, or navigate to Yoast > Settings > Search appearance for site-wide template rules.";
+    if (checkId.startsWith('titles') || checkId.startsWith('descriptions')) {
+      if (seoPlugin === 'Yoast') {
+        return "Edit under the page's Yoast SEO box, or navigate to Yoast > Settings > Search appearance for site-wide template rules.";
+      }
+      if (seoPlugin === 'RankMath') {
+        return "Edit under the Rank Math SEO box on the page editor, or go to Rank Math > Titles & Meta for global template defaults.";
+      }
+      return "Configure page titles in the WordPress page editor or install Yoast SEO / Rank Math to customize title tags and meta descriptions.";
     }
-    if (seoPlugin === 'RankMath') {
-      return "Edit under the Rank Math SEO box on the page editor, or go to Rank Math > Titles & Meta for global template defaults.";
+    if (checkId.startsWith('headings')) {
+      return "In the WordPress Block Editor, ensure there is exactly one H1 heading at the top of the post/page, and organize sub-sections with H2 and H3 blocks.";
     }
-    return "Update in WordPress Admin > Appearance > Customize, or manage site-wide tags via Yoast SEO / Rank Math plugins.";
+    if (checkId.startsWith('canonical')) {
+      return "Verify your theme header.php calls wp_head() and check Settings > General to confirm your preferred canonical HTTPS address.";
+    }
+    if (checkId.startsWith('sitemap')) {
+      return "WordPress 5.5+ includes core XML sitemaps at /wp-sitemap.xml. Ensure it is accessible and declared in your robots.txt.";
+    }
+    return "Update in WordPress Admin under the page editor, or manage global settings via your active SEO plugin.";
   }
 
   if (cms === 'Shopify') {
@@ -131,6 +153,37 @@ export function getStackFix(checkId: string, stack: SiteMetadata['detectedStack'
 
   if (cms === 'Squarespace') {
     return "Go to Home > Marketing > SEO in Squarespace to set site-wide meta rules, or open Page Settings > SEO for individual page overrides.";
+  }
+
+  // AEO & GEO tailored fixes
+  if (checkId.startsWith('aeo.')) {
+    if (checkId === 'aeo.question_headings') {
+      return "Rephrase section subheadings (H2/H3) as explicit user questions (e.g. 'What is...', 'How does...') to match AI answer engine queries.";
+    }
+    if (checkId === 'aeo.faq_schema') {
+      return "Provide on-page Q&A text backed by clean FAQPage JSON-LD schema for machine and answer engine extraction.";
+    }
+    if (checkId === 'aeo.structured_answers') {
+      return "Format procedural steps with <ol>/<ul> lists and comparative data with <table> tags so answer engines extract structured data.";
+    }
+  }
+
+  if (checkId.startsWith('geo.')) {
+    if (checkId === 'geo.ai_bot_access') {
+      return "In robots.txt, ensure User-agent: GPTBot, ClaudeBot, and PerplexityBot are permitted without broad Disallow directives.";
+    }
+    if (checkId === 'geo.waf_probe') {
+      return "Update edge WAF / Cloudflare managed rules to allow legitimate AI crawlers (GPTBot, PerplexityBot) through without 403 blocks.";
+    }
+    if (checkId === 'geo.client_render_barrier') {
+      return "Enable Server-Side Rendering (SSR) or SSG so AI scrapers receive pre-rendered HTML without requiring client-side JS.";
+    }
+    if (checkId === 'geo.entity_declared') {
+      return "Add valid sameAs URIs to schema.org Organization (e.g. Wikidata, Wikipedia, GitHub) to anchor brand identity in LLM knowledge graphs.";
+    }
+    if (checkId === 'geo.authorship_freshness') {
+      return "Include author attribution (<meta name='author'> or Person schema) and ISO-8601 publication timestamps on your content.";
+    }
   }
 
   // Generic fallback

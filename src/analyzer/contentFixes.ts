@@ -1,5 +1,5 @@
 export interface SuggestedContentFix {
-  type: 'meta_description' | 'title' | 'anchor_text' | 'image_alt' | 'image_dimensions' | 'viewport' | 'generic';
+  type: 'meta_description' | 'title' | 'anchor_text' | 'image_alt' | 'image_dimensions' | 'viewport' | 'robots_noindex' | 'canonical' | 'heading';
   label: string;
   actionLabel: string;
   text: string;
@@ -9,7 +9,7 @@ export interface SuggestedContentFix {
 
 /**
  * Format domain or brand into a human-readable title
- * e.g. "evangelcarriersnetwork.org" -> "ECN Global" or "Evangel Carriers Network"
+ * e.g. "exampleglobal.org" -> "Example Global"
  */
 export function formatBrandName(domainOrUrl: string, sampleTitle?: string): string {
   if (
@@ -17,7 +17,8 @@ export function formatBrandName(domainOrUrl: string, sampleTitle?: string): stri
     !sampleTitle.toLowerCase().includes('link') &&
     !sampleTitle.toLowerCase().includes('observed') &&
     !sampleTitle.toLowerCase().includes('internal') &&
-    !sampleTitle.toLowerCase().includes('affects')
+    !sampleTitle.toLowerCase().includes('affects') &&
+    !sampleTitle.toLowerCase().includes('defect')
   ) {
     const parts = sampleTitle.split(/\s*[|—–\-]\s*/).map((s) => s.trim()).filter(Boolean);
     if (parts.length > 0 && parts[0].length >= 2 && parts[0].length <= 30) {
@@ -25,20 +26,80 @@ export function formatBrandName(domainOrUrl: string, sampleTitle?: string): stri
     }
   }
 
-  const clean = domainOrUrl
+  const raw = domainOrUrl
     .replace(/^(https?:\/\/)?(www\.)?/, '')
     .split('/')[0]
     .split('.')[0];
 
-  // Common acronym or domain formatting
-  if (clean.toLowerCase() === 'evangelcarriersnetwork') {
-    return 'ECN Global';
+  const suffixes = [
+    'solutions', 'network', 'technologies', 'systems', 'global', 'media',
+    'digital', 'labs', 'studio', 'studios', 'group', 'capital', 'ventures',
+    'health', 'security', 'consulting', 'services', 'service', 'agency',
+    'store', 'shop', 'hub', 'app', 'tech', 'pay', 'link', 'ai'
+  ];
+
+  let formatted = raw.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_.]/g, ' ');
+
+  if (!formatted.includes(' ')) {
+    const lower = raw.toLowerCase();
+    for (const suffix of suffixes) {
+      if (lower.endsWith(suffix) && lower.length > suffix.length + 2) {
+        const prefix = raw.slice(0, raw.length - suffix.length);
+        const suf = raw.slice(raw.length - suffix.length);
+        formatted = `${prefix} ${suf}`;
+        break;
+      }
+    }
   }
 
-  return clean
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/[-_.]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return formatted.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export interface ExtractedPageContext {
+  url: string;
+  pathname: string;
+  pageType: 'home' | 'cart' | 'checkout' | 'about' | 'contact' | 'services' | 'pricing' | 'blog' | 'shop' | 'legal' | 'account' | 'general';
+  pageLabel: string;
+}
+
+export function extractPageContext(
+  observed?: string,
+  snippet?: string,
+  domain: string = 'your-site.com'
+): ExtractedPageContext {
+  let matched = '';
+  const quoteMatch = observed?.match(/['"](https?:\/\/[^'"]+|\/[^'"]*)['"]/i);
+  if (quoteMatch && quoteMatch[1]) {
+    matched = quoteMatch[1];
+  } else {
+    const rawMatch = (observed + ' ' + (snippet || '')).match(/https?:\/\/[^\s'")>]+/i);
+    if (rawMatch) matched = rawMatch[0];
+  }
+
+  const finalUrl = matched || `https://${domain}/`;
+  let pathname = '/';
+  try {
+    pathname = new URL(finalUrl.startsWith('/') ? `https://${domain}${finalUrl}` : finalUrl).pathname.toLowerCase();
+  } catch {}
+
+  if (pathname.includes('cart')) return { url: finalUrl, pathname, pageType: 'cart', pageLabel: 'Shopping Cart' };
+  if (pathname.includes('checkout')) return { url: finalUrl, pathname, pageType: 'checkout', pageLabel: 'Checkout' };
+  if (pathname.includes('account') || pathname.includes('profile')) return { url: finalUrl, pathname, pageType: 'account', pageLabel: 'Customer Account' };
+  if (pathname.includes('about')) return { url: finalUrl, pathname, pageType: 'about', pageLabel: 'About Us' };
+  if (pathname.includes('contact') || pathname.includes('support')) return { url: finalUrl, pathname, pageType: 'contact', pageLabel: 'Contact Us' };
+  if (pathname.includes('service') || pathname.includes('solution')) return { url: finalUrl, pathname, pageType: 'services', pageLabel: 'Services & Solutions' };
+  if (pathname.includes('pricing') || pathname.includes('plan')) return { url: finalUrl, pathname, pageType: 'pricing', pageLabel: 'Pricing Plans' };
+  if (pathname.includes('blog') || pathname.includes('news') || pathname.includes('post')) return { url: finalUrl, pathname, pageType: 'blog', pageLabel: 'Blog & Articles' };
+  if (pathname.includes('shop') || pathname.includes('product') || pathname.includes('store') || pathname.includes('catalog')) return { url: finalUrl, pathname, pageType: 'shop', pageLabel: 'Products & Store' };
+  if (pathname.includes('privacy') || pathname.includes('terms') || pathname.includes('policy')) return { url: finalUrl, pathname, pageType: 'legal', pageLabel: 'Privacy & Terms' };
+
+  if (pathname === '/' || pathname === '') {
+    return { url: `https://${domain}/`, pathname: '/', pageType: 'home', pageLabel: 'Home' };
+  }
+
+  const cleanPath = pathname.replace(/^\/|\/$/g, '').split('/').pop() || 'Page';
+  const label = cleanPath.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  return { url: finalUrl, pathname, pageType: 'general', pageLabel: label };
 }
 
 /**
@@ -52,27 +113,60 @@ export function getSuggestedContentFix(
   snippet?: string
 ): SuggestedContentFix | null {
   const normId = checkId.toLowerCase();
-  
-  // Extract clean page title if mentioned inside quotation marks
-  const titleMatch = observedText?.match(/"([^"]+)"/);
-  const possibleTitle = titleMatch ? titleMatch[1] : undefined;
-  const brand = formatBrandName(domain, possibleTitle);
+  const context = extractPageContext(observedText, snippet, domain);
+  const brand = formatBrandName(domain);
 
   // 1. META DESCRIPTIONS
   if (normId.includes('descriptions.missing') || normId.includes('descriptions.too_short')) {
-    const text = `Explore ${brand}: Official updates, verified services, and key resources. Designed for high performance, mobile speed, and seamless user experience.`;
+    let desc = '';
+    switch (context.pageType) {
+      case 'cart':
+        desc = `Review your selected items in the ${brand} shopping cart. Enjoy secure checkout, fast order processing, and reliable customer support.`;
+        break;
+      case 'checkout':
+        desc = `Complete your purchase at ${brand}. Encrypted SSL checkout, verified payment options, and instant order confirmation for all customers.`;
+        break;
+      case 'about':
+        desc = `Learn about ${brand}: our mission, values, and industry expertise. Discover how our dedicated team delivers trusted results and excellence.`;
+        break;
+      case 'contact':
+        desc = `Contact ${brand} today. Reach our support and sales team for assistance, inquiries, and consultations. We are ready to assist you.`;
+        break;
+      case 'services':
+        desc = `Explore professional services from ${brand}. High-performance, scalable solutions tailored to help your organization achieve measurable growth.`;
+        break;
+      case 'pricing':
+        desc = `View transparent pricing plans from ${brand}. Flexible options, clear deliverables, and no hidden fees. Choose the right plan for your team.`;
+        break;
+      case 'shop':
+        desc = `Shop the official ${brand} catalog. Explore high-quality products, competitive pricing, and fast shipping. Order your items online today.`;
+        break;
+      case 'blog':
+        desc = `Read the latest news, guides, and industry analysis from ${brand}. Stay informed with expert insights and practical best practices.`;
+        break;
+      case 'account':
+        desc = `Access your ${brand} customer account. Manage active orders, review billing history, and update profile preferences securely.`;
+        break;
+      case 'legal':
+        desc = `Read the official privacy policy and terms of service for ${brand}. Transparent guidelines on user data protection and service usage.`;
+        break;
+      case 'home':
+      default:
+        desc = `Welcome to ${brand}: Explore official updates, trusted services, and innovative digital solutions. Built for high performance, reliability, and speed.`;
+        break;
+    }
+
     return {
       type: 'meta_description',
-      label: 'Suggested Meta Description',
+      label: `Tailored Meta Description for ${context.pageLabel}`,
       actionLabel: 'Description',
-      text,
-      charCount: text.length,
-      recommendation: '70–160 chars (100% visible on mobile & desktop Google snippets)',
+      text: desc,
+      charCount: desc.length,
+      recommendation: `${desc.length} chars (within Google's optimal 120–155 char mobile SERP boundary)`,
     };
   }
 
   if (normId.includes('descriptions.too_long') || normId.includes('descriptions.duplicate')) {
-    // Attempt to extract existing description from observed or snippet
     let extracted = '';
     const match = observedText?.match(/"([^"]+)"/) || snippet?.match(/content="([^"]+)"/);
     if (match && match[1]) {
@@ -80,7 +174,6 @@ export function getSuggestedContentFix(
     }
 
     if (extracted && extracted.length > 150) {
-      // Find the last sentence or word boundary before 150 chars
       const truncated = extracted.slice(0, 150);
       const lastSentence = truncated.lastIndexOf('.');
       const cleanText = lastSentence > 80 ? truncated.slice(0, lastSentence + 1) : truncated.replace(/[,;:\s]+[^\s]*$/, '') + '...';
@@ -94,14 +187,14 @@ export function getSuggestedContentFix(
       };
     }
 
-    const text = `Discover ${brand}: Explore official insights, featured resources, and news. Optimized for search accessibility and fast mobile loading.`;
+    const fallbackDesc = `Discover ${brand}: Explore official insights, featured resources, and news. Optimized for search accessibility and fast mobile loading.`;
     return {
       type: 'meta_description',
-      label: 'Recommended Meta Description',
+      label: `Optimized Meta Description for ${context.pageLabel}`,
       actionLabel: 'Description',
-      text,
-      charCount: text.length,
-      recommendation: '70–160 chars optimal search standard',
+      text: fallbackDesc,
+      charCount: fallbackDesc.length,
+      recommendation: 'Condensed to optimal 120–155 chars',
     };
   }
 
@@ -114,7 +207,6 @@ export function getSuggestedContentFix(
     }
 
     if (rawTitle && rawTitle.length > 58) {
-      // Split on separators (| or — or -)
       const segments = rawTitle.split(/\s*[|—–\-]\s*/).map((s) => s.trim()).filter(Boolean);
       let condensed = rawTitle;
       if (segments.length >= 3) {
@@ -139,7 +231,7 @@ export function getSuggestedContentFix(
       };
     }
 
-    const fallbackTitle = `${brand} — Official Home & Resources`;
+    const fallbackTitle = `${context.pageLabel} | ${brand}`;
     return {
       type: 'title',
       label: 'Suggested Title Tag',
@@ -150,20 +242,63 @@ export function getSuggestedContentFix(
     };
   }
 
-  if (normId.includes('titles.missing') || normId.includes('titles.too_short')) {
-    const text = `${brand} — Official Website & Platform`;
+  if (normId.includes('titles.missing') || normId.includes('titles.too_short') || normId.includes('titles.duplicate')) {
+    let title = '';
+    switch (context.pageType) {
+      case 'cart':
+        title = `Shopping Cart | ${brand}`;
+        break;
+      case 'checkout':
+        title = `Secure Checkout | ${brand}`;
+        break;
+      case 'about':
+        title = `About Us — Mission & Team | ${brand}`;
+        break;
+      case 'contact':
+        title = `Contact Us — Customer Support | ${brand}`;
+        break;
+      case 'services':
+        title = `Services & Solutions | ${brand}`;
+        break;
+      case 'pricing':
+        title = `Pricing Plans & Options | ${brand}`;
+        break;
+      case 'shop':
+        title = `Products & Catalog | ${brand}`;
+        break;
+      case 'blog':
+        title = `Blog & Industry Insights | ${brand}`;
+        break;
+      case 'account':
+        title = `Customer Account | ${brand}`;
+        break;
+      case 'legal':
+        title = `Privacy & Terms | ${brand}`;
+        break;
+      case 'home':
+      default:
+        title = `${brand} — Official Website & Platform`;
+        break;
+    }
+
     return {
       type: 'title',
-      label: 'Recommended Title Tag',
+      label: `Tailored Title Tag for ${context.pageLabel}`,
       actionLabel: 'Title',
-      text,
-      charCount: text.length,
-      recommendation: '30–60 chars optimal search visibility',
+      text: title,
+      charCount: title.length,
+      recommendation: 'Under 60 chars optimal search visibility',
     };
   }
 
   // 3. EMPTY ANCHOR LINKS
-  if (normId.includes('links.empty_anchor') || normId.includes('links.no_anchor')) {
+  if (
+    normId.includes('links.empty_anchor') ||
+    normId.includes('empty anchor') ||
+    normId.includes('links.empty') ||
+    normId.includes('links.no_anchor') ||
+    normId.startsWith('links')
+  ) {
     const urlMatch = observedText?.match(/https?:\/\/[^\s'")]+/);
     const linkUrl = urlMatch ? urlMatch[0].toLowerCase() : '';
 
@@ -180,10 +315,18 @@ export function getSuggestedContentFix(
       anchorText = `Subscribe to ${brand} on YouTube`;
     } else if (linkUrl.includes('github.com')) {
       anchorText = `View ${brand} on GitHub`;
+    } else if (linkUrl.includes('tiktok.com')) {
+      anchorText = `Watch ${brand} on TikTok`;
+    } else if (linkUrl.includes('t.me/') || linkUrl.includes('telegram.me')) {
+      anchorText = `Join ${brand} on Telegram`;
+    } else if (linkUrl.includes('medium.com')) {
+      anchorText = `Read ${brand} on Medium`;
     } else if (linkUrl.includes('contact') || linkUrl.includes('support')) {
       anchorText = `Contact ${brand} Support`;
     } else if (linkUrl.includes('about')) {
       anchorText = `About ${brand}`;
+    } else if (linkUrl.includes('checkout') || linkUrl.includes('cart')) {
+      anchorText = `Proceed to Checkout`;
     }
 
     return {
@@ -195,8 +338,46 @@ export function getSuggestedContentFix(
     };
   }
 
-  // 4. IMAGES MISSING DIMENSIONS (Mobile CLS)
-  if (normId.includes('images.missing_dimensions') || normId.includes('mobile.cls_dimensions')) {
+  // 4. DUPLICATE CONTENT (Near Duplicate Body Text)
+  if (
+    normId.includes('duplicate_content') ||
+    normId.includes('near_duplicate') ||
+    normId.includes('duplicate_body') ||
+    normId.includes('duplicate content')
+  ) {
+    const isUtility = context.pageType === 'checkout' || context.pageType === 'cart' || context.pageType === 'account' ||
+      observedText?.toLowerCase().includes('checkout') || observedText?.toLowerCase().includes('cart') ||
+      snippet?.toLowerCase().includes('checkout') || snippet?.toLowerCase().includes('cart');
+
+    if (isUtility) {
+      return {
+        type: 'robots_noindex',
+        label: 'Exclude Duplicate Transactional Page from Search Index',
+        actionLabel: 'Robots Tag',
+        text: '<meta name="robots" content="noindex, follow" />',
+        recommendation: 'Prevents search engines from indexing duplicate cart & checkout utility flows',
+      };
+    }
+
+    const matchUrl = observedText?.match(/https?:\/\/[^\s'")]+/);
+    const primaryUrl = matchUrl ? matchUrl[0] : `https://${domain}/`;
+    return {
+      type: 'canonical',
+      label: 'Canonicalize to Master Authoritative URL',
+      actionLabel: 'Canonical Tag',
+      text: `<link rel="canonical" href="${primaryUrl}" />`,
+      recommendation: 'Consolidates duplicate content signals into the primary canonical URL',
+    };
+  }
+
+  // 5. IMAGES MISSING DIMENSIONS (Mobile CLS)
+  if (
+    normId.includes('images.missing_dimensions') ||
+    normId.includes('missing dimensions') ||
+    normId.includes('images.missing') ||
+    normId.includes('mobile.cls_dimensions') ||
+    normId.startsWith('images')
+  ) {
     return {
       type: 'image_dimensions',
       label: 'Prevent Mobile Layout Shift (CLS)',
@@ -206,18 +387,18 @@ export function getSuggestedContentFix(
     };
   }
 
-  // 5. IMAGES MISSING ALT
+  // 6. IMAGES MISSING ALT
   if (normId.includes('images.missing_alt') || normId.includes('images.no_alt')) {
     return {
       type: 'image_alt',
       label: 'Suggested Image Alt Attribute',
       actionLabel: 'Alt Tag',
-      text: `alt="${brand} featured illustration"`,
+      text: `alt="${brand} — ${context.pageLabel} illustration"`,
       recommendation: 'Provides screen-reader accessibility and image search indexing',
     };
   }
 
-  // 6. MOBILE VIEWPORT
+  // 7. MOBILE VIEWPORT
   if (normId.includes('mobile.viewport') || normId.includes('viewport.missing')) {
     return {
       type: 'viewport',

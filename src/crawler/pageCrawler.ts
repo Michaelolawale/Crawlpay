@@ -52,23 +52,62 @@ export class PageCrawler {
     const rootOrigin = new URL(startUrl).origin;
     const hostname = new URL(startUrl).hostname;
 
-    // 1. Fetch robots.txt
+    // 1. Fetch robots.txt, probe WAF for GPTBot, and probe llms.txt concurrently
     let robotsTxtContent: string | undefined;
-    try {
-      const robotsUrl = `${rootOrigin}/robots.txt`;
-      const res = await fetch(robotsUrl, {
+    let isRobotsFetchFailed = false;
+    let wafProbe: SiteMetadata['wafProbe'] = undefined;
+    let llmsTxtFound = false;
+
+    const [robotsRes, wafRes, llmsRes] = await Promise.allSettled([
+      // A. Robots.txt
+      fetch(`${rootOrigin}/robots.txt`, {
         headers: { 'User-Agent': this.config.userAgent, 'Cache-Control': 'no-cache' },
         cache: 'no-store',
         signal: AbortSignal.timeout(4000),
-      });
-      if (res.ok) {
-        robotsTxtContent = await res.text();
+      }),
+      // B. AI User-Agent WAF Probe (HEAD request with GPTBot user-agent)
+      fetch(startUrl, {
+        method: 'HEAD',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)',
+          Accept: 'text/html,application/xhtml+xml',
+        },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(3000),
+      }),
+      // C. llms.txt probe
+      fetch(`${rootOrigin}/llms.txt`, {
+        headers: { 'User-Agent': this.config.userAgent },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(2500),
+      }),
+    ]);
+
+    if (robotsRes.status === 'fulfilled') {
+      if (robotsRes.value.ok) {
+        robotsTxtContent = await robotsRes.value.text();
+      } else if (robotsRes.value.status >= 500) {
+        isRobotsFetchFailed = true;
       }
-    } catch {
-      // Continue even if robots.txt 404s
+    } else {
+      isRobotsFetchFailed = true;
     }
 
-    const robotsParser = new RobotsParser(robotsTxtContent, 'CrawlPayBot');
+    if (wafRes.status === 'fulfilled') {
+      const status = wafRes.value.status;
+      const isBlocked = status === 403 || status === 429 || status === 503;
+      wafProbe = {
+        accessible: !isBlocked,
+        status,
+        blockedReason: isBlocked ? (status === 403 ? 'WAF 403 Forbidden' : `HTTP ${status}`) : undefined,
+      };
+    }
+
+    if (llmsRes.status === 'fulfilled' && llmsRes.value.ok) {
+      llmsTxtFound = true;
+    }
+
+    const robotsParser = new RobotsParser(robotsTxtContent, 'CrawlPayBot', isRobotsFetchFailed);
 
     // 2. Discover and parse sitemap
     const sitemapData = await fetchAndParseSitemap(startUrl, robotsParser.getSitemaps());
@@ -172,6 +211,8 @@ export class PageCrawler {
       sitemapUrls: sitemapData.urls,
       robotsTxtFound: Boolean(robotsTxtContent),
       robotsTxtContent,
+      wafProbe,
+      llmsTxtFound,
     };
 
     return {

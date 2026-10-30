@@ -87,6 +87,17 @@ server.tool(
         `- **Performance:** ${report.scores.performance}/100`,
         `- **Social / OpenGraph:** ${report.scores.social}/100`,
         report.scores.mobile !== undefined ? `- **Mobile Vitals:** ${report.scores.mobile}/100` : '',
+        `- **⭐ Answer Engine (AEO):** ${report.scores.aeo}/100`,
+        `- **⭐ AI Search Readiness (GEO):** ${report.scores.geo}/100`,
+        report.coverage ? `- **Audit Coverage:** ${report.coverage.coveragePercentage}% (${report.coverage.evaluatedChecks}/${report.coverage.totalChecks} checks evaluated)` : '',
+        ``,
+        `## 🤖 AEO & GEO Intelligence Signals`,
+        `- **Question-Led Headings:** ${report.aeoSignals?.questionHeadingsCount || 0} detected (${report.aeoSignals?.questionHeadings.slice(0, 3).map((q) => `"${q}"`).join(', ') || 'None'})`,
+        `- **Machine FAQ Schema:** ${report.aeoSignals?.hasFaqSchema ? '✅ Present (Q&A Machine Readable)' : '⚠️ Missing (Recommend adding FAQPage JSON-LD)'}`,
+        `- **AI Bot Accessibility (RFC 9309):** ${report.geoSignals?.aiBots.map((b) => `${b.bot}: ${b.status}`).join(' | ') || 'Default Allowed'}`,
+        `- **Brand Entity Anchors:** ${report.geoSignals?.brandEntityDeclared ? `✅ Declared (${report.geoSignals.declaredSameAsCount} external anchors)` : '⚠️ None declared (Recommend adding schema.org sameAs)'}`,
+        `- **Freshness & Attribution:** ${report.geoSignals?.hasAuthorAttribution ? 'Author attribution present' : 'No author attribution'} · ${report.geoSignals?.hasPublicationDates ? 'ISO timestamps present' : 'No publication dates'}`,
+        `- **llms.txt Standard:** ${report.geoSignals?.hasLlmsTxt ? '✅ Found (/llms.txt present)' : 'ℹ️ None detected (Optional)'}`,
         ``,
         `## 🚀 Top Priority Needle Movers`,
         ...(report.topNeedleMovers && report.topNeedleMovers.length > 0
@@ -111,6 +122,9 @@ server.tool(
         }
         if (report.codePatches.schemaJsonLd) {
           outputLines.push(`**Structured Schema (JSON-LD):**\n\`\`\`json\n${report.codePatches.schemaJsonLd.trim()}\n\`\`\``);
+        }
+        if (report.codePatches.geoRobotsBlock) {
+          outputLines.push(`**AI-Optimized robots.txt (RFC 9309):**\n\`\`\`txt\n${report.codePatches.geoRobotsBlock.trim()}\n\`\`\``);
         }
         outputLines.push(``);
       }
@@ -183,6 +197,9 @@ server.tool(
         `| Estimated LCP Speed | ${comp.target.lcpSeconds}s | ${comp.competitor.lcpSeconds}s |`,
         `| Schema Tags Detected | ${comp.target.schemaCount} | ${comp.competitor.schemaCount} |`,
         `| Primary Heading | \`${comp.target.heading || 'None'}\` | \`${comp.competitor.heading || 'None'}\` |`,
+        `| Answer Engine (AEO) | **${targetReport.scores.aeo}/100** | **${competitorReport.scores.aeo}/100** |`,
+        `| AI Search Readiness (GEO) | **${targetReport.scores.geo}/100** | **${competitorReport.scores.geo}/100** |`,
+        `| AI Bot Accessibility | ${targetReport.geoSignals?.aiBots.filter((b) => b.status === 'allowed').length || 0}/4 bots | ${competitorReport.geoSignals?.aiBots.filter((b) => b.status === 'allowed').length || 0}/4 bots |`,
         ``,
         `## 🔎 Why They Are Winning / Key Gaps`,
         ...(comp.whyTheyAreWinning.length > 0

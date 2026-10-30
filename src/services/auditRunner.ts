@@ -73,8 +73,8 @@ export async function runAuditPipeline(
 
   const $ = cheerio.load(rootPage.html);
 
-  // 2. Run the deterministic checks (including mobile performance)
-  const { findings, notChecked, mobileMetrics } = await runAllChecks(pages, metadata, robotsParser);
+  // 2. Run the deterministic checks (including mobile performance, AEO & GEO)
+  const { findings, notChecked, mobileMetrics, aeoSignals, geoSignals } = await runAllChecks(pages, metadata, robotsParser);
 
   // 3. Group by root cause, compute page importance & priorities, attach stackFix
   const { groups, whatPassed } = groupAndPrioritizeFindings(findings, pages, metadata);
@@ -113,16 +113,45 @@ export async function runAuditPipeline(
   const mobileFindingsCount = findings.filter((f) => f.checkId.startsWith('mobile')).length;
   const mobileScore = mobileMetrics?.mobileScore ?? Math.max(35, 100 - mobileFindingsCount * 15);
 
+  // AEO Score calculation
+  let aeoDeductions = 0;
+  for (const f of findings) {
+    if (f.checkId === 'aeo.question_headings') aeoDeductions += 15;
+    else if (f.checkId === 'aeo.faq_schema') aeoDeductions += 10;
+    else if (f.checkId === 'aeo.structured_answers') aeoDeductions += 10;
+  }
+  const aeoScore = Math.max(35, Math.min(100, 100 - aeoDeductions));
+
+  // GEO Score calculation (AI Search Readiness)
+  let geoDeductions = 0;
+  let unknownChecksCount = 0;
+  for (const f of findings) {
+    if (f.checkId === 'geo.ai_bot_access') geoDeductions += 25;
+    else if (f.checkId === 'geo.waf_probe') geoDeductions += 20;
+    else if (f.checkId === 'geo.client_render_barrier') geoDeductions += 25;
+    else if (f.checkId === 'geo.entity_declared') geoDeductions += 15;
+    else if (f.checkId === 'geo.authorship_freshness') geoDeductions += 10;
+  }
+  if (geoSignals?.aiBots.some((b) => b.status === 'unknown')) {
+    unknownChecksCount++;
+  }
+  const geoScore = Math.max(35, Math.min(100, 100 - geoDeductions));
+
+  const totalCheckFamilies = 13;
+  const evaluatedChecks = totalCheckFamilies - unknownChecksCount;
+  const coveragePercentage = Math.round((evaluatedChecks / totalCheckFamilies) * 100);
+
   // 8. Map Top Needle Movers directly from highest priority FindingGroups
-  const topNeedleMovers: Array<{ priority: 'Critical' | 'High' | 'Quick Win'; title: string; description: string; action: string }> = [];
+  const topNeedleMovers: Array<{ priority: 'Critical' | 'High' | 'Quick Win'; title: string; description: string; action: string; snippet?: string }> = [];
 
   for (const group of groups.slice(0, 3)) {
     const p = group.severity === 'critical' ? 'Critical' : group.severity === 'high' ? 'High' : 'Quick Win';
     const sample = group.findings[0];
     topNeedleMovers.push({
       priority: p,
-      title: `${group.checkId.replace(/_/g, ' ')} (${group.affectedCount} page${group.affectedCount > 1 ? 's' : ''})`,
+      title: group.checkId,
       description: sample ? sample.evidence.observed : `Affects ${group.affectedCount} URLs across the crawl.`,
+      snippet: sample ? sample.evidence.snippet : undefined,
       action: group.stackFix || (sample ? sample.evidence.expected : 'Review and correct on affected templates.'),
     });
   }
@@ -138,8 +167,16 @@ export async function runAuditPipeline(
   }
 
   return {
+    schemaVersion: '2.0.0',
+    auditVersion: '1.2.0',
     targetUrl: normalizedUrl,
     auditTimestamp: new Date().toISOString(),
+    coverage: {
+      totalChecks: totalCheckFamilies,
+      evaluatedChecks,
+      unknownChecks: unknownChecksCount,
+      coveragePercentage,
+    },
     summary: llmResult.summary,
     scores: {
       overall: overallScore,
@@ -148,7 +185,11 @@ export async function runAuditPipeline(
       performance: performance.score,
       mobile: mobileScore,
       social: 90,
+      aeo: aeoScore,
+      geo: geoScore,
     },
+    aeoSignals,
+    geoSignals,
     mobileMetrics,
     archetype,
     topNeedleMovers,
