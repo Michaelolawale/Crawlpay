@@ -74,11 +74,14 @@ server.tool(
       }
 
       // Format markdown response
+      const rawConf = report.archetype?.confidence ?? 85;
+      const confPercent = Math.round(rawConf <= 1 ? rawConf * 100 : rawConf);
+
       const outputLines: string[] = [
         `# 🔍 CrawlPay Technical SEO Audit Report`,
         `**Target URL:** ${report.targetUrl}`,
         `**Audit Timestamp:** ${report.auditTimestamp}`,
-        `**Archetype Detected:** ${report.archetype?.label || 'General Web Application'} (Confidence: ${Math.round((report.archetype?.confidence || 0.85) * 100)}%)`,
+        `**Archetype Detected:** ${report.archetype?.label || 'General Web Application'} (Confidence: ${confPercent}%)`,
         ``,
         `## 📊 Scores Breakdown`,
         `- **Overall Health:** ${report.scores.overall}/100`,
@@ -102,8 +105,8 @@ server.tool(
         `## 🚀 Top Priority Needle Movers`,
         ...(report.topNeedleMovers && report.topNeedleMovers.length > 0
           ? report.topNeedleMovers.map(
-              (m) => `### [${m.priority}] ${m.title}\n${m.description}\n**Actionable Fix:** ${m.action}\n`
-            )
+            (m) => `### [${m.priority}] ${m.title}\n${m.description}\n**Actionable Fix:** ${m.action}\n`
+          )
           : ['No critical blocking issues identified.']),
         ``,
       ];
@@ -307,7 +310,8 @@ server.tool(
   },
   async ({ url, targetUrl, recipient, amountUsd = '0.05' }) => {
     try {
-      const destination = url || targetUrl || 'https://crawlpay.org/api/audit';
+      const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000';
+      const destination = url || targetUrl || `${appBaseUrl}/api/audit`;
       console.error(`[Celo MCP] Settling x402 payment for ${destination} on Celo Mainnet...`);
 
       const telemetry = await buyCoordinator.getLiveCeloTelemetry();
@@ -359,10 +363,10 @@ server.tool(
 async function run() {
   console.error('[Celo MCP] Starting CrawlPay Celo MCP Server...');
   console.error(`[Celo MCP] Chain: Celo Mainnet (42220) | Tag: ${CONFIG.ATTRIBUTION_TAG} | Wallet: ${CONFIG.AGENT_WALLET_ADDRESS}`);
-  
+
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  
+
   console.error('[Celo MCP] CrawlPay Celo MCP Server is running and listening on stdio.');
 }
 
