@@ -12,8 +12,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
-import { CONFIG } from '@/config';
-import { getAdminToken } from '@/utils/adminClient';
+import { CONFIG } from '../../config';
+import { getAdminToken } from '../../utils/adminClient';
 
 const PUBLIC_AGENT_ADDRESS =
   process.env.NEXT_PUBLIC_AGENT_ADDRESS || CONFIG.AGENT_WALLET_ADDRESS;

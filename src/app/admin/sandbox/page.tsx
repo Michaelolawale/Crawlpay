@@ -11,9 +11,9 @@ import {
   AlertCircle,
   ShieldAlert,
 } from 'lucide-react';
-import { CheckEngineView } from '@/components/CheckEngineView';
-import { FullAuditReport } from '@/types/audit';
-import { getAdminToken } from '@/utils/adminClient';
+import { CheckEngineView } from '../../../components/CheckEngineView';
+import { FullAuditReport } from '../../../types/audit';
+import { getAdminToken } from '../../../utils/adminClient';
 
 export default function AdminSandboxPage() {
   const [targetUrl, setTargetUrl] = useState('');

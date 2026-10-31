@@ -254,7 +254,7 @@ export class PageCrawler {
       });
 
       clearTimeout(timeout);
-      finalUrl = res.url;
+      finalUrl = res.url || currentUrl;
       status = res.status;
 
       res.headers.forEach((val, key) => {

@@ -33,6 +33,10 @@ export function checkCanonicals(pages: PageCrawlData[], metadata: SiteMetadata):
 
     // 2. Relative vs Absolute inconsistency
     if (!rawCanonical.startsWith('http://') && !rawCanonical.startsWith('https://')) {
+      let absoluteExample = rawCanonical;
+      try {
+        absoluteExample = new URL(rawCanonical, page.url).href;
+      } catch {}
       findings.push({
         id: generateStableFindingId('canonical.relative_url', page.url, rawCanonical),
         checkId: 'canonical.relative_url',
@@ -40,7 +44,7 @@ export function checkCanonicals(pages: PageCrawlData[], metadata: SiteMetadata):
         url: page.url,
         evidence: {
           observed: `Canonical URL uses relative format: '${rawCanonical}'.`,
-          expected: `Canonical links must be absolute URLs with protocol and domain (e.g., '${new URL(rawCanonical, page.url).href}').`,
+          expected: `Canonical links must be absolute URLs with protocol and domain (e.g., '${absoluteExample}').`,
           snippet: `<link rel="canonical" href="${rawCanonical}">`,
         },
         rootCauseKey: 'canonical.relative_url',

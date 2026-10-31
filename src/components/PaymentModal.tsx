@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -111,7 +112,34 @@ export function PaymentModal({
     } catch {}
   }, [targetUrl]);
 
-  if (!isOpen) return null;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  // Body scroll lock & Escape key listener
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
+  if (!isOpen || !mounted) return null;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -426,10 +454,22 @@ export function PaymentModal({
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink/60 p-0 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* Modal Container: Bottom sheet on mobile, rounded card on desktop */}
-      <div className="relative w-full max-w-lg rounded-t-[24px] sm:rounded-[24px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] isolate">
+      {/* 1. Full-Screen Backdrop Blur - Edge to edge without container clipping */}
+      <div
+        className="fixed inset-0 bg-ink/70 dark:bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200 cursor-pointer"
+        onClick={handleClose}
+        aria-hidden="true"
+      />
+
+      {/* 2. Scrollable Viewport Wrapper */}
+      <div className="fixed inset-0 overflow-y-auto overflow-x-hidden flex min-h-[100dvh] items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none">
+        {/* Modal Container: Bottom sheet on mobile, rounded card on desktop */}
+        <div
+          className="pointer-events-auto relative w-full max-w-lg rounded-t-[24px] sm:rounded-[24px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-2xl max-h-[90dvh] sm:max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-4 sm:zoom-in-95 duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
         {/* Close Button */}
         <button
           onClick={handleClose}
@@ -820,7 +860,9 @@ export function PaymentModal({
             </div>
           </div>
         )}
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

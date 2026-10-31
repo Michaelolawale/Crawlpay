@@ -18,8 +18,8 @@ import {
   Radio,
   Zap,
 } from 'lucide-react';
-import { JobRecord } from '@/services/db';
-import { getAdminToken } from '@/utils/adminClient';
+import { JobRecord } from '../../../services/db';
+import { getAdminToken } from '../../../utils/adminClient';
 
 function formatRelativeTime(isoString: string): string {
   try {

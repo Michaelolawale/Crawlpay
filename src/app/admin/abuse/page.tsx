@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { ShieldBan, Trash2, Plus, AlertCircle, ShieldAlert } from 'lucide-react';
-import { BlocklistRecord } from '@/services/db';
-import { getAdminToken } from '@/utils/adminClient';
+import { BlocklistRecord } from '../../../services/db';
+import { getAdminToken } from '../../../utils/adminClient';
 
 export default function AdminAbusePage() {
   const [blocklist, setBlocklist] = useState<BlocklistRecord[]>([]);

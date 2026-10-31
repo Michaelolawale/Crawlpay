@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CreditCard, ExternalLink, RefreshCw, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
-import { PaymentRecord } from '@/services/db';
-import { getAdminToken } from '@/utils/adminClient';
+import { PaymentRecord } from '../../../services/db';
+import { getAdminToken } from '../../../utils/adminClient';
 
 export default function AdminPaymentsPage() {
   const [payments, setPayments] = useState<PaymentRecord[]>([]);

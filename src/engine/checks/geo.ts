@@ -98,25 +98,34 @@ export function checkGEO(
   // 4. Entity Grounding: Check declared sameAs links in JSON-LD
   const allSameAsLinks: string[] = [];
   let hasEntityDeclared = false;
+  let hasAuthorAttribution = false;
+  let hasPublicationDates = false;
 
   for (const page of pages) {
     for (const item of page.jsonLd || []) {
-      const type = item?.['@type'] || item?.type;
-      const isEntity =
-        type === 'Organization' ||
-        type === 'Corporation' ||
-        type === 'SoftwareApplication' ||
-        type === 'WebSite' ||
-        type === 'Person';
+      const schemas: any[] = Array.isArray(item?.['@graph']) ? item['@graph'] : [item];
+      for (const s of schemas) {
+        if (!s || typeof s !== 'object') continue;
+        const type = s?.['@type'] || s?.type;
+        const isEntity =
+          type === 'Organization' ||
+          type === 'Corporation' ||
+          type === 'SoftwareApplication' ||
+          type === 'WebSite' ||
+          type === 'Person';
 
-      if (isEntity && item?.sameAs) {
-        hasEntityDeclared = true;
-        const links = Array.isArray(item.sameAs) ? item.sameAs : [item.sameAs];
-        for (const l of links) {
-          if (typeof l === 'string' && l.startsWith('http') && !allSameAsLinks.includes(l)) {
-            allSameAsLinks.push(l);
+        if (isEntity && s?.sameAs) {
+          hasEntityDeclared = true;
+          const links = Array.isArray(s.sameAs) ? s.sameAs : [s.sameAs];
+          for (const l of links) {
+            if (typeof l === 'string' && l.startsWith('http') && !allSameAsLinks.includes(l)) {
+              allSameAsLinks.push(l);
+            }
           }
         }
+
+        if (s?.author || s?.creator) hasAuthorAttribution = true;
+        if (s?.dateModified || s?.datePublished) hasPublicationDates = true;
       }
     }
   }
@@ -135,17 +144,8 @@ export function checkGEO(
     });
   }
 
-  // 5. Authorship & Freshness signals
-  let hasAuthorAttribution = false;
-  let hasPublicationDates = false;
-
+  // 5. Authorship & Freshness signals (HTML fallback checks)
   for (const page of pages) {
-    // Check Schema.org
-    for (const item of page.jsonLd || []) {
-      if (item?.author || item?.creator) hasAuthorAttribution = true;
-      if (item?.dateModified || item?.datePublished) hasPublicationDates = true;
-    }
-
     // Check meta tags & HTML
     const htmlLower = (page.html || '').toLowerCase();
     if (htmlLower.includes('name="author"') || htmlLower.includes('property="article:author"')) {

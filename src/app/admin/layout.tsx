@@ -15,9 +15,9 @@ import {
   KeyRound,
   ExternalLink,
 } from 'lucide-react';
-import { CrawlLogo } from '@/components/CrawlLogo';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { setAdminToken, clearAdminToken } from '@/utils/adminClient';
+import { CrawlLogo } from '../../components/CrawlLogo';
+import { ThemeToggle } from '../../components/ThemeToggle';
+import { setAdminToken, clearAdminToken } from '../../utils/adminClient';
 
 const ADMIN_NAV = [
   { href: '/admin', label: 'Overview', shortLabel: 'Overview', icon: LayoutDashboard },

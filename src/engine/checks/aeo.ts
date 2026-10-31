@@ -79,11 +79,14 @@ export function checkAEO(pages: PageCrawlData[], metadata: SiteMetadata): AeoChe
 
     // 2. aeo.faq_schema check
     const hasFaq = (page.jsonLd || []).some((item: any) => {
-      const type = item?.['@type'] || item?.type;
-      if (Array.isArray(type)) {
-        return type.some((t) => t === 'FAQPage' || t === 'QAPage');
-      }
-      return type === 'FAQPage' || type === 'QAPage';
+      const schemas: any[] = Array.isArray(item?.['@graph']) ? item['@graph'] : [item];
+      return schemas.some((s: any) => {
+        const type = s?.['@type'] || s?.type;
+        if (Array.isArray(type)) {
+          return type.some((t: string) => t === 'FAQPage' || t === 'QAPage');
+        }
+        return type === 'FAQPage' || type === 'QAPage';
+      });
     });
 
     if (hasFaq) {

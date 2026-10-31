@@ -42,18 +42,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const { url, mode = 'quick', requirePaid = false, paymentProof, wallet } = body;
 
-    if (!url) {
-      return NextResponse.json({ error: 'Missing target URL' }, { status: 400 });
-    }
-
-    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
-
-    // Check IP blocklist
-    if (await db.isBlocklisted('ip', clientIp)) {
-      return NextResponse.json(
-        { error: 'Access denied: IP address is blocklisted.' },
-        { status: 403 }
-      );
+    if (!url || typeof url !== 'string' || !url.trim()) {
+      return NextResponse.json({ error: 'Missing or invalid target URL' }, { status: 400 });
     }
 
     // Check domain blocklist
@@ -65,7 +55,9 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
-    } catch {}
+    } catch {
+      return NextResponse.json({ error: 'Malformed target URL format' }, { status: 400 });
+    }
 
     // Check wallet blocklist
     if (wallet && (await db.isBlocklisted('wallet', wallet))) {
@@ -78,7 +70,7 @@ export async function POST(req: NextRequest) {
     const dynamicConfig = await db.getConfig();
 
     // Enforce dynamic rate limit per minute
-    if (!db.checkRateLimit(clientIp, dynamicConfig.rate_limit_per_minute)) {
+    if (!db.checkRateLimit(ip, dynamicConfig.rate_limit_per_minute)) {
       return NextResponse.json(
         { error: `Rate limit exceeded: maximum ${dynamicConfig.rate_limit_per_minute} requests per minute.` },
         { status: 429 }
@@ -86,13 +78,13 @@ export async function POST(req: NextRequest) {
     }
 
     // 2. Check for x402 Payment Headers or Body proof
-    const authHeader = req.headers.get('authorization') || req.headers.get('x-payment');
-    const incomingTxHash =
-      typeof paymentProof === 'string' && paymentProof.startsWith('0x') && paymentProof.length === 66
-        ? paymentProof
-        : authHeader && authHeader.toLowerCase().includes('0x')
-        ? authHeader.split(' ').pop()
-        : undefined;
+    const authHeader = req.headers.get('authorization') || req.headers.get('x-payment') || '';
+    let rawTx = typeof paymentProof === 'string' ? paymentProof.trim() : undefined;
+    if (!rawTx && authHeader) {
+      const match = authHeader.match(/0x[a-fA-F0-9]{64}/);
+      if (match) rawTx = match[0];
+    }
+    const incomingTxHash = rawTx && /^0x[a-fA-F0-9]{64}$/.test(rawTx) ? rawTx : undefined;
 
     let isVerifiedPaid = false;
     let verifiedPaymentInfo: any = null;
@@ -208,6 +200,13 @@ export async function POST(req: NextRequest) {
     const duration = Date.now() - startTime;
     const reportId = `rep_${Date.now()}`;
 
+    if (verifiedPaymentInfo) {
+      report.onchainReceipt.isRealBroadcast = true;
+      report.onchainReceipt.upstreamBrowserReceipt.txHash = incomingTxHash!;
+      report.onchainReceipt.upstreamBrowserReceipt.celoscanUrl = `https://celoscan.io/tx/${incomingTxHash}`;
+      report.onchainReceipt.upstreamBrowserReceipt.isRealBroadcast = true;
+    }
+
     // Save report in persistent store
     await db.saveReport(reportId, report, {
       jobId: createdJobId,
@@ -215,13 +214,6 @@ export async function POST(req: NextRequest) {
       wallet: effectiveWallet,
       mode: crawlMode,
     });
-
-    if (verifiedPaymentInfo) {
-      report.onchainReceipt.isRealBroadcast = true;
-      report.onchainReceipt.upstreamBrowserReceipt.txHash = incomingTxHash!;
-      report.onchainReceipt.upstreamBrowserReceipt.celoscanUrl = `https://celoscan.io/tx/${incomingTxHash}`;
-      report.onchainReceipt.upstreamBrowserReceipt.isRealBroadcast = true;
-    }
 
     // Update job status to done
     await db.updateJob(createdJobId, {

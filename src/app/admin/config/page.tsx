@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Sliders, Check, Loader2, Save } from 'lucide-react';
-import { DynamicConfig } from '@/services/db';
-import { getAdminToken } from '@/utils/adminClient';
+import { DynamicConfig } from '../../../services/db';
+import { getAdminToken } from '../../../utils/adminClient';
 
 export default function AdminConfigPage() {
   const [config, setConfig] = useState<DynamicConfig>({

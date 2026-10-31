@@ -11,6 +11,7 @@ import { PageCrawler } from '../crawler/pageCrawler';
 import { runAllChecks } from '../engine/checks';
 import { groupAndPrioritizeFindings } from '../engine/aggregator';
 import { summarizeAuditWithLlm } from '../engine/llmLayer';
+import { getFindingKnowledge } from '../analyzer/findingKnowledge';
 
 import { DynamicConfig } from './db';
 
@@ -147,9 +148,17 @@ export async function runAuditPipeline(
   for (const group of groups.slice(0, 3)) {
     const p = group.severity === 'critical' ? 'Critical' : group.severity === 'high' ? 'High' : 'Quick Win';
     const sample = group.findings[0];
+    const knowledge = getFindingKnowledge(
+      group.checkId,
+      sample?.evidence?.observed,
+      metadata.detectedStack,
+      metadata.hostname,
+      sample?.evidence?.snippet
+    );
+    const title = knowledge?.title || group.checkId;
     topNeedleMovers.push({
       priority: p,
-      title: group.checkId,
+      title,
       description: sample ? sample.evidence.observed : `Affects ${group.affectedCount} URLs across the crawl.`,
       snippet: sample ? sample.evidence.snippet : undefined,
       action: group.stackFix || (sample ? sample.evidence.expected : 'Review and correct on affected templates.'),
