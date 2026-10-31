@@ -50,6 +50,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     const ethereum = (window as unknown as { ethereum?: any })?.ethereum;
     if (!ethereum) return;
 
+    // Check if provider is Phantom which does not support Celo
+    const isPhantom = Boolean(
+      ethereum?.isPhantom || (window as unknown as { phantom?: { ethereum?: any } })?.phantom?.ethereum === ethereum
+    );
+    if (isPhantom) {
+      alert(
+        'Phantom wallet does not support Celo Mainnet (Chain ID 42220). Please connect a Celo-compatible EVM wallet such as MetaMask, Rabby, Valora, or MiniPay.'
+      );
+      return;
+    }
+
     try {
       await ethereum.request({
         method: 'wallet_switchEthereumChain',
@@ -57,22 +68,29 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       });
       setIsWrongNetwork(false);
     } catch (switchError: any) {
-      if (switchError?.code === 4902) {
-        try {
-          await ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: '0xa4ec',
-                chainName: 'Celo Mainnet',
-                nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
-                rpcUrls: ['https://forno.celo.org'],
-                blockExplorerUrls: ['https://celoscan.io'],
-              },
-            ],
-          });
-          setIsWrongNetwork(false);
-        } catch {}
+      if (switchError?.code === 4001) {
+        return; // User cancelled
+      }
+      try {
+        await ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              chainId: '0xa4ec',
+              chainName: 'Celo Mainnet',
+              nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
+              rpcUrls: ['https://forno.celo.org'],
+              blockExplorerUrls: ['https://celoscan.io'],
+            },
+          ],
+        });
+        setIsWrongNetwork(false);
+      } catch (addError: any) {
+        if (addError?.code !== 4001) {
+          alert(
+            'Your connected wallet does not support Celo Mainnet (Chain ID 42220). Please switch to MetaMask, Rabby, or Valora.'
+          );
+        }
       }
     }
   };
@@ -240,7 +258,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </span>
               </div>
               <p className="font-footer text-[14px] leading-[20px] text-graphite-200 font-normal">
-                Autonomous technical SEO and competitor intelligence audit agent settled per crawl on Celo mainnet.
+                Autonomous technical SEO, AEO &amp; GEO audit agent settled per crawl on Celo mainnet.
               </p>
             </div>
 

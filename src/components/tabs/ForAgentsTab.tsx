@@ -141,7 +141,7 @@ console.log(\`Detected \${audit.prioritizedGroups.length} root cause issue group
           Agent & Developer Integration
         </h2>
         <p className="mt-1 text-sm text-muted-foreground max-w-2xl">
-          Everything AI agents and developers need to consume CrawlPay programmatically over Celo HTTP 402 rails.
+          Everything AI agents and developers need to consume CrawlPay programmatically over Celo HTTP 402 rails—auditing technical SEO, AEO query mapping, and GEO citability on demand.
         </p>
       </div>
 
@@ -268,7 +268,7 @@ console.log(\`Detected \${audit.prioritizedGroups.length} root cause issue group
               <tr>
                 <td className="py-3 px-3 text-primary font-bold">POST /api/audit</td>
                 <td className="py-3 px-3 font-sans text-muted-foreground">
-                  Deterministic technical audit, root causes & stack fixes
+                  Deterministic SEO, AEO &amp; GEO audit, root causes &amp; stack fixes
                 </td>
                 <td className="py-3 px-3 text-foreground">$0.25 / $0.50 USD₮</td>
                 <td className="py-3 px-3 text-muted-foreground">x402 / Web3</td>

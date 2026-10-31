@@ -207,10 +207,10 @@ export function AuditHomeTab({ initialTarget = '', loadedReport, onAuditComplete
       {/* Tab Header */}
       <div>
         <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
-          Autonomous SEO Audit
+          Autonomous SEO, AEO &amp; GEO Audit
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Deterministic technical SEO, Core Web Vitals, and stack-tailored code fixes. No accounts, no subscriptions.
+          Deterministic technical SEO, AEO query mapping, GEO generative citability, and stack-tailored code fixes. No accounts, no subscriptions.
         </p>
       </div>
 

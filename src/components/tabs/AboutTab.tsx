@@ -65,6 +65,16 @@ export function AboutTab() {
       name: 'Schema.org JSON-LD Validation',
       desc: 'Validates JSON-LD schema syntax, BreadcrumbList, Organization, and structured data entities.',
     },
+    {
+      id: 'aeo',
+      name: 'Answer Engine Optimization (AEO)',
+      desc: 'Evaluates interrogative question headings, machine-readable FAQ/QA schema, and direct answer formats for AI search engines like ChatGPT and Perplexity.',
+    },
+    {
+      id: 'geo',
+      name: 'Generative Engine Optimization (GEO)',
+      desc: 'Checks AI crawler accessibility (GPTBot, ClaudeBot, PerplexityBot), WAF reachability, Schema.org sameAs entity grounding, and E-E-A-T freshness.',
+    },
   ];
 
   const notChecked = [
@@ -98,7 +108,7 @@ export function AboutTab() {
           About CrawlPay & Check Engine
         </h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Autonomous technical SEO agent powered by deterministic code, onchain Celo settlement, and full scope transparency.
+          Autonomous technical SEO, AEO, and GEO agent powered by deterministic code, onchain Celo settlement, and full scope transparency.
         </p>
       </div>
 
@@ -106,7 +116,7 @@ export function AboutTab() {
       <section className="rounded-xl border border-border bg-card p-6 space-y-4">
         <div className="flex items-center gap-2">
           <CheckCircle2 className="size-5 text-emerald-400" />
-          <h3 className="text-base font-semibold text-foreground">What the Agent Checks (10 Core Disciplines)</h3>
+          <h3 className="text-base font-semibold text-foreground">What the Agent Checks (12 Core Disciplines)</h3>
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">
           Findings are detected by deterministic rule-based algorithms—never hallucinated by an LLM. Every finding carries exact URL evidence and expected benchmarks.

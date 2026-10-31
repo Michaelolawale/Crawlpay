@@ -140,7 +140,7 @@ export default function TermsPage() {
             </h2>
           </div>
           <p className="text-[14px] sm:text-[15px] text-graphite-800 leading-relaxed font-normal">
-            CrawlPay is an autonomous technical SEO and competitor intelligence platform designed for web developers, site owners, and autonomous AI agents. Unlike traditional SaaS tools that require recurring monthly retainers and user accounts, CrawlPay provides deterministic on-demand audits settled directly on Celo mainnet rails via x402 micropayments.
+            CrawlPay is an autonomous technical SEO, Answer Engine Optimization (AEO), and Generative Engine Optimization (GEO) platform designed for web developers, site owners, and autonomous AI agents. Unlike traditional SaaS tools that require recurring monthly retainers and user accounts, CrawlPay provides deterministic on-demand audits settled directly on Celo mainnet rails via x402 micropayments.
           </p>
         </section>
 
@@ -231,7 +231,7 @@ export default function TermsPage() {
                 </span>
               </div>
               <p className="font-footer text-[14px] leading-[20px] text-graphite-200 font-normal">
-                Autonomous technical SEO and competitor intelligence audit agent settled per crawl on Celo mainnet.
+                Autonomous technical SEO, AEO &amp; GEO audit agent settled per crawl on Celo mainnet.
               </p>
               <div className="pt-2">
                 <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 block">

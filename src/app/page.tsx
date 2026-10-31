@@ -50,7 +50,7 @@ export const metadata = {
   const faqs = [
     {
       q: 'What is CrawlPay and how does it work?',
-      a: 'CrawlPay is an autonomous SEO audit agent on Celo mainnet. It inspects live websites using 10 deterministic engine checks and delivers ready-to-deploy code fixes on demand, settled per crawl via x402 micropayments.',
+      a: 'CrawlPay is an autonomous site audit agent on Celo mainnet. It inspects live websites across technical SEO, Answer Engine Optimization (AEO), and Generative Engine Optimization (GEO), delivering ready-to-deploy code fixes on demand, settled per crawl via x402 micropayments.',
     },
     {
       q: 'How does on-demand x402 payment work on Celo?',
@@ -58,7 +58,7 @@ export const metadata = {
     },
     {
       q: 'What checks does the deterministic engine run?',
-      a: 'The engine evaluates canonical URL consistency, robots.txt directives, XML sitemaps, indexability headers, heading hierarchy, meta descriptions, OpenGraph tags, mobile viewport settings, and Core Web Vitals.',
+      a: 'The engine evaluates canonical consistency, robots.txt AI bot directives (GPTBot, ClaudeBot, PerplexityBot), JSON-LD schema, AEO question-answer extraction, GEO citability metrics, heading hierarchy, meta tags, and Core Web Vitals.',
     },
     {
       q: 'Which wallets and tokens are supported?',
@@ -186,7 +186,7 @@ export const metadata = {
           <div className="max-w-[1176px] mx-auto px-4 sm:px-6 text-center">
             {/* Eyebrow: DM Sans 400, 18px, 1.6, violet */}
             <p className="font-sans text-[15px] sm:text-[18px] leading-[1.6] font-[400] text-violet mb-3 sm:mb-4">
-              Autonomous SEO on Celo Mainnet
+              Autonomous Technical SEO, AEO &amp; GEO on Celo
             </p>
 
             {/* Display Headline: DM Sans 600, fluid responsive text */}
@@ -197,7 +197,7 @@ export const metadata = {
 
             {/* Supporting Line: Simple, accurate, core info */}
             <p className="text-[15px] sm:text-[17px] leading-[1.6] text-graphite-800 max-w-[660px] mx-auto mt-4 sm:mt-6 font-normal">
-              No accounts. No subscriptions. Enter any target URL to run 10 deterministic engine checks, isolate root cause diagnostics, and get copy-pasteable code fixes—settled on-chain for $0.25.
+              No accounts. No subscriptions. Enter any target URL to run deterministic SEO, AEO, and GEO checks, isolate root cause diagnostics, and get copy-pasteable code fixes—settled on-chain for $0.25.
             </p>
 
             {/* Search / Input Field with Filled Capsule Button */}
@@ -226,7 +226,7 @@ export const metadata = {
             <div className="mt-5 sm:mt-6 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-[13px] sm:text-[14px] text-graphite-800">
               <span className="inline-flex items-center gap-1.5">
                 <Check className="size-4 text-ink shrink-0" />
-                <span>10 Deterministic Checks</span>
+                <span>SEO, AEO &amp; GEO Engine</span>
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Check className="size-4 text-ink shrink-0" />
@@ -284,10 +284,10 @@ export const metadata = {
                 {/* Title & Description */}
                 <div>
                   <h3 className="font-sans font-[600] text-[20px] sm:text-[24px] leading-[1.33] text-ink">
-                    Deterministic 10-Check Audit Engine
+                    Technical SEO, AEO &amp; GEO Engine
                   </h3>
                   <p className="text-[13px] sm:text-[14px] text-graphite-800 mt-1">
-                    Evaluates canonical chains, indexability, metadata, and Core Web Vitals.
+                    Evaluates canonicals, AI search citability, bot permissions, and Core Web Vitals.
                   </p>
                 </div>
               </div>
@@ -330,7 +330,7 @@ export const metadata = {
                     Framework-Specific Code Patches
                   </h3>
                   <p className="text-[13px] sm:text-[14px] text-graphite-800 mt-1">
-                    Ready-to-deploy code fixes for Next.js, WordPress, and Shopify to eliminate penalties.
+                    Ready-to-deploy code fixes for Next.js, WordPress, and Shopify to rank across search and AI engines.
                   </p>
                 </div>
               </div>
@@ -364,12 +364,12 @@ export const metadata = {
                     Enter Target URL
                   </h3>
                   <p className="text-[14px] leading-[1.6] text-graphite-800 font-normal">
-                    Input any public domain or path. Choose a single-page quick crawl or sitewide BFS audit to evaluate robots.txt, canonical chains, and indexability.
+                    Input any public domain or path. Choose a single-page quick crawl or sitewide BFS audit to evaluate search indexability, robots.txt, and AI crawler permissions.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-graphite-100/70 font-mono text-[11px] text-graphite-600 bg-white p-3 rounded-[8px] border border-graphite-100">
                   <div className="text-ink font-medium">Target: example.com</div>
-                  <div className="text-graphite-600">Scope: 10 Engine Checks</div>
+                  <div className="text-graphite-600">Scope: SEO, AEO &amp; GEO Checks</div>
                 </div>
               </div>
 
@@ -402,11 +402,11 @@ export const metadata = {
                     Diagnostics &amp; Fixes
                   </h3>
                   <p className="text-[14px] leading-[1.6] text-graphite-800 font-normal">
-                    The engine executes 10 technical checks in under 5 seconds. Get root-cause diagnostics and copy-pasteable code fixes for Next.js and WordPress.
+                    The engine executes deterministic technical checks in under 5 seconds. Get root-cause diagnostics and copy-pasteable code fixes for search engines and generative AI answers.
                   </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-graphite-100/70 font-mono text-[11px] text-graphite-600 bg-white p-3 rounded-[8px] border border-graphite-100">
-                  <div className="text-ink font-medium">Output: 10/10 Diagnostics</div>
+                  <div className="text-ink font-medium">Output: SEO + AI Search Diagnostics</div>
                   <div className="text-graphite-600">Patch: layout.tsx Ready</div>
                 </div>
               </div>
@@ -428,7 +428,7 @@ export const metadata = {
                   Root cause grouping. Zero guessing.
                 </h2>
                 <p className="text-[15px] sm:text-[16px] leading-[1.6] text-graphite-800 font-normal">
-                  CrawlPay evaluates live server responses against explicit technical criteria. Issues are grouped by underlying root cause—so fixing one configuration resolves dozens of search warnings at once.
+                  CrawlPay evaluates live server responses against explicit technical criteria across search engines and AI answer engines. Issues are grouped by underlying root cause—so fixing one configuration resolves dozens of search warnings and AI citation blockers at once.
                 </p>
                 <div className="pt-2">
                   <Link
@@ -646,7 +646,7 @@ export const metadata = {
                 </span>
               </div>
               <p className="font-footer text-[14px] leading-[20px] text-graphite-200 font-normal">
-                Autonomous technical SEO and competitor intelligence audit agent settled per crawl on Celo mainnet.
+                Autonomous technical SEO, AEO &amp; GEO audit agent settled per crawl on Celo mainnet.
               </p>
               <div className="pt-2">
                 <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 block">

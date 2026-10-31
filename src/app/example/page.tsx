@@ -172,7 +172,7 @@ export default function ExampleReportPage() {
                 Verified Audit: evangelcarriersnetwork.org
               </h1>
               <p className="text-[13px] text-graphite-800 dark:text-graphite-300 font-normal">
-                Live deterministic technical SEO and stack audit executed through the CrawlPay engine.
+                Live deterministic technical SEO, AEO, and GEO stack audit executed through the CrawlPay engine.
               </p>
             </div>
 

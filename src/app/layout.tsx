@@ -9,12 +9,12 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'CrawlPay — On-demand site audits',
-  description: 'On-demand, granular site audits—settled only when the agent crawls, not on a monthly subscription.',
-  keywords: ['celo', 'x402', 'seo', 'agent', 'micropayments', 'crawler', 'audit'],
+  title: 'CrawlPay — On-demand site audits (SEO, AEO & GEO)',
+  description: 'On-demand technical SEO, AEO query mapping, and GEO generative citability audits—settled per crawl via x402 on Celo.',
+  keywords: ['celo', 'x402', 'seo', 'aeo', 'geo', 'ai search', 'agent', 'micropayments', 'crawler', 'audit'],
   openGraph: {
-    title: 'CrawlPay — On-demand site audits',
-    description: 'On-demand, granular site audits—settled only when the agent crawls, not on a monthly subscription.',
+    title: 'CrawlPay — On-demand site audits (SEO, AEO & GEO)',
+    description: 'On-demand technical SEO, AEO query mapping, and GEO generative citability audits—settled per crawl via x402 on Celo.',
     type: 'website',
   },
   icons: {

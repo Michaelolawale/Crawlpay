@@ -143,7 +143,7 @@ export default function DocsPage() {
               Agents, MCP &amp; x402 Protocol Specs
             </h1>
             <p className="text-[15px] sm:text-[17px] leading-[1.6] text-graphite-800 font-normal max-w-[760px]">
-              CrawlPay provides autonomous AI agents, LLM pipelines, and automated tooling with deterministic SEO analysis and competitive intelligence. Settled on Celo Mainnet per crawl via x402—zero accounts or subscriptions required.
+              CrawlPay provides autonomous AI agents, LLM pipelines, and automated tooling with deterministic SEO, AEO, and GEO analysis. Settled on Celo Mainnet per crawl via x402—zero accounts or subscriptions required.
             </p>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function DocsPage() {
                 </span>
               </div>
               <p className="text-[14px] text-graphite-800 leading-relaxed font-normal">
-                Initiates a deterministic crawler audit. Returns 10 technical SEO checks, root cause finding groups, and copy-pasteable framework patches.
+                Initiates a deterministic crawler audit. Returns 12 technical SEO, AEO, and GEO checks, root cause finding groups, and copy-pasteable framework patches.
               </p>
               <div className="rounded-[8px] bg-graphite-900 p-4 font-mono text-[12px] text-graphite-200 overflow-x-auto">
                 <pre>{`// Request Body:
@@ -348,7 +348,7 @@ console.log('Mined payment tx:', txHash);`}</pre>
             <div className="pt-2">
               <h4 className="text-[14px] font-semibold text-ink mb-2">Exposed Celo Native MCP Tools:</h4>
               <ul className="text-[13px] text-graphite-700 space-y-1.5 list-disc list-inside">
-                <li><code className="text-violet font-mono text-[12px]">crawlpay_audit_site</code>: Runs technical SEO audit, CWV metrics, copywriting fixes, and returns Celo receipt.</li>
+                <li><code className="text-violet font-mono text-[12px]">crawlpay_audit_site</code>: Runs technical SEO, AEO, and GEO audits, CWV metrics, copywriting fixes, and returns Celo receipt.</li>
                 <li><code className="text-violet font-mono text-[12px]">crawlpay_compare_competitor</code>: Head-to-head competitor audit with gap analysis and 3 action steps.</li>
                 <li><code className="text-violet font-mono text-[12px]">crawlpay_agent_status</code>: Real-time Celo block height, gas prices, wallet balances, and ERC-8004 identity status.</li>
                 <li><code className="text-violet font-mono text-[12px]">handle_payment_required</code>: Automatic x402 payment resolution on Celo Mainnet.</li>
@@ -413,7 +413,7 @@ console.log('Mined payment tx:', txHash);`}</pre>
                 </span>
               </div>
               <p className="font-footer text-[14px] leading-[20px] text-graphite-200 font-normal">
-                Autonomous technical SEO and competitor intelligence audit agent settled per crawl on Celo mainnet.
+                Autonomous technical SEO, AEO &amp; GEO audit agent settled per crawl on Celo mainnet.
               </p>
               <div className="pt-2">
                 <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 block">

@@ -42,6 +42,42 @@ interface PaymentModalProps {
 type ModalStep = 'review' | 'status';
 type AuditStatusPhase = 'wallet_confirm' | 'onchain_confirm' | 'running_audit' | 'ready' | 'failed';
 
+/**
+ * Resolves the active EVM provider, detecting multi-wallet injections and non-Celo wallets like Phantom.
+ */
+function getCeloEthereumProvider(): { provider: any; isPhantom: boolean; name: string } | null {
+  if (typeof window === 'undefined') return null;
+  const eth = (window as unknown as { ethereum?: any })?.ethereum;
+  if (!eth) return null;
+
+  // Multi-wallet injector resolution: prioritize non-Phantom EVM wallets that support Celo
+  if (Array.isArray(eth.providers) && eth.providers.length > 0) {
+    const celoCapable =
+      eth.providers.find((p: any) => p.isMetaMask && !p.isPhantom) ||
+      eth.providers.find((p: any) => p.isRabby) ||
+      eth.providers.find((p: any) => p.isCoinbaseWallet) ||
+      eth.providers.find((p: any) => !p.isPhantom);
+
+    if (celoCapable) {
+      return {
+        provider: celoCapable,
+        isPhantom: false,
+        name: celoCapable.isRabby ? 'Rabby' : celoCapable.isMetaMask ? 'MetaMask' : 'EVM Wallet',
+      };
+    }
+  }
+
+  const isPhantom = Boolean(
+    eth.isPhantom || (window as unknown as { phantom?: { ethereum?: any } })?.phantom?.ethereum === eth
+  );
+
+  return {
+    provider: eth,
+    isPhantom,
+    name: isPhantom ? 'Phantom' : eth.isRabby ? 'Rabby' : eth.isMetaMask ? 'MetaMask' : 'EVM Wallet',
+  };
+}
+
 export function PaymentModal({
   isOpen,
   onClose,
@@ -254,103 +290,173 @@ export function PaymentModal({
   };
 
   /**
-   * Main Wallet Payment Flow
+   * Main Wallet Payment Flow with Celo compatibility checks & timeout guards
    */
   const handlePayWithWallet = async () => {
     setIsPaying(true);
     setErrorMessage(null);
     setIsWrongNetwork(false);
 
-    const ethereum = (window as unknown as { ethereum?: any })?.ethereum;
-    if (!ethereum) {
+    // 1. Resolve EVM Provider & Detect non-Celo wallets like Phantom
+    const detected = getCeloEthereumProvider();
+    if (!detected || !detected.provider) {
       setIsPaying(false);
-      setErrorMessage('No EVM wallet detected. Please install MetaMask, Rabby, or a Celo-compatible wallet to continue.');
+      setErrorMessage(
+        'No EVM wallet detected. Please install a Celo-compatible wallet such as MetaMask, Rabby, Valora, MiniPay, or Coinbase Wallet.'
+      );
       return;
     }
 
+    // Explicitly reject Phantom which does not support Celo network (Chain ID 42220)
+    if (detected.isPhantom) {
+      setIsPaying(false);
+      setErrorMessage(
+        'Phantom wallet does not support Celo Mainnet (Chain ID 42220). Please connect a Celo-compatible wallet such as MetaMask, Rabby, Valora, MiniPay, or Coinbase Wallet, or use the Manual Transfer option below.'
+      );
+      return;
+    }
+
+    const provider = detected.provider;
+    let hasBroadcastTx = false;
+
     try {
-      // 1. Request accounts
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      // 2. Request accounts with 30s timeout guard
+      const accountsPromise = provider.request({ method: 'eth_requestAccounts' });
+      const accountsTimeout = new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Wallet connection request timed out. Please unlock your wallet and approve connection.')),
+          30000
+        )
+      );
+
+      const accounts = await Promise.race([accountsPromise, accountsTimeout]);
       if (!accounts || !accounts[0]) {
         throw new Error('Wallet connection was cancelled or rejected.');
       }
       const userWallet = accounts[0];
       setConnectedWallet(userWallet);
 
-      // 2. Ensure Celo Mainnet (42220 / 0xa4ec)
+      // 3. Ensure Celo Mainnet (42220 / 0xa4ec)
+      let currentChainId: string = '';
       try {
-        await ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0xa4ec' }],
-        });
-      } catch (switchError: any) {
-        if (switchError?.code === 4902) {
-          await ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: '0xa4ec',
-                chainName: 'Celo Mainnet',
-                nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
-                rpcUrls: ['https://forno.celo.org'],
-                blockExplorerUrls: ['https://celoscan.io'],
-              },
-            ],
+        currentChainId = await provider.request({ method: 'eth_chainId' });
+      } catch {}
+
+      const isAlreadyCelo = currentChainId === '0xa4ec' || currentChainId === '42220' || currentChainId === '0x42220';
+
+      if (!isAlreadyCelo) {
+        try {
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0xa4ec' }],
           });
-        } else if (switchError?.code === 4001) {
-          setIsWrongNetwork(true);
-          throw new Error('Network switch to Celo Mainnet was rejected.');
+        } catch (switchError: any) {
+          if (switchError?.code === 4001) {
+            setIsWrongNetwork(true);
+            throw new Error('Network switch to Celo Mainnet was rejected in your wallet.');
+          }
+
+          // Try adding Celo chain if unsupported or not yet added
+          try {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: '0xa4ec',
+                  chainName: 'Celo Mainnet',
+                  nativeCurrency: { name: 'CELO', symbol: 'CELO', decimals: 18 },
+                  rpcUrls: ['https://forno.celo.org'],
+                  blockExplorerUrls: ['https://celoscan.io'],
+                },
+              ],
+            });
+          } catch (addError: any) {
+            if (addError?.code === 4001) {
+              throw new Error('Adding Celo Mainnet to your wallet was rejected.');
+            }
+            throw new Error(
+              'Your connected wallet does not support Celo Mainnet (Chain ID 42220). Please switch to MetaMask, Rabby, Valora, or use the Manual Transfer option below.'
+            );
+          }
+        }
+
+        // Verify chain again
+        try {
+          const verifiedChainId = await provider.request({ method: 'eth_chainId' });
+          if (verifiedChainId !== '0xa4ec' && verifiedChainId !== '42220' && verifiedChainId !== '0x42220') {
+            setIsWrongNetwork(true);
+            throw new Error('Wallet is not connected to Celo Mainnet (Chain ID 42220). Please switch networks in your wallet.');
+          }
+        } catch (chainErr: any) {
+          if (chainErr?.message?.includes('not connected to Celo')) throw chainErr;
         }
       }
 
-      // 3. Switch to Status Stepper
+      // 4. Switch to Status Stepper
       setStep('status');
       setStatusPhase('wallet_confirm');
       setStatusMessage('Please confirm the transaction in your wallet...');
 
-      // 4. Send attributed micropayment transaction on Celo Mainnet
+      // 5. Send transaction on Celo Mainnet with 45-second timeout guard
       let submittedTxHash: string;
       const celoInWei = BigInt(Math.floor(Number(celoAmount) * 1e18));
       const valueHex = '0x' + celoInWei.toString(16);
 
       try {
-        submittedTxHash = await ethereum.request({
+        const sendTxPromise = provider.request({
           method: 'eth_sendTransaction',
           params: [
             {
               from: userWallet,
               to: payToAddress,
-              value: valueHex, // Deducts real CELO
-              data: DATA_SUFFIX, // ERC-8021 Attribution tag suffix
+              value: valueHex,
+              data: DATA_SUFFIX,
             },
           ],
         });
+
+        const txTimeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(
+            () =>
+              reject(
+                new Error(
+                  'Wallet confirmation timed out (45s). Your wallet did not complete the transaction. If using an unsupported wallet or custom network, please use MetaMask or the Manual Transfer option below.'
+                )
+              ),
+            45000
+          )
+        );
+
+        submittedTxHash = await Promise.race([sendTxPromise, txTimeoutPromise]);
       } catch (txErr: any) {
-        // Handle User Rejection gracefully (No funds deducted yet)
+        // Revert back to review step immediately so user is never trapped in endless status spinner
+        setStep('review');
+        setStatusPhase('wallet_confirm');
+        setIsPaying(false);
+
         if (txErr?.code === 4001 || txErr?.message?.toLowerCase().includes('reject') || txErr?.message?.toLowerCase().includes('denied')) {
-          setStep('review');
           setErrorMessage('Transaction was rejected in your wallet. You can try again whenever you’re ready.');
-          setIsPaying(false);
           return;
         }
 
-        // Handle Insufficient Gas / Tokens
-        if (txErr?.message?.toLowerCase().includes('insufficient funds')) {
-          setStep('review');
-          setErrorMessage('Insufficient CELO for gas fees. Note: Gas on Celo is paid in CELO (typically < $0.001 per transaction). Please top up your wallet with a small amount of CELO.');
-          setIsPaying(false);
+        if (txErr?.message?.toLowerCase().includes('insufficient funds') || txErr?.message?.toLowerCase().includes('insufficient celo')) {
+          setErrorMessage(
+            'Insufficient CELO for gas fees. Note: Gas on Celo is paid in CELO (typically < $0.001 per transaction). Please top up your wallet with a small amount of CELO or use Manual Transfer.'
+          );
           return;
         }
 
-        throw txErr;
+        setErrorMessage(txErr?.message || 'Transaction could not be broadcast from your wallet.');
+        return;
       }
 
       // Transaction successfully broadcasted on Celo
+      hasBroadcastTx = true;
       setTxHash(submittedTxHash);
       setStatusPhase('onchain_confirm');
       setStatusMessage(`Transaction broadcast (${submittedTxHash.slice(0, 10)}...). Confirming on Celo Mainnet...`);
 
-      // 5. Poll for on-chain block mining confirmation
+      // 6. Poll for on-chain block mining confirmation
       for (let attempt = 1; attempt <= 15; attempt++) {
         try {
           const verifyRes = await fetch('/api/payment/verify', {
@@ -369,14 +475,17 @@ export function PaymentModal({
         }
       }
 
-      // 6. Execute audit pipeline with verified payment proof
+      // 7. Execute audit pipeline with verified payment proof
       await executeAuditPipeline(submittedTxHash, userWallet);
     } catch (err: any) {
       console.error('[Payment Flow Error]', err);
-      if (step === 'status') {
+      if (hasBroadcastTx) {
         setStatusPhase('failed');
         setErrorMessage(err?.message || 'Audit execution encountered an error.');
       } else {
+        // Never leave user trapped on status screen if no transaction took place
+        setStep('review');
+        setStatusPhase('wallet_confirm');
         setErrorMessage(err?.message || 'Payment initiation failed.');
       }
     } finally {
@@ -520,8 +629,8 @@ export function PaymentModal({
 
               <div className="text-[11px] text-graphite-800 dark:text-graphite-400 pt-1.5 border-t border-graphite-100 dark:border-graphite-800">
                 {mode === 'quick'
-                  ? 'Includes single-page crawl, 10 deterministic checks, root cause grouping & AI fixes.'
-                  : 'Includes deep multi-page BFS crawl, sitewide indexability, orphan checks, and code patches.'}
+                  ? 'Includes single-page crawl, SEO, AEO & GEO engine checks, root cause grouping & AI fixes.'
+                  : 'Includes deep multi-page BFS crawl, AEO query mapping, GEO citability, sitewide indexability, and code patches.'}
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-graphite-100 dark:border-graphite-800">
@@ -534,18 +643,27 @@ export function PaymentModal({
 
             {/* Error Feedback */}
             {errorMessage && (
-              <div className="flex items-start gap-2.5 rounded-[14px] border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-                <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-600" />
-                <div className="flex-1 min-w-0">
-                  <p>{errorMessage}</p>
+              <div className="flex items-start gap-2.5 rounded-[14px] border border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40 p-3 text-xs text-rose-700 dark:text-rose-300 animate-in fade-in">
+                <AlertCircle className="size-4 shrink-0 mt-0.5 text-rose-600 dark:text-rose-400" />
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  <p className="leading-relaxed">{errorMessage}</p>
                   {isWrongNetwork && (
                     <button
                       type="button"
                       onClick={handlePayWithWallet}
-                      className="mt-2 inline-flex items-center gap-1.5 rounded-[48px] bg-amber-100 border border-amber-300 px-3 py-1 text-amber-800 hover:bg-amber-200 font-semibold text-xs"
+                      className="inline-flex items-center gap-1.5 rounded-[48px] bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-700 px-3 py-1 text-amber-800 dark:text-amber-200 hover:bg-amber-200 font-semibold text-xs transition-colors"
                     >
                       <AlertTriangle className="size-3" />
                       <span>Switch to Celo Mainnet (42220)</span>
+                    </button>
+                  )}
+                  {errorMessage.includes('Manual Transfer') && (
+                    <button
+                      type="button"
+                      onClick={() => setShowManualPay(true)}
+                      className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-3.5 py-1 text-xs font-semibold hover:opacity-90 transition-opacity"
+                    >
+                      <span>Open Manual Transfer Details</span>
                     </button>
                   )}
                 </div>
@@ -750,9 +868,9 @@ export function PaymentModal({
               )}
             </div>
 
-            {/* Before payment deduction: safe cancel option */}
+            {/* Before payment deduction: safe cancel option & wallet fallback hint */}
             {statusPhase === 'wallet_confirm' && (
-              <div className="flex justify-center pt-1">
+              <div className="flex flex-col items-center gap-2 pt-2 text-center">
                 <button
                   type="button"
                   onClick={() => {
@@ -761,10 +879,13 @@ export function PaymentModal({
                     setErrorMessage(null);
                     setIsPaying(false);
                   }}
-                  className="text-xs text-graphite-800 hover:text-ink underline transition-colors cursor-pointer"
+                  className="rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-4 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors cursor-pointer"
                 >
                   Cancel and return to review
                 </button>
+                <p className="text-[11px] text-graphite-500 dark:text-graphite-400 max-w-xs">
+                  If your wallet extension does not prompt, it might not support Celo Mainnet (e.g. Phantom). You can cancel and use Manual Transfer instead.
+                </p>
               </div>
             )}
 

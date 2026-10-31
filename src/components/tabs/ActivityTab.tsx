@@ -133,7 +133,7 @@ export function ActivityTab() {
             Onchain Activity & Proof of Settlement
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Verifiable transactions settled on Celo Mainnet carrying the hackathon attribution tag.
+            Verifiable SEO, AEO &amp; GEO audit transactions settled on Celo Mainnet carrying the hackathon attribution tag.
           </p>
         </div>
 

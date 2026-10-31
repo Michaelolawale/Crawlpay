@@ -74,7 +74,7 @@ export function ReportsTab({ onRecheck, onViewReport }: ReportsTabProps) {
             Audit Reports
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Past audits for your session. Recheck any site with a single click.
+            Past technical SEO, AEO, and GEO audits for your session. Recheck any site with a single click.
           </p>
         </div>
 
@@ -96,7 +96,7 @@ export function ReportsTab({ onRecheck, onViewReport }: ReportsTabProps) {
           <FileText className="mx-auto size-10 text-muted-foreground/40 mb-3" />
           <h3 className="text-base font-semibold text-foreground">No Audits Found Yet</h3>
           <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-            Run an audit from the home tab to generate your first technical SEO inspection report.
+            Run an audit from the home tab to generate your first technical SEO, AEO &amp; GEO inspection report.
           </p>
         </div>
       ) : (
