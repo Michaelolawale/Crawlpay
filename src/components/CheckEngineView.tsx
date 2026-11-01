@@ -410,9 +410,9 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           </p>
         </div>
 
-        {/* 6 Thematic Health Pillar Meters (Unified Streamlined Strip) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-y sm:divide-y-0 sm:divide-x divide-graphite-100 dark:divide-graphite-800 rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/40 dark:bg-[#1a1b22]/40 overflow-hidden">
-          <div className="p-3 space-y-1.5">
+        {/* 6 Thematic Health Pillar Meters (Unified Streamlined Grid) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
+          <div className="p-3 space-y-1.5 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/60">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
                 <Globe className="size-3 text-violet" />
@@ -425,7 +425,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             </div>
           </div>
 
-          <div className="p-3 space-y-1.5">
+          <div className="p-3 space-y-1.5 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/60">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
                 <Zap className="size-3 text-amber-500" />
@@ -438,7 +438,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             </div>
           </div>
 
-          <div className="p-3 space-y-1.5">
+          <div className="p-3 space-y-1.5 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/60">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
                 <Smartphone className="size-3 text-emerald-600" />
@@ -451,7 +451,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             </div>
           </div>
 
-          <div className="p-3 space-y-1.5">
+          <div className="p-3 space-y-1.5 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/60">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
                 <Layers className="size-3 text-blue-500" />
@@ -464,7 +464,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             </div>
           </div>
 
-          <div className="p-3 space-y-1.5">
+          <div className="p-3 space-y-1.5 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/60">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
                 <Bot className="size-3 text-violet" />
@@ -477,7 +477,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             </div>
           </div>
 
-          <div className="p-3 space-y-1.5">
+          <div className="p-3 space-y-1.5 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/60">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
                 <Bot className="size-3 text-emerald-600" />
