@@ -103,36 +103,16 @@ function AuditPageContent() {
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 animate-fade-in">
-      {/* Visual Workflow Stepper Header */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar text-xs font-mono">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet/10 text-violet font-semibold border border-violet/20">
-            <span className="size-4 rounded-full bg-violet text-white text-[10px] flex items-center justify-center font-bold">1</span>
-            <span>Target &amp; Scope</span>
-          </div>
-          <ArrowRight className="size-3 text-graphite-400 shrink-0" />
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f4f4f6] dark:bg-[#1a1b22] text-graphite-600 dark:text-graphite-400 border border-graphite-200 dark:border-graphite-800">
-            <span className="size-4 rounded-full bg-graphite-300 dark:bg-graphite-700 text-graphite-800 dark:text-graphite-200 text-[10px] flex items-center justify-center font-bold">2</span>
-            <span>x402 Settlement</span>
-          </div>
-          <ArrowRight className="size-3 text-graphite-400 shrink-0" />
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f4f4f6] dark:bg-[#1a1b22] text-graphite-600 dark:text-graphite-400 border border-graphite-200 dark:border-graphite-800">
-            <span className="size-4 rounded-full bg-graphite-300 dark:bg-graphite-700 text-graphite-800 dark:text-graphite-200 text-[10px] flex items-center justify-center font-bold">3</span>
-            <span>Deterministic Fixes</span>
-          </div>
-        </div>
-
-        <div>
-          <p className="font-sans text-[14px] sm:text-[16px] leading-[1.6] font-[400] text-violet mb-1">
-            Autonomous Execution
-          </p>
-          <h1 className="font-sans text-[24px] sm:text-[34px] font-[600] tracking-tight text-ink dark:text-white leading-snug">
-            Deterministic SEO &amp; Competitor Intelligence Audit
-          </h1>
-          <p className="mt-1 text-[14px] sm:text-[15px] text-graphite-800 dark:text-graphite-300 leading-relaxed font-normal">
-            Autonomous crawl with 10 deterministic engine checks, root cause grouping, and ready-to-deploy code fixes settled per crawl on Celo Mainnet.
-          </p>
-        </div>
+      <div>
+        <p className="font-sans text-[14px] sm:text-[16px] leading-[1.6] font-[400] text-violet mb-1">
+          Autonomous Execution
+        </p>
+        <h1 className="font-sans text-[24px] sm:text-[34px] font-[600] tracking-tight text-ink dark:text-white leading-snug">
+          Deterministic SEO &amp; Competitor Intelligence Audit
+        </h1>
+        <p className="mt-1 text-[14px] sm:text-[15px] text-graphite-800 dark:text-graphite-300 leading-relaxed font-normal">
+          Autonomous crawl with 10 deterministic engine checks, root cause grouping, and ready-to-deploy code fixes settled per crawl on Celo Mainnet.
+        </p>
       </div>
 
       {/* Main Audit Form Card */}
@@ -352,8 +332,7 @@ function AuditPageContent() {
             }`}
           >
             <ShieldCheck className="size-4" />
-            <span>Authorize &amp; Launch {depth === 'quick' ? 'Quick Audit' : 'Deep Crawl'} (${currentPrice} USDT)</span>
-            <ArrowRight className="size-4" />
+            <span>Pay ${currentPrice} USDT</span>
           </button>
         </form>
       </div>
