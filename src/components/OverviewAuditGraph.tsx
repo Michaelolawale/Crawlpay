@@ -365,7 +365,7 @@ export function OverviewAuditGraph({
           TAB 1: CUMULATIVE DOM RENDER & PAINT TIMELINE
           ======================================================================= */}
       {activeTab === 'timeline' && (
-        <div className="space-y-3">
+        <div className="space-y-3 tab-panel-enter">
           {/* Real-time Telemetry Scrubber Pill */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-0.5 text-xs">
             <div className="flex items-center gap-1.5">
@@ -470,7 +470,7 @@ export function OverviewAuditGraph({
                         fontFamily="monospace"
                         fontWeight={isGoal ? 'bold' : 'normal'}
                       >
-                        {t === 2.5 ? '2.5s★' : `${t.toFixed(1)}s`}
+                        {t === 2.5 ? '2.5s (Goal)' : `${t.toFixed(1)}s`}
                       </text>
                     </g>
                   );
@@ -524,7 +524,7 @@ export function OverviewAuditGraph({
                 )}
               </svg>
               <p className="text-[10px] text-center text-graphite-800/80 dark:text-graphite-400 font-mono mt-1">
-                Touch and drag along chart to scrub millisecond milestones &bull; ★ 2.5s Google LCP standard
+                Touch and drag along chart to scrub millisecond milestones &bull; 2.5s Google LCP standard
               </p>
             </div>
 
@@ -698,7 +698,7 @@ export function OverviewAuditGraph({
           Desktop: Calibrated 6-Category Grouped Bar Chart + Details Drawer
           ======================================================================= */}
       {activeTab === 'pillars' && (
-        <div className="space-y-4">
+        <div className="space-y-4 tab-panel-enter">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs px-0.5">
             <div>
               <span className="font-bold text-ink dark:text-white text-xs sm:text-sm block">
@@ -997,7 +997,7 @@ export function OverviewAuditGraph({
           TAB 3: CORE WEB VITALS WATERFALL CHART
           ======================================================================= */}
       {activeTab === 'vitals' && (
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-3 sm:space-y-4 tab-panel-enter">
           <div className="grid gap-3 sm:grid-cols-2">
             {vitalsMetrics.map((metric) => {
               const maxScale = Math.max(metric.targetVal, metric.compVal, metric.poorThreshold) * 1.15;
@@ -1076,7 +1076,7 @@ export function OverviewAuditGraph({
           TAB 4: RFC 9309 AI BOT ACCESS MATRIX
           ======================================================================= */}
       {activeTab === 'bots' && (
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-3 sm:space-y-4 tab-panel-enter">
           <div className="grid gap-2.5 sm:gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {botList.map((bot: any, idx: number) => {
               const isAllowed = bot.status === 'allowed';

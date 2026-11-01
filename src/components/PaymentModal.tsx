@@ -779,30 +779,65 @@ export function PaymentModal({
 
         {/* STEP 2: STATUS STEP (SURVIVES REFRESH) */}
         {step === 'status' && (
-          <div className="mt-5 space-y-5">
+          <div className="mt-5 space-y-5 animate-slide-up">
+            {/* Visual Progress Bar */}
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center text-[11px] font-mono">
+                <span className="text-graphite-600 dark:text-graphite-400">Audit Progression</span>
+                <span className="font-bold text-violet">
+                  {statusPhase === 'wallet_confirm'
+                    ? '25%'
+                    : statusPhase === 'onchain_confirm'
+                    ? '50%'
+                    : statusPhase === 'running_audit'
+                    ? '80%'
+                    : statusPhase === 'ready'
+                    ? '100%'
+                    : 'Processing'}
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-[#e6e6e8] dark:bg-[#252631] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-violet to-emerald-500 transition-all duration-700 ease-out"
+                  style={{
+                    width:
+                      statusPhase === 'wallet_confirm'
+                        ? '25%'
+                        : statusPhase === 'onchain_confirm'
+                        ? '50%'
+                        : statusPhase === 'running_audit'
+                        ? '80%'
+                        : statusPhase === 'ready'
+                        ? '100%'
+                        : '10%',
+                  }}
+                />
+              </div>
+            </div>
+
             {/* Stepper Progress Visualizer */}
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <span
-                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold transition-all ${
                     statusPhase !== 'wallet_confirm'
                       ? 'bg-emerald-600 text-white'
-                      : 'bg-ink text-white animate-pulse'
+                      : 'bg-ink dark:bg-white text-white dark:text-ink animate-pulse ring-2 ring-violet/40'
                   }`}
                 >
                   {statusPhase !== 'wallet_confirm' ? <Check className="size-3.5" /> : '1'}
                 </span>
-                <span className="text-xs font-semibold text-ink">Confirm in wallet</span>
+                <span className="text-xs font-semibold text-ink dark:text-white">Confirm in wallet</span>
               </div>
 
               <div className="flex items-center gap-3">
                 <span
-                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold transition-all ${
                     statusPhase === 'running_audit' || statusPhase === 'ready'
                       ? 'bg-emerald-600 text-white'
                       : statusPhase === 'onchain_confirm'
-                      ? 'bg-ink text-white animate-pulse'
-                      : 'bg-[#e6e6e8] text-graphite-800'
+                      ? 'bg-ink dark:bg-white text-white dark:text-ink animate-pulse ring-2 ring-violet/40'
+                      : 'bg-[#e6e6e8] dark:bg-[#252631] text-graphite-800 dark:text-graphite-400'
                   }`}
                 >
                   {statusPhase === 'running_audit' || statusPhase === 'ready' ? (
@@ -811,49 +846,49 @@ export function PaymentModal({
                     '2'
                   )}
                 </span>
-                <span className="text-xs font-semibold text-ink">Confirming on-chain</span>
+                <span className="text-xs font-semibold text-ink dark:text-white">Confirming on-chain</span>
               </div>
 
               <div className="flex items-center gap-3">
                 <span
-                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold transition-all ${
                     statusPhase === 'ready'
                       ? 'bg-emerald-600 text-white'
                       : statusPhase === 'running_audit'
-                      ? 'bg-ink text-white animate-pulse'
-                      : 'bg-[#e6e6e8] text-graphite-800'
+                      ? 'bg-ink dark:bg-white text-white dark:text-ink animate-pulse ring-2 ring-violet/40'
+                      : 'bg-[#e6e6e8] dark:bg-[#252631] text-graphite-800 dark:text-graphite-400'
                   }`}
                 >
                   {statusPhase === 'ready' ? <Check className="size-3.5" /> : '3'}
                 </span>
-                <span className="text-xs font-semibold text-ink">Running crawl & audit</span>
+                <span className="text-xs font-semibold text-ink dark:text-white">Running crawl &amp; audit</span>
               </div>
 
               <div className="flex items-center gap-3">
                 <span
-                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold ${
-                    statusPhase === 'ready' ? 'bg-emerald-600 text-white' : 'bg-[#e6e6e8] text-graphite-800'
+                  className={`flex size-6 items-center justify-center rounded-full text-xs font-bold transition-all ${
+                    statusPhase === 'ready' ? 'bg-emerald-600 text-white' : 'bg-[#e6e6e8] dark:bg-[#252631] text-graphite-800 dark:text-graphite-400'
                   }`}
                 >
                   {statusPhase === 'ready' ? <Check className="size-3.5" /> : '4'}
                 </span>
-                <span className="text-xs font-semibold text-ink">Report ready</span>
+                <span className="text-xs font-semibold text-ink dark:text-white">Report ready</span>
               </div>
             </div>
 
             {/* Current Phase Message Box */}
-            <div className="rounded-[16px] border border-graphite-100 bg-[#f4f4f6] p-4 space-y-2">
+            <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#111216] p-4 space-y-2">
               <div className="flex items-center gap-2">
                 {statusPhase !== 'ready' && statusPhase !== 'failed' && (
-                  <Loader2 className="size-4 animate-spin text-ink" />
+                  <Loader2 className="size-4 animate-spin text-ink dark:text-white" />
                 )}
                 {statusPhase === 'ready' && <Check className="size-4 text-emerald-600" />}
                 {statusPhase === 'failed' && <AlertCircle className="size-4 text-rose-600" />}
-                <span className="text-xs font-semibold text-ink">{statusMessage}</span>
+                <span className="text-xs font-semibold text-ink dark:text-white">{statusMessage}</span>
               </div>
 
               {txHash && (
-                <div className="pt-2 border-t border-graphite-100 text-[11px] text-graphite-800">
+                <div className="pt-2 border-t border-graphite-100 dark:border-graphite-800 text-[11px] text-graphite-800 dark:text-graphite-400">
                   <span>Transaction Hash: </span>
                   <a
                     href={`https://celoscan.io/tx/${txHash}`}

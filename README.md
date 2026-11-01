@@ -1,4 +1,4 @@
-# CrawlPay 🕷️⚡
+# CrawlPay
 
 <p align="center">
   <img src="public/logo-dark.jpg" alt="CrawlPay Logo" width="128" style="border-radius: 28px;" />
@@ -14,7 +14,7 @@
 
 ---
 
-## 📌 Executive Summary
+## Executive Summary
 
 Modern webmasters, indie hackers, and autonomous AI agents face severe friction with existing SEO & market intelligence tooling:
 1. **Predatory Recurring Subscriptions:** Legacy platforms (Ahrefs, Semrush, Screaming Frog) demand **$99–$249 every month** via credit cards, regardless of whether a user runs 1 audit or 50.
@@ -26,7 +26,7 @@ Modern webmasters, indie hackers, and autonomous AI agents face severe friction 
 
 ---
 
-## 👤 Target User & Before/After Cost Story
+## Target User & Before/After Cost Story
 
 * **Named User:** **Mateo Rossi**, Founder & Lead Developer at **CeloPulse** (`celopulse.org` — an indie Web3 directory and developer resource portal).
 * **What it costs Mateo today (Before CrawlPay):**
@@ -41,41 +41,41 @@ Modern webmasters, indie hackers, and autonomous AI agents face severe friction 
 
 ---
 
-## ⚡ Core Capabilities
+## Core Capabilities
 
-### 1. 🤖 Answer Engine (AEO) & Generative Search (GEO) Auditor
+### 1. Answer Engine (AEO) & Generative Search (GEO) Auditor
 - **Direct Answer Readiness:** Evaluates content structure against LLM knowledge synthesis standards (Perplexity, SearchGPT, Claude, Gemini, Google AI Overviews).
 - **RFC 9309 AI Bot Matrix:** Deterministic longest-match evaluation of `robots.txt` permissions for `GPTBot`, `ClaudeBot`, `PerplexityBot`, `Google-Extended`, and `CCBot`.
 - **Entity Grounding & `/llms.txt`:** Checks for declared Wikidata/Wikipedia `sameAs` entity links and validates AI crawler documentation paths.
 
-### 2. 📊 Responsive Visual Telemetry & Benchmark Charts
+### 2. Responsive Visual Telemetry & Benchmark Charts
 - **DOM Paint Completion Curve:** Real mathematical cumulative S-curve plotting Time to First Byte (TTFB), First Contentful Paint (FCP), DOM Interactive, and Largest Contentful Paint (LCP) against Google's 2.5s standard.
 - **Mobile-First Layout:** Dual-mode adaptive architecture:
   - **Mobile (<640px):** 1.4:1 aspect-ratio SVG with 60fps touch-scrubbing (live millisecond HUD) + full-width Comparative Pillar Cards with dual progress bars and delta indicators.
   - **Desktop (sm+):** Calibrated 800px SVG curves and 6-column grouped bar charts with interactive drawer.
 
-### 3. 📂 Google Search Console (GSC) Upload & Gap Ingestion
+### 3. Google Search Console (GSC) Upload & Gap Ingestion
 - Upload GSC exports (`.csv`, `.tsv`, `.json`, `.zip`) directly into CrawlPay.
 - Instantly isolates coverage gaps: unindexed URLs, soft 404s, "Discovered – currently not indexed", and generates immediate remedial actions.
 
-### 4. 📱 Mobile-First Indexing Telemetry (375px–414px)
+### 4. Mobile-First Indexing Telemetry (375px–414px)
 - Deterministic checks for viewport meta configuration, 48px touch tap targets, aspect-ratio cumulative layout shifts (CLS), and simulated 4G mobile LCP.
 
-### 5. ⚔️ Head-to-Head Competitor Intelligence
+### 5. Head-to-Head Competitor Intelligence
 - Benchmarks your site against any direct rival URL.
 - Highlights speed differences, schema tag disparity, and produces a *"Why They Are Winning"* breakdown with 3 immediate leapfrog action steps.
 
-### 6. 🛠️ Stack-Tailored Copy-Paste Code Patches
+### 6. Stack-Tailored Copy-Paste Code Patches
 - Automatically detects the target CMS / framework (**Next.js 14/15 App Router**, **Shopify Liquid**, **WordPress**, **HTML5**).
 - Produces pre-formatted, drop-in code fixes and valid **Schema.org JSON-LD** tags.
 
-### 7. 📄 Shareable & Printable Reports
+### 7. Shareable & Printable Reports
 - Persistent report viewer with one-click JSON export and clean print-to-PDF formatting.
 - Live interactive demo preview available at `/example`.
 
 ---
 
-## 🔗 Celo Mainnet & Onchain Verification
+## Celo Mainnet & Onchain Verification
 
 Every audit executed through CrawlPay settles on **Celo Mainnet** with ERC-8021 calldata attribution:
 
@@ -92,7 +92,7 @@ Every audit executed through CrawlPay settles on **Celo Mainnet** with ERC-8021 
 
 ---
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 ```mermaid
 flowchart TD
@@ -117,7 +117,7 @@ flowchart TD
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 crawlpay/
@@ -145,7 +145,7 @@ crawlpay/
 
 ---
 
-## 🚀 Quick Start (Local Development)
+## Quick Start (Local Development)
 
 ### 1. Prerequisites
 - Node.js 18.17+ or 20+
@@ -179,7 +179,7 @@ npm start
 
 ---
 
-## 📡 Machine-Readable Discovery & API Endpoints
+## Machine-Readable Discovery & API Endpoints
 
 Autonomous agents can discover and call CrawlPay endpoints without human intervention:
 
@@ -191,6 +191,6 @@ Autonomous agents can discover and call CrawlPay endpoints without human interve
 
 ---
 
-## 📜 License
+## License
 
 Distributed under the **Apache-2.0** License. See `LICENSE` for details.

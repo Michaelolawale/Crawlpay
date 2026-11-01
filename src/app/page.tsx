@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ChevronRight,
   ArrowRight,
@@ -9,6 +10,8 @@ import {
   Copy,
   Menu,
   X,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
 import { CrawlLogo } from '@/components/CrawlLogo';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -16,18 +19,21 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 const PUBLIC_AGENT_ADDRESS = '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
 
 export default function LandingPage() {
+  const router = useRouter();
   const [heroUrl, setHeroUrl] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [copiedPatch, setCopiedPatch] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleHeroSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     const trimmed = heroUrl.trim();
     if (trimmed) {
-      window.location.href = `/app/audit?target=${encodeURIComponent(trimmed)}`;
+      router.push(`/app/audit?target=${encodeURIComponent(trimmed)}`);
     } else {
-      window.location.href = '/app/audit';
+      router.push('/app/audit');
     }
   };
 
@@ -201,23 +207,33 @@ export const metadata = {
             </p>
 
             {/* Search / Input Field with Filled Capsule Button */}
-            <form onSubmit={handleHeroSubmit} className="mt-[28px] sm:mt-[32px] max-w-[620px] mx-auto">
+            <form onSubmit={handleHeroSubmit} className="mt-[28px] sm:mt-[32px] max-w-[640px] mx-auto">
               <div className="flex flex-col sm:flex-row items-center gap-[10px] sm:gap-[12px]">
                 <div className="relative w-full">
                   <input
                     type="text"
                     value={heroUrl}
                     onChange={(e) => setHeroUrl(e.target.value)}
-                    placeholder="Enter website URL (e.g. example.com or yoursite.com)"
-                    className="w-full bg-white text-ink border border-ink rounded-[32px] px-[18px] sm:px-[21px] py-[10px] sm:py-[11px] placeholder:text-graphite-600 focus:outline-none focus:shadow-hero-field text-[15px] sm:text-[16px] transition-shadow"
+                    placeholder="Enter website URL (e.g. celopulse.org or yoursite.com)"
+                    className="w-full bg-white text-ink border border-ink rounded-[32px] px-[18px] sm:px-[21px] py-[11px] sm:py-[12px] placeholder:text-graphite-600 focus:outline-none focus:ring-2 focus:ring-violet/30 focus:shadow-hero-field text-[15px] sm:text-[16px] transition-all"
                   />
                 </div>
                 <button
                   type="submit"
-                  className="w-full sm:w-auto shrink-0 bg-ink text-white rounded-[48px] px-[24px] py-[10px] sm:py-[11px] text-[14px] leading-[1.6] font-normal hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center justify-center gap-2"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto shrink-0 bg-ink text-white rounded-[48px] px-[26px] py-[11px] sm:py-[12px] text-[14px] leading-[1.6] font-medium hover:bg-ink/90 active:scale-[0.98] transition-all hover-lift cursor-pointer inline-flex items-center justify-center gap-2 shadow-sm disabled:opacity-75"
                 >
-                  <span>Audit Your Site</span>
-                  <ArrowRight className="size-4" />
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin text-white" />
+                      <span>Launching...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Audit Your Site</span>
+                      <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -355,9 +371,9 @@ export const metadata = {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 mt-10 sm:mt-14 text-left">
               {/* Step 1 */}
-              <div className="bg-[#fcfcfd] border border-graphite-100 rounded-[16px] p-6 sm:p-7 flex flex-col justify-between hover:border-ink/20 transition-all shadow-sm">
+              <div className="bg-[#fcfcfd] border border-graphite-100 rounded-[16px] p-6 sm:p-7 flex flex-col justify-between hover:border-ink/20 hover-lift transition-all shadow-sm">
                 <div>
-                  <div className="size-9 rounded-full bg-ink text-white font-mono font-medium text-[13px] flex items-center justify-center mb-5">
+                  <div className="size-9 rounded-full bg-ink text-white font-mono font-medium text-[13px] flex items-center justify-center mb-5 shadow-xs">
                     01
                   </div>
                   <h3 className="font-sans font-[600] text-[20px] leading-[1.3] text-ink mb-2">
@@ -374,9 +390,9 @@ export const metadata = {
               </div>
 
               {/* Step 2 */}
-              <div className="bg-[#fcfcfd] border border-graphite-100 rounded-[16px] p-6 sm:p-7 flex flex-col justify-between hover:border-ink/20 transition-all shadow-sm">
+              <div className="bg-[#fcfcfd] border border-graphite-100 rounded-[16px] p-6 sm:p-7 flex flex-col justify-between hover:border-ink/20 hover-lift transition-all shadow-sm">
                 <div>
-                  <div className="size-9 rounded-full bg-ink text-white font-mono font-medium text-[13px] flex items-center justify-center mb-5">
+                  <div className="size-9 rounded-full bg-ink text-white font-mono font-medium text-[13px] flex items-center justify-center mb-5 shadow-xs">
                     02
                   </div>
                   <h3 className="font-sans font-[600] text-[20px] leading-[1.3] text-ink mb-2">
@@ -393,9 +409,9 @@ export const metadata = {
               </div>
 
               {/* Step 3 */}
-              <div className="bg-[#fcfcfd] border border-graphite-100 rounded-[16px] p-6 sm:p-7 flex flex-col justify-between hover:border-ink/20 transition-all shadow-sm">
+              <div className="bg-[#fcfcfd] border border-graphite-100 rounded-[16px] p-6 sm:p-7 flex flex-col justify-between hover:border-ink/20 hover-lift transition-all shadow-sm">
                 <div>
-                  <div className="size-9 rounded-full bg-ink text-white font-mono font-medium text-[13px] flex items-center justify-center mb-5">
+                  <div className="size-9 rounded-full bg-ink text-white font-mono font-medium text-[13px] flex items-center justify-center mb-5 shadow-xs">
                     03
                   </div>
                   <h3 className="font-sans font-[600] text-[20px] leading-[1.3] text-ink mb-2">

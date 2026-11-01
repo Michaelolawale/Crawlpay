@@ -726,7 +726,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           TAB 1: FINDINGS EXPLORER (100% EXPLANATORY & ACTIONABLE)
           ========================================================================= */}
       {activeMainTab === 'issues' && (
-        <div className="space-y-4">
+        <div className="space-y-4 tab-panel-enter">
           {displayedGroups.length === 0 ? (
             <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-8 text-center space-y-2">
               <CheckCircle2 className="mx-auto size-8 text-emerald-500" />
@@ -759,7 +759,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               return (
                 <div
                   key={group.rootCauseKey}
-                  className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] shadow-sm overflow-hidden transition-all"
+                  className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] shadow-sm overflow-hidden transition-all hover:border-graphite-300 dark:hover:border-graphite-700"
                 >
                   <button
                     type="button"
@@ -802,14 +802,14 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                           <span>Fix Ready</span>
                         </span>
                       )}
-                      <span className="text-xs text-violet font-semibold">{isExpanded ? 'Hide Details' : 'View Action'}</span>
-                      {isExpanded ? <ChevronUp className="size-4 text-violet" /> : <ChevronDown className="size-4 text-violet" />}
+                      <span className="text-xs text-violet font-semibold transition-colors">{isExpanded ? 'Hide Details' : 'View Action'}</span>
+                      <ChevronDown className={`size-4 text-violet transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                     </div>
                   </button>
 
                   {/* Expanded Issue Action Drawer */}
                   {isExpanded && (
-                    <div className="border-t border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#14151a] p-4 sm:p-5 space-y-4">
+                    <div className="border-t border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#14151a] p-4 sm:p-5 space-y-4 animate-slide-up">
                       {/* 1. WHY THIS MATTERS (PLAIN ENGLISH EXPLANATION) */}
                       <div className="rounded-[14px] border border-violet/20 bg-violet/5 dark:bg-violet/10 p-4 space-y-1.5">
                         <div className="flex items-center gap-1.5 text-xs font-bold text-violet uppercase tracking-wider">
@@ -933,19 +933,21 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           TAB 2: VISUAL TELEMETRY & GRAPHS
           ========================================================================= */}
       {activeMainTab === 'graphs' && (
-        <OverviewAuditGraph
-          report={report || null}
-          comparison={comparison}
-          auditedDomain={cleanDomain}
-          competitorDomain={comparison?.competitor?.url}
-        />
+        <div className="tab-panel-enter">
+          <OverviewAuditGraph
+            report={report || null}
+            comparison={comparison}
+            auditedDomain={cleanDomain}
+            competitorDomain={comparison?.competitor?.url}
+          />
+        </div>
       )}
 
       {/* =========================================================================
           TAB 3: AI SEARCH & ANSWER ENGINE (AEO & GEO)
           ========================================================================= */}
       {activeMainTab === 'aeo-geo' && (
-        <div className="space-y-6">
+        <div className="space-y-6 tab-panel-enter">
           {/* Executive Overview Cards */}
           <div className="grid gap-4 sm:grid-cols-2">
             {/* AEO Card */}
@@ -1164,7 +1166,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           TAB 4: MOBILE & CORE WEB VITALS
           ========================================================================= */}
       {activeMainTab === 'vitals' && (
-        <div className="space-y-6">
+        <div className="space-y-6 tab-panel-enter">
           {/* Mobile Telemetry Grid */}
           <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
@@ -1328,7 +1330,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           TAB 5: STACK-TAILORED CODE PATCHES
           ========================================================================= */}
       {activeMainTab === 'patches' && (
-        <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
+        <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5 tab-panel-enter">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -1472,7 +1474,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           TAB 6: COMPETITOR BENCHMARK
           ========================================================================= */}
       {activeMainTab === 'competitor' && (
-        <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
+        <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5 tab-panel-enter">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
@@ -1492,36 +1494,53 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             )}
           </div>
 
-          <form onSubmit={handleRunCompetitor} className="flex flex-col sm:flex-row gap-2.5">
-            <div className="relative flex-1">
-              <Globe className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 text-graphite-800/60 dark:text-graphite-400" />
-              <input
-                id="competitor-domain-input"
-                type="text"
-                aria-label="Enter rival website domain to compare"
-                value={competitorUrl}
-                onChange={(e) => setCompetitorUrl(e.target.value)}
-                placeholder="Enter rival domain (e.g. semrush.com or ahrefs.com)"
-                className="w-full rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-graphite-800/60 focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-white"
-              />
+          <form onSubmit={handleRunCompetitor} className="space-y-2">
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <div className="relative flex-1">
+                <Globe className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 text-graphite-800/60 dark:text-graphite-400" />
+                <input
+                  id="competitor-domain-input"
+                  type="text"
+                  aria-label="Enter rival website domain to compare"
+                  value={competitorUrl}
+                  onChange={(e) => setCompetitorUrl(e.target.value)}
+                  placeholder="Enter rival domain (e.g. semrush.com or ahrefs.com)"
+                  className="w-full rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-graphite-800/60 focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-white"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={compLoading}
+                className="inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 hover-lift active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer shrink-0"
+              >
+                {compLoading ? (
+                  <>
+                    <Activity className="size-3.5 animate-spin" />
+                    <span>Crawling Rival...</span>
+                  </>
+                ) : (
+                  <>
+                    <Swords className="size-3.5" />
+                    <span>Run Comparison</span>
+                  </>
+                )}
+              </button>
             </div>
-            <button
-              type="submit"
-              disabled={compLoading}
-              className="inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer shrink-0"
-            >
-              {compLoading ? (
-                <>
-                  <Activity className="size-3.5 animate-spin" />
-                  <span>Crawling Rival...</span>
-                </>
-              ) : (
-                <>
-                  <Swords className="size-3.5" />
-                  <span>Run Comparison</span>
-                </>
-              )}
-            </button>
+
+            {/* Quick Rival Suggestions */}
+            <div className="flex flex-wrap items-center gap-1.5 text-[11px] pt-1">
+              <span className="text-graphite-500 font-mono">Quick test rivals:</span>
+              {['ahrefs.com', 'semrush.com', 'moz.com'].map((rival) => (
+                <button
+                  key={rival}
+                  type="button"
+                  onClick={() => setCompetitorUrl(rival)}
+                  className="rounded-full border border-graphite-200 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] px-2.5 py-0.5 text-graphite-700 dark:text-graphite-300 hover:text-blue-500 hover:border-blue-400 font-mono hover-lift transition-all cursor-pointer"
+                >
+                  {rival}
+                </button>
+              ))}
+            </div>
           </form>
 
           {compError && (
