@@ -10,6 +10,9 @@ import {
   RefreshCw,
   ExternalLink,
   TrendingUp,
+  CheckCircle2,
+  Clock,
+  FileText,
 } from 'lucide-react';
 
 import { CONFIG } from '../../config';
@@ -193,6 +196,103 @@ export default function AdminOverviewPage() {
             </strong>
           </div>
         </div>
+      </div>
+
+      {/* Latest User Jobs Live Feed Card */}
+      <div className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-6 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-graphite-100 dark:border-graphite-800 pb-4">
+          <div className="flex items-center gap-2.5">
+            <h2 className="font-display text-base font-bold text-ink dark:text-white">
+              Latest User Audit Jobs
+            </h2>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live Feed
+            </span>
+          </div>
+          <Link
+            href="/admin/jobs"
+            className="text-xs font-semibold text-violet hover:underline inline-flex items-center gap-1"
+          >
+            <span>View Full Queue ({data?.totalCalls || 0})</span>
+            <ExternalLink className="size-3" />
+          </Link>
+        </div>
+
+        {(!data?.recentJobs || data.recentJobs.length === 0) ? (
+          <div className="py-8 text-center text-xs text-graphite-800 dark:text-graphite-400">
+            <Clock className="size-5 mx-auto mb-1 text-graphite-400 stroke-1" />
+            <p className="font-medium text-ink dark:text-white">No jobs recorded yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-graphite-100 dark:border-graphite-800 text-graphite-800 dark:text-graphite-400 font-semibold">
+                <tr>
+                  <th className="pb-2.5 pr-4 whitespace-nowrap">Started</th>
+                  <th className="pb-2.5 pr-4">Target Website</th>
+                  <th className="pb-2.5 pr-4">Wallet</th>
+                  <th className="pb-2.5 pr-4">Depth</th>
+                  <th className="pb-2.5 pr-4">Status</th>
+                  <th className="pb-2.5 text-right">Report</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-graphite-100 dark:divide-graphite-800">
+                {data.recentJobs.map((j: any) => (
+                  <tr key={j.id} className="hover:bg-[#f4f4f6]/60 dark:hover:bg-[#20212b]/60 transition-colors">
+                    <td className="py-2.5 pr-4 font-mono text-graphite-800 dark:text-graphite-400 whitespace-nowrap">
+                      {new Date(j.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="py-2.5 pr-4 font-mono font-medium text-ink dark:text-white max-w-[200px] truncate">
+                      <a href={j.url} target="_blank" rel="noopener noreferrer" className="hover:text-violet hover:underline inline-flex items-center gap-1">
+                        <span>{j.url.replace(/^https?:\/\//, '')}</span>
+                        <ExternalLink className="size-2.5 opacity-50 shrink-0" />
+                      </a>
+                    </td>
+                    <td className="py-2.5 pr-4 font-mono text-[11px] text-graphite-800 dark:text-graphite-400 whitespace-nowrap">
+                      {j.wallet ? `${j.wallet.slice(0, 6)}...${j.wallet.slice(-4)}` : 'Anonymous'}
+                    </td>
+                    <td className="py-2.5 pr-4 uppercase text-[10px] font-bold text-graphite-800 dark:text-graphite-400">
+                      {j.depth}
+                    </td>
+                    <td className="py-2.5 pr-4 whitespace-nowrap">
+                      {j.status === 'done' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <CheckCircle2 className="size-3 text-emerald-500" />
+                          <span>Done</span>
+                        </span>
+                      ) : j.status === 'running' ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 animate-pulse">
+                          <RefreshCw className="size-3 animate-spin text-blue-500" />
+                          <span>Running</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                          <AlertCircle className="size-3 text-rose-500" />
+                          <span>Failed</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 text-right whitespace-nowrap">
+                      {j.report_id ? (
+                        <Link
+                          href={`/app/reports/${j.report_id}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 rounded-[32px] border border-graphite-100 dark:border-graphite-700 bg-white dark:bg-[#20212b] px-2.5 py-0.5 text-[11px] font-semibold text-ink dark:text-white hover:text-violet transition-colors"
+                        >
+                          <FileText className="size-3 text-emerald-600 dark:text-emerald-400" />
+                          <span>Report</span>
+                        </Link>
+                      ) : (
+                        <span className="text-graphite-400 font-mono text-[11px]">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Quick Navigation Cards */}

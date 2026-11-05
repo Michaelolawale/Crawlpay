@@ -61,5 +61,6 @@ export async function GET(req: NextRequest) {
     failedJobsCount: failedJobs.length,
     onchainStatus,
     activeConfig,
+    recentJobs: jobs.slice(0, 10),
   });
 }

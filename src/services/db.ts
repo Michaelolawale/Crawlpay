@@ -83,7 +83,7 @@ class CrawlpayDatabase {
           chain_id: 42220,
           tx_hash: '0x3fc8402348c27474548c645bb2290dbeee4f47aeb38107342b108cbb34a062f5',
           status: 'confirmed',
-          created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+          created_at: '2026-10-25T12:00:00.000Z',
         },
       ],
       jobs: [
@@ -93,9 +93,9 @@ class CrawlpayDatabase {
           url: 'https://evangelcarriersnetwork.org',
           depth: 'quick',
           status: 'done',
-          started_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
-          finished_at: new Date(Date.now() - 1000 * 60 * 44).toISOString(),
-          duration_ms: 1240,
+          started_at: '2026-10-25T12:00:00.000Z',
+          finished_at: '2026-10-25T12:00:03.500Z',
+          duration_ms: 3500,
           is_test: false,
           report_id: 'rep_evangel_example',
         },
@@ -170,27 +170,29 @@ class CrawlpayDatabase {
    */
   public async syncOnchainTransactions(): Promise<void> {
     const now = Date.now();
-    if (now - this.lastSyncTime < 8000) return; // 8s debounce
+    if (now - this.lastSyncTime < 10000) return; // 10s debounce
     this.lastSyncTime = now;
 
     try {
       const agent = (process.env.AGENT_WALLET_ADDRESS || '0xf06c2b754d07cba299751f0985a48f8013bb6b39').toLowerCase();
       const res = await fetch(
-        `https://explorer.celo.org/mainnet/api?module=account&action=txlist&address=${agent}&page=1&offset=100&sort=desc`,
-        { cache: 'no-store', signal: AbortSignal.timeout(4500) }
+        `https://explorer.celo.org/mainnet/api?module=account&action=txlist&address=${agent}&page=1&offset=50&sort=desc`,
+        { cache: 'no-store', signal: AbortSignal.timeout(6000) }
       );
       const json = await res.json().catch(() => ({}));
       if (json.status === '1' && Array.isArray(json.result)) {
+        const existingPayments = await this.listPayments();
+        const existingTxHashes = new Set(existingPayments.map((p) => p.tx_hash.toLowerCase()));
+
         for (const tx of json.result) {
           if (!tx.hash || tx.isError !== '0') continue;
           if (tx.to && tx.to.toLowerCase() === agent) {
             const valueCelo = Number(tx.value) / 1e18;
             if (valueCelo <= 0) continue;
 
-            const existing = await this.getPaymentByTxHash(tx.hash);
-            const payId = `pay_chain_${tx.hash.slice(2, 10)}`;
-
-            if (!existing) {
+            const cleanHash = tx.hash.toLowerCase();
+            if (!existingTxHashes.has(cleanHash)) {
+              const payId = `pay_chain_${cleanHash.slice(2, 10)}`;
               const paymentRecord: PaymentRecord = {
                 id: payId,
                 wallet: tx.from,
@@ -202,28 +204,7 @@ class CrawlpayDatabase {
                 created_at: new Date(Number(tx.timeStamp) * 1000).toISOString(),
               };
               await this.addPayment(paymentRecord);
-            }
-
-            const existingPaymentId = existing ? existing.id : payId;
-            const existingJob = (await this.listJobs(true)).find(
-              (j) => j.payment_id === existingPaymentId || j.id === `job_chain_${tx.hash.slice(2, 10)}`
-            );
-
-            if (!existingJob) {
-              const jobId = `job_chain_${tx.hash.slice(2, 10)}`;
-              await this.addJob({
-                id: jobId,
-                payment_id: existingPaymentId,
-                url: 'https://evangelcarriersnetwork.org',
-                depth: valueCelo >= 6 ? 'full' : 'quick',
-                status: 'done',
-                started_at: new Date(Number(tx.timeStamp) * 1000).toISOString(),
-                finished_at: new Date(Number(tx.timeStamp) * 1000 + 3500).toISOString(),
-                duration_ms: 3500,
-                is_test: false,
-                report_id: 'rep_evangel_example',
-                wallet: tx.from,
-              });
+              existingTxHashes.add(cleanHash);
             }
           }
         }
@@ -409,22 +390,21 @@ class CrawlpayDatabase {
     const supabase = getSupabaseAdminClient();
     if (supabase) {
       try {
-        let query = supabase.from('jobs').select('*').order('started_at', { ascending: false }).limit(100);
+        let query = supabase.from('jobs').select('*').order('started_at', { ascending: false }).limit(200);
         if (!includeTest) {
           query = query.eq('is_test', false);
         }
         const { data, error } = await query;
-        if (!error && data) {
+        if (!error && Array.isArray(data)) {
           const records = data as JobRecord[];
-          // Update local cache items
-          for (const item of records) {
-            const idx = this.inMemoryData.jobs.findIndex((j) => j.id === item.id);
-            if (idx >= 0) {
-              this.inMemoryData.jobs[idx] = item;
-            } else {
-              this.inMemoryData.jobs.push(item);
-            }
+          const map = new Map<string, JobRecord>();
+          for (const j of this.inMemoryData.jobs) {
+            map.set(j.id, j);
           }
+          for (const j of records) {
+            map.set(j.id, j);
+          }
+          this.inMemoryData.jobs = Array.from(map.values());
         }
       } catch (err) {
         console.warn('[DB] Supabase listJobs fallback:', err);

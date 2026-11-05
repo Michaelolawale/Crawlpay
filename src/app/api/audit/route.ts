@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
       // Replay prevention & idempotent retry support
       const existingPayment = await db.getPaymentByTxHash(incomingTxHash);
       if (existingPayment) {
-        // Check if there is already a completed report for this payment
+        // Check if there is already a completed report for this exact payment and URL (idempotency)
         const allJobs = await db.listJobs();
         const completedJob = allJobs.find(
           (j) => j.payment_id === existingPayment.id && j.status === 'done' && j.report_id
@@ -108,13 +108,9 @@ export async function POST(req: NextRequest) {
           if (existingReport) {
             return NextResponse.json(existingReport);
           }
-          return NextResponse.json(
-            { error: 'Transaction hash has already been used for a previous audit.' },
-            { status: 400 }
-          );
         }
 
-        // Previous job failed, timed out, or is being retried — allow retry with existing payment!
+        // Previous job failed, timed out, or is being executed — allow with existing payment!
         isVerifiedPaid = true;
         paymentId = existingPayment.id;
       } else {

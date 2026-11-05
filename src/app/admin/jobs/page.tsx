@@ -45,7 +45,7 @@ function isRecentJob(isoString: string): boolean {
   try {
     const d = new Date(isoString);
     const diffMs = Date.now() - d.getTime();
-    return diffMs < 30 * 60 * 1000; // Within 30 minutes
+    return diffMs < 24 * 60 * 60 * 1000; // Within 24 hours
   } catch {
     return false;
   }

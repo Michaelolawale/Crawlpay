@@ -462,7 +462,7 @@ export function PaymentModal({
           const verifyRes = await fetch('/api/payment/verify', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ txHash: submittedTxHash }),
+            body: JSON.stringify({ txHash: submittedTxHash, url: targetUrl, mode }),
           });
           const vData = await verifyRes.json();
           if (vData.valid && vData.mined) {
@@ -508,7 +508,7 @@ export function PaymentModal({
       const verifyRes = await fetch('/api/payment/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ txHash: manualTxInput.trim() }),
+        body: JSON.stringify({ txHash: manualTxInput.trim(), url: targetUrl, mode }),
       });
       const verifyData = await verifyRes.json();
 
