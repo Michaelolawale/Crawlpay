@@ -22,9 +22,9 @@ export function detectSiteArchetype($: cheerio.CheerioAPI, html: string, url: st
     web3Score += 3;
     detectedSignals.push('Web3 wallet connector library');
   }
-  if (text.includes('connect wallet') || text.includes('metamask') || text.includes('smart contract') || text.includes('celo') || text.includes('mint')) {
-    web3Score += 2;
-    detectedSignals.push('Web3 keywords (Connect Wallet, Mint, Contract)');
+  if (text.includes('connect wallet') || text.includes('metamask') || text.includes('smart contract') || text.includes('celo') || text.includes('mint') || text.includes('x402') || text.includes('onchain') || text.includes('usdt')) {
+    web3Score += 3;
+    detectedSignals.push('Web3 / Onchain payment signals (Celo, x402, USDT, Smart Contract)');
   }
 
   // 2. E-Commerce Detection
@@ -37,20 +37,20 @@ export function detectSiteArchetype($: cheerio.CheerioAPI, html: string, url: st
     ecommerceScore += 3;
     detectedSignals.push('Cart & Checkout buttons/elements');
   }
-  if ($('[class*="price"]').length > 0 || text.includes('free shipping') || text.includes('return policy')) {
+  if (text.includes('free shipping') || text.includes('return policy') || text.includes('items in cart')) {
     ecommerceScore += 2;
-    detectedSignals.push('Retail pricing & shipping cues');
+    detectedSignals.push('Retail shipping & return cues');
   }
 
   // 3. SaaS / B2B Software Detection
   let saasScore = 0;
-  if (text.includes('pricing') && (text.includes('monthly') || text.includes('annually') || text.includes('per user'))) {
+  if (text.includes('pricing') && (text.includes('monthly') || text.includes('annually') || text.includes('per user') || text.includes('per crawl') || text.includes('free audit') || text.includes('quick audit'))) {
     saasScore += 3;
-    detectedSignals.push('SaaS subscription pricing tiers');
+    detectedSignals.push('SaaS / Developer pricing tiers');
   }
-  if (text.includes('start free trial') || text.includes('request demo') || text.includes('sign up free') || text.includes('api documentation')) {
+  if (text.includes('start free trial') || text.includes('request demo') || text.includes('sign up free') || text.includes('api documentation') || text.includes('mcp') || text.includes('developer') || text.includes('audit')) {
     saasScore += 3;
-    detectedSignals.push('SaaS call-to-actions (Free trial, Demo, API)');
+    detectedSignals.push('SaaS / Developer tools (API, MCP, Docs, Audit)');
   }
   if (lowerHtml.includes('intercom') || lowerHtml.includes('crisp') || lowerHtml.includes('hubspot') || lowerHtml.includes('stripe.com')) {
     saasScore += 2;

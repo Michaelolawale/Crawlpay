@@ -10,11 +10,17 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://crawlpay.vercel.app'),
+  alternates: {
+    canonical: '/',
+  },
   title: {
     default: 'CrawlPay — Autonomous Site Audits (SEO, AEO & GEO)',
     template: '%s | CrawlPay (SEO, AEO & GEO)',
   },
   description: 'On-demand technical SEO, AEO query mapping, and GEO generative citability audits—settled per crawl via x402 on Celo.',
+  authors: [{ name: 'CrawlPay Protocol', url: 'https://crawlpay.vercel.app' }],
+  creator: 'CrawlPay Protocol',
+  publisher: 'CrawlPay',
   keywords: ['celo', 'x402', 'seo', 'aeo', 'geo', 'ai search', 'agent', 'micropayments', 'crawler', 'audit'],
   openGraph: {
     title: 'CrawlPay — Autonomous Site Audits (SEO, AEO & GEO)',

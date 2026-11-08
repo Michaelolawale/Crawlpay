@@ -38,19 +38,22 @@ export function checkSitemap(pages: PageCrawlData[], metadata: SiteMetadata): Fi
     });
   }
 
-  // Build lookups
-  const sitemapUrls = new Set(metadata.sitemapUrls.map((u) => u.toLowerCase()));
+  // Build lookups with trailing slash normalization
+  const normalize = (u: string) => u.toLowerCase().trim().replace(/\/+$/, '');
+  const sitemapUrls = new Set(metadata.sitemapUrls.map(normalize));
   const crawledPages = new Map<string, PageCrawlData>();
   for (const page of pages) {
-    crawledPages.set(page.url.toLowerCase(), page);
-    crawledPages.set(page.finalUrl.toLowerCase(), page);
+    crawledPages.set(normalize(page.url), page);
+    crawledPages.set(normalize(page.finalUrl), page);
   }
 
   // 3. Important crawled pages missing from sitemap (depth <= 1, indexable, 200 OK)
   for (const page of pages) {
     if (page.depth <= 1 && page.status === 200) {
       const isNoindex = page.robotsMeta.toLowerCase().includes('noindex');
-      if (!isNoindex && !sitemapUrls.has(page.url.toLowerCase()) && !sitemapUrls.has(page.finalUrl.toLowerCase())) {
+      const normUrl = normalize(page.url);
+      const normFinal = normalize(page.finalUrl);
+      if (!isNoindex && !sitemapUrls.has(normUrl) && !sitemapUrls.has(normFinal)) {
         findings.push({
           id: generateStableFindingId('sitemap.missing_important_page', page.url, 'not_in_sitemap'),
           checkId: 'sitemap.missing_important_page',
