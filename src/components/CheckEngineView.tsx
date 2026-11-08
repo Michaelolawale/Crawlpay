@@ -3208,53 +3208,6 @@ Allow: /`;
       )}
 
     {/* =========================================================================
-        LIVE ON-CHAIN SETTLEMENT PROOF (187+ VERIFIED TRANSACTIONS)
-        ========================================================================= */}
-    <div className="rounded-[16px] border border-violet/20 bg-gradient-to-br from-violet/5 via-white to-white dark:from-violet/10 dark:via-[#16171d] dark:to-[#16171d] p-4 space-y-3 shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-2.5">
-        <div className="flex items-center gap-2">
-          <span className="relative flex size-2.5 shrink-0">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
-          </span>
-          <span className="font-semibold text-ink dark:text-white text-xs">
-            Live On-Chain Settlement Proof
-          </span>
-          <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.5 text-[10px] font-mono font-bold">
-            187+ Verified Crawls
-          </span>
-        </div>
-        <a
-          href="https://celoscan.io/address/0xf06c2b754d07cba299751f0985a48f8013bb6b39"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-violet hover:underline text-[11px] font-mono inline-flex items-center gap-1 font-semibold"
-        >
-          <span>Inspect on Celoscan</span>
-          <ExternalLink className="size-3" />
-        </a>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-        <div className="rounded-[10px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2 space-y-0.5">
-          <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Settlement Rail</span>
-          <strong className="text-ink dark:text-white font-mono">Celo Mainnet (42220)</strong>
-        </div>
-        <div className="rounded-[10px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2 space-y-0.5">
-          <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Attribution Tag</span>
-          <strong className="text-violet font-mono truncate block">celo_757c2ac3b70c</strong>
-        </div>
-        <div className="rounded-[10px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2 space-y-0.5">
-          <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Settlement Model</span>
-          <strong className="text-emerald-600 dark:text-emerald-400 font-mono">x402 Pay-Per-Crawl</strong>
-        </div>
-        <div className="rounded-[10px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2 space-y-0.5">
-          <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Proof Integrity</span>
-          <strong className="text-ink dark:text-white font-mono">ERC-8021 Verified</strong>
-        </div>
-      </div>
-    </div>
-
-    {/* =========================================================================
         AUDIT TRANSPARENCY & DATA BOUNDARIES
         ========================================================================= */}
     <section className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#16171d] p-4 text-xs space-y-2">
