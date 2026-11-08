@@ -12,6 +12,8 @@ import {
   FolderOpen,
   RefreshCw,
   MessageSquare,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { SiteHeader, focusRing } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
@@ -132,29 +134,44 @@ export default function DocsPage() {
                   Open your Claude Desktop configuration file
                 </h3>
               </div>
-              <p className="text-[14px] text-graphite-700 dark:text-graphite-300 pl-8">
+              <p className="text-[14px] text-graphite-700 dark:text-graphite-300 pl-0 sm:pl-8">
                 Open or create your Claude Desktop config file in your preferred text editor:
               </p>
-              <div className="pl-8 space-y-2 text-[13px] font-mono">
-                <div className="p-2.5 rounded-[8px] bg-graphite-100 dark:bg-graphite-900 border border-graphite-200 dark:border-graphite-800 text-graphite-800 dark:text-graphite-200 flex items-center justify-between">
-                  <span><strong>macOS:</strong> ~/Library/Application Support/Claude/claude_desktop_config.json</span>
-                  <button
-                    type="button"
-                    onClick={() => copy('~/Library/Application Support/Claude/claude_desktop_config.json', 'path-mac')}
-                    className={`text-violet hover:underline text-[12px] shrink-0 ml-2 ${focusRing}`}
-                  >
-                    {copiedKey === 'path-mac' ? 'Copied' : 'Copy'}
-                  </button>
+              <div className="pl-0 sm:pl-8 space-y-2.5 text-[13px] font-mono">
+                {/* macOS Config Path Card */}
+                <div className="p-3 rounded-[10px] bg-graphite-100 dark:bg-graphite-900 border border-graphite-200 dark:border-graphite-800 text-graphite-800 dark:text-graphite-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[12px] text-ink dark:text-white uppercase tracking-wider">macOS</span>
+                    <button
+                      type="button"
+                      onClick={() => copy('~/Library/Application Support/Claude/claude_desktop_config.json', 'path-mac')}
+                      className={`inline-flex items-center gap-1.5 text-violet hover:underline text-[12px] font-medium cursor-pointer ${focusRing}`}
+                    >
+                      {copiedKey === 'path-mac' ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+                      <span>{copiedKey === 'path-mac' ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                  <div className="p-2 rounded-[6px] bg-white dark:bg-[#121317] border border-graphite-200/70 dark:border-graphite-800 text-[12px] font-mono text-graphite-700 dark:text-graphite-300 break-all select-all leading-relaxed">
+                    ~/Library/Application Support/Claude/claude_desktop_config.json
+                  </div>
                 </div>
-                <div className="p-2.5 rounded-[8px] bg-graphite-100 dark:bg-graphite-900 border border-graphite-200 dark:border-graphite-800 text-graphite-800 dark:text-graphite-200 flex items-center justify-between">
-                  <span><strong>Windows:</strong> %APPDATA%\Claude\claude_desktop_config.json</span>
-                  <button
-                    type="button"
-                    onClick={() => copy('%APPDATA%\\Claude\\claude_desktop_config.json', 'path-win')}
-                    className={`text-violet hover:underline text-[12px] shrink-0 ml-2 ${focusRing}`}
-                  >
-                    {copiedKey === 'path-win' ? 'Copied' : 'Copy'}
-                  </button>
+
+                {/* Windows Config Path Card */}
+                <div className="p-3 rounded-[10px] bg-graphite-100 dark:bg-graphite-900 border border-graphite-200 dark:border-graphite-800 text-graphite-800 dark:text-graphite-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-[12px] text-ink dark:text-white uppercase tracking-wider">Windows</span>
+                    <button
+                      type="button"
+                      onClick={() => copy('%APPDATA%\\Claude\\claude_desktop_config.json', 'path-win')}
+                      className={`inline-flex items-center gap-1.5 text-violet hover:underline text-[12px] font-medium cursor-pointer ${focusRing}`}
+                    >
+                      {copiedKey === 'path-win' ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
+                      <span>{copiedKey === 'path-win' ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                  <div className="p-2 rounded-[6px] bg-white dark:bg-[#121317] border border-graphite-200/70 dark:border-graphite-800 text-[12px] font-mono text-graphite-700 dark:text-graphite-300 break-all select-all leading-relaxed">
+                    %APPDATA%\Claude\claude_desktop_config.json
+                  </div>
                 </div>
               </div>
             </div>
@@ -168,43 +185,47 @@ export default function DocsPage() {
                   Add CrawlPay to the configuration
                 </h3>
               </div>
-              <p className="text-[14px] text-graphite-700 dark:text-graphite-300 pl-8">
+              <p className="text-[14px] text-graphite-700 dark:text-graphite-300 pl-0 sm:pl-8">
                 Paste the following block inside the <code className="font-mono text-ink dark:text-white text-[13px]">&quot;mcpServers&quot;</code> object:
               </p>
-              <div className="pl-8">
-                <div className="relative rounded-[8px] bg-graphite-900 p-4 font-mono text-[12px] text-graphite-200 overflow-x-auto">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      copy(
-                        JSON.stringify(
-                          {
-                            mcpServers: {
-                              crawlpay: {
-                                command: 'node',
-                                args: [
-                                  '/path/to/Crawlpay/node_modules/tsx/dist/cli.mjs',
-                                  '/path/to/Crawlpay/scripts/mcp-server.ts',
-                                ],
-                                env: {
-                                  CELO_RPC_URL: 'https://forno.celo.org',
-                                  AGENT_WALLET_ADDRESS: PUBLIC_AGENT_ADDRESS,
-                                  ATTRIBUTION_TAG: 'celo_757c2ac3b70c',
+              <div className="pl-0 sm:pl-8">
+                <div className="rounded-[10px] bg-graphite-900 border border-graphite-800 overflow-hidden font-mono text-[12px]">
+                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-graphite-800 bg-[#14151a]">
+                    <span className="text-[11px] font-mono text-graphite-400">claude_desktop_config.json</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copy(
+                          JSON.stringify(
+                            {
+                              mcpServers: {
+                                crawlpay: {
+                                  command: 'node',
+                                  args: [
+                                    '/path/to/Crawlpay/node_modules/tsx/dist/cli.mjs',
+                                    '/path/to/Crawlpay/scripts/mcp-server.ts',
+                                  ],
+                                  env: {
+                                    CELO_RPC_URL: 'https://forno.celo.org',
+                                    AGENT_WALLET_ADDRESS: PUBLIC_AGENT_ADDRESS,
+                                    ATTRIBUTION_TAG: 'celo_757c2ac3b70c',
+                                  },
                                 },
                               },
                             },
-                          },
-                          null,
-                          2
-                        ),
-                        'claude-cfg'
-                      )
-                    }
-                    className={`absolute top-3 right-3 text-violet hover:underline text-[12px] ${focusRing}`}
-                  >
-                    {copiedKey === 'claude-cfg' ? 'Copied' : 'Copy configuration'}
-                  </button>
-                  <pre>{`{
+                            null,
+                            2
+                          ),
+                          'claude-cfg'
+                        )
+                      }
+                      className={`inline-flex items-center gap-1.5 text-violet hover:underline text-[12px] font-medium cursor-pointer ${focusRing}`}
+                    >
+                      {copiedKey === 'claude-cfg' ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                      <span>{copiedKey === 'claude-cfg' ? 'Copied' : 'Copy configuration'}</span>
+                    </button>
+                  </div>
+                  <pre className="p-4 text-graphite-200 overflow-x-auto leading-relaxed">{`{
   "mcpServers": {
     "crawlpay": {
       "command": "node",
@@ -233,7 +254,7 @@ export default function DocsPage() {
                   Restart Claude Desktop
                 </h3>
               </div>
-              <p className="text-[14px] text-graphite-700 dark:text-graphite-300 pl-8">
+              <p className="text-[14px] text-graphite-700 dark:text-graphite-300 pl-0 sm:pl-8">
                 Completely quit Claude Desktop (Cmd+Q on macOS, or exit from the Windows system tray) and relaunch it. Once open, look for the hammer icon in the prompt input bar: clicking it will confirm <strong className="text-ink dark:text-white font-medium">crawlpay</strong> tools are active and ready.
               </p>
             </div>
@@ -247,10 +268,10 @@ export default function DocsPage() {
                   Ask Claude to audit your site
                 </h3>
               </div>
-              <p className="text-[14px] text-graphite-700 dark:text-graphite-300 pl-8">
+              <p className="text-[14px] text-graphite-700 dark:text-graphite-300 pl-0 sm:pl-8">
                 Ask Claude directly in chat. It will invoke CrawlPay&apos;s crawler and report back with findings and code fixes:
               </p>
-              <div className="pl-8 grid sm:grid-cols-2 gap-2 text-[13px]">
+              <div className="pl-0 sm:pl-8 grid sm:grid-cols-2 gap-2 text-[13px]">
                 <div className="p-3 rounded-[8px] bg-graphite-100 dark:bg-graphite-900 border border-graphite-200 dark:border-graphite-800 text-graphite-800 dark:text-graphite-200">
                   &ldquo;Why isn&apos;t my site https://example.com showing up in ChatGPT or Perplexity?&rdquo;
                 </div>
