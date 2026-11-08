@@ -32,7 +32,7 @@ export class PageCrawler {
       totalTimeoutMs: customConfig?.totalTimeoutMs || 60000,
       perRequestTimeoutMs: customConfig?.perRequestTimeoutMs || 8000,
       requestsPerSecond: customConfig?.requestsPerSecond || 4,
-      userAgent: customConfig?.userAgent || 'CrawlPayBot/1.0 (+https://crawlpay.org/bot)',
+      userAgent: customConfig?.userAgent || 'CrawlPayBot/1.0 (+https://crawlpay.vercel.app/bot)',
     };
   }
 
@@ -241,36 +241,60 @@ export class PageCrawler {
     const timeout = setTimeout(() => controller.abort(), this.config.perRequestTimeoutMs);
 
     try {
-      const res = await fetch(currentUrl, {
-        headers: {
-          'User-Agent': this.config.userAgent,
-          Accept: 'text/html,application/xhtml+xml',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          Pragma: 'no-cache',
-        },
-        cache: 'no-store',
-        redirect: 'follow',
-        signal: controller.signal,
-      });
+      let redirectCount = 0;
+      const maxRedirects = 5;
 
-      clearTimeout(timeout);
-      finalUrl = res.url || currentUrl;
-      status = res.status;
+      while (redirectCount <= maxRedirects) {
+        // Validate URL and DNS before EVERY hop (SSRF + DNS rebinding prevention)
+        const check = await validateAndNormalizeTargetUrl(currentUrl);
+        if (!check.valid || !check.normalizedUrl) {
+          throw new Error(check.error || 'Target hop blocked by SSRF protection');
+        }
 
-      res.headers.forEach((val, key) => {
-        responseHeaders[key.toLowerCase()] = val;
-      });
+        const res = await fetch(currentUrl, {
+          headers: {
+            'User-Agent': this.config.userAgent,
+            Accept: 'text/html,application/xhtml+xml',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+          },
+          cache: 'no-store',
+          redirect: 'manual', // Strictly manual to intercept and validate redirects
+          signal: controller.signal,
+        });
 
-      // Cap at 2MB per spec
-      const buffer = await res.arrayBuffer();
-      byteSize = buffer.byteLength;
-      if (byteSize > this.config.maxResponseBytes) {
-        // Truncate to max bytes
-        const truncated = buffer.slice(0, this.config.maxResponseBytes);
-        html = new TextDecoder('utf-8').decode(truncated);
-      } else {
-        html = new TextDecoder('utf-8').decode(buffer);
+        status = res.status;
+
+        // If redirect status code
+        if ([301, 302, 303, 307, 308].includes(status)) {
+          const location = res.headers.get('location');
+          if (!location) break;
+          redirectChain.push(currentUrl);
+          const resolvedNext = new URL(location, currentUrl).toString();
+          currentUrl = resolvedNext;
+          finalUrl = resolvedNext;
+          redirectCount++;
+          continue;
+        }
+
+        // Final destination reached
+        finalUrl = currentUrl;
+        res.headers.forEach((val, key) => {
+          responseHeaders[key.toLowerCase()] = val;
+        });
+
+        // Cap at 2MB per spec
+        const buffer = await res.arrayBuffer();
+        byteSize = buffer.byteLength;
+        if (byteSize > this.config.maxResponseBytes) {
+          const truncated = buffer.slice(0, this.config.maxResponseBytes);
+          html = new TextDecoder('utf-8').decode(truncated);
+        } else {
+          html = new TextDecoder('utf-8').decode(buffer);
+        }
+        break;
       }
+      clearTimeout(timeout);
     } catch (err: any) {
       clearTimeout(timeout);
       // If direct request failed or timed out, provide standard placeholder to run checks

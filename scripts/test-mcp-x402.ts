@@ -119,8 +119,8 @@ async function runMcpAndX402Tests() {
     const x402Result = await sendRpc('tools/call', {
       name: 'handle_payment_required',
       arguments: {
-        url: 'https://crawlpay.org/api/audit',
-        amountUsd: '0.25',
+        url: 'https://crawlpay.vercel.app/api/audit',
+        amountUsd: '0.50',
       },
     });
     const x402Text = x402Result.result?.content?.[0]?.text || '';

@@ -19,15 +19,17 @@ export async function POST(req: NextRequest) {
       const existingPayment = await db.getPaymentByTxHash(txHash);
 
       const payId = existingPayment ? existingPayment.id : `pay_${Date.now()}_${txHash.slice(2, 8)}`;
-      const valueCelo = Number(verification.valueCelo || 0);
-      const isCelo = valueCelo > 0;
+      const isUsdt = verification.token === 'USDT' || Boolean(verification.valueUsdt);
+      const isCelo = !isUsdt && Number(verification.valueCelo || 0) > 0;
+      const paymentAmount = isUsdt ? (verification.valueUsdt || '0.50') : (verification.valueCelo || '6.60');
+      const paymentToken = isUsdt ? 'USDT' : 'CELO';
 
       if (!existingPayment) {
         await db.addPayment({
           id: payId,
           wallet: verification.from || 'unknown',
-          amount: isCelo ? (verification.valueCelo || '3.30') : '0.25',
-          token: isCelo ? 'CELO' : 'USDT',
+          amount: paymentAmount,
+          token: paymentToken,
           chain_id: 42220,
           tx_hash: txHash,
           status: 'confirmed',

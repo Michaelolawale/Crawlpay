@@ -34,6 +34,9 @@ export default function AdminSandboxPage() {
 
     try {
       const authKey = getAdminToken();
+      if (!authKey) {
+        throw new Error('Please enter your admin passkey in the Admin Console first.');
+      }
       const res = await fetch('/api/admin/sandbox', {
         method: 'POST',
         headers: {
@@ -113,7 +116,7 @@ export default function AdminSandboxPage() {
                   <Zap className={`size-4 ${mode === 'quick' ? 'text-violet' : 'text-graphite-600 dark:text-graphite-400'}`} />
                   <span className="font-sans font-[600] text-[15px] text-ink dark:text-white">Quick Audit (1 Page)</span>
                 </div>
-                <p className="mt-1 text-xs text-graphite-800 dark:text-graphite-400">Free sandbox simulation</p>
+                <p className="mt-1 text-xs text-graphite-800 dark:text-graphite-400">Single landing page structure &amp; on-page analysis</p>
               </div>
 
               <div
@@ -128,9 +131,33 @@ export default function AdminSandboxPage() {
                   <Layers className={`size-4 ${mode === 'full' ? 'text-violet' : 'text-graphite-600 dark:text-graphite-400'}`} />
                   <span className="font-sans font-[600] text-[15px] text-ink dark:text-white">Full Deep Crawl (Up to 50 Pages)</span>
                 </div>
-                <p className="mt-1 text-xs text-graphite-800 dark:text-graphite-400">Free sandbox simulation</p>
+                <p className="mt-1 text-xs text-graphite-800 dark:text-graphite-400">Multi-page BFS crawl checking internal links, orphan pages &amp; duplicate content</p>
               </div>
             </div>
+          </div>
+
+          {/* Quick Test URL Suggestions */}
+          <div className="space-y-1.5 text-xs text-graphite-600 dark:text-graphite-400">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="font-mono text-[11px] font-semibold text-ink dark:text-white">Sample multi-page test domains:</span>
+              {[
+                { url: 'https://news.ycombinator.com', label: 'Hacker News (50 pages)' },
+                { url: 'https://docs.github.com', label: 'GitHub Docs' },
+                { url: 'https://developer.mozilla.org', label: 'MDN Web' },
+              ].map((site) => (
+                <button
+                  key={site.url}
+                  type="button"
+                  onClick={() => setTargetUrl(site.url)}
+                  className="rounded-full border border-graphite-200 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1f202b] px-3 py-1 text-[11px] font-mono text-ink dark:text-white hover:border-violet hover:text-violet transition-colors cursor-pointer"
+                >
+                  {site.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-graphite-500">
+              Note: To test multi-page depth, select a domain with internal navigation links (domains like <code className="font-mono">example.com</code> contain zero internal links and are single-page by design).
+            </p>
           </div>
 
           {errorMsg && (
@@ -145,8 +172,21 @@ export default function AdminSandboxPage() {
             disabled={running || !targetUrl.trim()}
             className="w-full inline-flex h-[46px] items-center justify-center gap-2 rounded-[48px] bg-ink dark:bg-white px-6 text-sm font-semibold text-white dark:text-ink hover:opacity-90 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
           >
-            {running ? <Loader2 className="size-4 animate-spin" /> : <FlaskConical className="size-4" />}
-            <span>{running ? 'Running Sandbox Pipeline...' : 'Run Sandbox Audit (is_test=true)'}</span>
+            {running ? (
+              <>
+                <Loader2 className="size-4 animate-spin text-violet" />
+                <span>
+                  {mode === 'full'
+                    ? 'Crawling Multi-Page Architecture (up to 50 pages & internal links)...'
+                    : 'Running Quick Audit Pipeline...'}
+                </span>
+              </>
+            ) : (
+              <>
+                <FlaskConical className="size-4" />
+                <span>{mode === 'full' ? 'Execute Full Deep Audit (is_test=true)' : 'Execute Quick Audit (is_test=true)'}</span>
+              </>
+            )}
           </button>
         </form>
       </div>

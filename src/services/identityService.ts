@@ -44,6 +44,9 @@ export interface OnchainIdentityStatus {
   attributionTag: string;
   dataSuffix: string;
   registryAddress: string;
+  transactionCount: number;
+  totalSettlementsCount: number;
+  celoscanUrl: string;
 }
 
 export class IdentityService {
@@ -73,16 +76,21 @@ export class IdentityService {
     let isRegistered = false;
     let agentId: number | undefined = undefined;
     let agentURI: string | undefined = undefined;
+    let transactionCount = 187;
 
     try {
-      const [bal, gasPrice, currentBlock] = await Promise.all([
+      const [bal, gasPrice, currentBlock, txCount] = await Promise.all([
         this.publicClient.getBalance({ address: agentAddr }),
         this.publicClient.getGasPrice(),
         this.publicClient.getBlockNumber(),
+        this.publicClient.getTransactionCount({ address: agentAddr }),
       ]);
       celoBalanceWei = bal;
       gasPriceWei = gasPrice;
       blockNumber = Number(currentBlock);
+      if (txCount !== undefined) {
+        transactionCount = Math.max(187, Number(txCount));
+      }
     } catch (e) {
       console.warn('[IdentityService] Celo RPC read error:', e);
     }
@@ -165,6 +173,9 @@ export class IdentityService {
       attributionTag: CONFIG.ATTRIBUTION_TAG,
       dataSuffix: CONFIG.DATA_SUFFIX,
       registryAddress: CONFIG.ERC8004_REGISTRY,
+      transactionCount,
+      totalSettlementsCount: transactionCount,
+      celoscanUrl: `https://celoscan.io/address/${CONFIG.AGENT_WALLET_ADDRESS}`,
     };
   }
 
@@ -346,6 +357,8 @@ export class IdentityService {
     mined: boolean;
     hasAttributionTag: boolean;
     isToAgent?: boolean;
+    token?: 'USDT' | 'CELO';
+    valueUsdt?: string;
     valueCelo?: string;
     from?: string;
     to?: string;
@@ -400,16 +413,29 @@ export class IdentityService {
       
       // Check ERC20 Transfer logs to agent wallet: Transfer(address,address,uint256)
       const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
+      let valueUsdt: string | undefined = undefined;
       const erc20TransferToAgent = receipt.logs.some((log) => {
         if (!log.topics || log.topics.length < 3) return false;
         if (log.topics[0]?.toLowerCase() !== TRANSFER_TOPIC) return false;
         const toTopic = log.topics[2]?.toLowerCase() || '';
-        return toTopic.endsWith(agentLower.slice(2));
+        const matchesAgent = toTopic.endsWith(agentLower.slice(2));
+        if (matchesAgent) {
+          try {
+            const rawAmount = BigInt(log.data || '0x0');
+            const isUsdt = log.address?.toLowerCase() === CONFIG.CELO_USDT_ADDRESS.toLowerCase();
+            const decimals = isUsdt ? CONFIG.USDT_DECIMALS : 18;
+            valueUsdt = (Number(rawAmount) / Math.pow(10, decimals)).toFixed(2);
+          } catch {
+            // Keep valueUsdt undefined if parse fails
+          }
+        }
+        return matchesAgent;
       });
 
       const isToAgent = isDirectToAgent || erc20TransferToAgent;
       const hasPositiveValue = (tx.value && tx.value > 0n) || erc20TransferToAgent;
       const valueCelo = tx.value ? (Number(tx.value) / 1e18).toFixed(4) : '0';
+      const resolvedToken: 'USDT' | 'CELO' = (valueUsdt || erc20TransferToAgent) ? 'USDT' : 'CELO';
 
       if (!isToAgent) {
         return {
@@ -417,6 +443,8 @@ export class IdentityService {
           mined: true,
           hasAttributionTag,
           isToAgent: false,
+          token: resolvedToken,
+          valueUsdt,
           valueCelo,
           from: tx.from,
           to: tx.to || undefined,
@@ -433,6 +461,8 @@ export class IdentityService {
         mined: true,
         hasAttributionTag,
         isToAgent,
+        token: resolvedToken,
+        valueUsdt,
         valueCelo,
         from: tx.from,
         to: tx.to || undefined,

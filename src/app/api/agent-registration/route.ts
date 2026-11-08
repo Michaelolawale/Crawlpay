@@ -2,41 +2,47 @@ import { NextRequest, NextResponse } from 'next/server';
 import { CONFIG } from '@/config';
 
 export async function GET(req: NextRequest) {
-  const host = req.headers.get('host') || 'crawlpay.org';
+  const host = req.headers.get('host') || 'crawlpay.vercel.app';
   const protocol = host.includes('localhost') ? 'http' : 'https';
   const baseUrl = `${protocol}://${host}`;
 
   const registrationDoc = {
     type: 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1',
-    name: 'CrawlPay SEO & Intelligence Agent',
+    name: 'CrawlPay SEO, AEO & GEO Agent',
     description:
-      'Autonomous on-demand technical SEO, Core Web Vitals, and competitor intelligence audit agent on Celo mainnet. Replaces expensive monthly SEO subscriptions with granular micropayments per crawl via x402 and buy (gateway.usebuy.ai).',
+      'Autonomous on-demand technical SEO, AEO, and GEO site audit agent on Celo mainnet. Provides zero-fabrication keyword strategy, analytics tracking validation, local SEO readiness, and stack-tailored 1-click fixes with x402 micropayments.',
     image: `${baseUrl}/favicon.ico`,
     services: [
       {
         name: 'web',
         endpoint: baseUrl,
-        description: 'Interactive SEO audit dashboard and audit results viewer',
+        description: 'Interactive marketer-friendly SEO audit command center and dashboard',
       },
       {
         name: 'x402',
         endpoint: `${baseUrl}/api/audit`,
-        version: '1.0.0',
-        description: 'Pay-per-audit HTTP 402 SEO intelligence engine',
+        version: '2.0.0',
+        description: 'Pay-per-audit HTTP 402 SEO, AEO, GEO & analytics intelligence engine',
         methods: ['POST'],
       },
       {
         name: 'bazaar',
         endpoint: `${baseUrl}/api/x402-bazaar`,
-        version: '1.0.0',
+        version: '2.0.0',
         description: 'Machine discovery catalog and JSON schema for CrawlPay services',
       },
       {
         name: 'compare',
         endpoint: `${baseUrl}/api/compare`,
-        version: '1.0.0',
-        description: 'Head-to-head competitor speed, vitals, and keyword gap analysis',
+        version: '2.0.0',
+        description: 'Head-to-head competitor speed, vitals, and actionable win plan',
         methods: ['POST'],
+      },
+      {
+        name: 'status',
+        endpoint: `${baseUrl}/api/agent/status`,
+        version: '2.0.0',
+        description: 'Real-time agent identity, gas balance, and Celo Mainnet telemetry',
       },
     ],
     x402Support: true,

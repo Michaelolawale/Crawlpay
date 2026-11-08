@@ -24,6 +24,7 @@ export interface JobRecord {
   is_test: boolean;
   report_id?: string;
   wallet?: string;
+  ip?: string;
 }
 
 export interface BlocklistRecord {
@@ -52,7 +53,7 @@ export interface SavedReportRecord {
 }
 
 const DEFAULT_CONFIG: DynamicConfig = {
-  quick_price_usd: '0.25',
+  quick_price_usd: '0.00',
   full_price_usd: '0.50',
   crawl_timeout_ms: 7000,
   max_pages_full: 50,
@@ -78,7 +79,7 @@ class CrawlpayDatabase {
         {
           id: 'pay_init_1',
           wallet: '0xf06c2b754d07cba299751f0985a48f8013bb6b39',
-          amount: '0.25',
+          amount: '0.50',
           token: 'USDT',
           chain_id: 42220,
           tx_hash: '0x3fc8402348c27474548c645bb2290dbeee4f47aeb38107342b108cbb34a062f5',
@@ -91,7 +92,7 @@ class CrawlpayDatabase {
           id: 'job_evangel_example',
           payment_id: 'pay_init_1',
           url: 'https://evangelcarriersnetwork.org',
-          depth: 'quick',
+          depth: 'full',
           status: 'done',
           started_at: '2026-10-25T12:00:00.000Z',
           finished_at: '2026-10-25T12:00:03.500Z',
@@ -101,7 +102,7 @@ class CrawlpayDatabase {
         },
       ],
       config: {
-        quick_price_usd: '0.25',
+        quick_price_usd: '0.00',
         full_price_usd: '0.50',
         crawl_timeout_ms: '7000',
         max_pages_full: '50',
@@ -341,6 +342,7 @@ class CrawlpayDatabase {
           is_test: Boolean(job.is_test),
           report_id: job.report_id || null,
           wallet: job.wallet ? job.wallet.toLowerCase() : null,
+          ip: job.ip || null,
         });
       } catch (err) {
         console.warn('[DB] Supabase addJob error:', err);
@@ -674,6 +676,84 @@ class CrawlpayDatabase {
     timestamps.push(now);
     this.rateLimitMap.set(ip, timestamps);
     return true;
+  }
+
+  /**
+   * Supabase-backed & in-memory sliding window rate limiter for Free Quick Audits:
+   * - Max 5 audits per hour per IP
+   * - 10-minute domain cooldown (if domain was crawled within 10 minutes and done, returns cached report id)
+   * - DOES NOT count failed audits (status: 'failed') against user quota
+   */
+  public async checkFreeAuditLimit(
+    ip: string,
+    targetUrl: string,
+    maxPerHour: number = 5,
+    cooldownMinutes: number = 10
+  ): Promise<{
+    allowed: boolean;
+    code?: 'RATE_LIMIT_EXCEEDED' | 'DOMAIN_COOLDOWN';
+    message?: string;
+    retryAfterSec?: number;
+    cachedReportId?: string;
+  }> {
+    const now = Date.now();
+    const oneHourAgo = new Date(now - 3600_000).toISOString();
+    const cooldownAgo = new Date(now - cooldownMinutes * 60_000).toISOString();
+
+    let targetDomain = '';
+    try {
+      targetDomain = new URL(targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`).hostname.toLowerCase();
+    } catch {}
+
+    const allJobs = await this.listJobs();
+
+    // 1. Check domain cooldown for free audits
+    if (targetDomain) {
+      const recentSameDomain = allJobs.find((j) => {
+        if (j.status !== 'done' || !j.report_id || j.payment_id) return false;
+        try {
+          const d = new URL(j.url.startsWith('http') ? j.url : `https://${j.url}`).hostname.toLowerCase();
+          return d === targetDomain && (j.finished_at || j.started_at) > cooldownAgo;
+        } catch {
+          return false;
+        }
+      });
+
+      if (recentSameDomain && recentSameDomain.report_id) {
+        // Return existing cached report to save crawler resources
+        return {
+          allowed: true,
+          cachedReportId: recentSameDomain.report_id,
+        };
+      }
+    }
+
+    // 2. Count ONLY successful completed free audits for this IP in the last hour
+    const successfulFreeJobs = allJobs.filter((j) => {
+      return (
+        j.ip === ip &&
+        !j.payment_id &&
+        j.status === 'done' &&
+        (j.finished_at || j.started_at) > oneHourAgo
+      );
+    });
+
+    if (successfulFreeJobs.length >= maxPerHour) {
+      // Find the oldest job in this window to calculate precise retryAfterSec
+      const oldestTimestamp = Math.min(
+        ...successfulFreeJobs.map((j) => new Date(j.finished_at || j.started_at).getTime())
+      );
+      const retryAfterSec = Math.max(1, Math.ceil((oldestTimestamp + 3600_000 - now) / 1000));
+
+      return {
+        allowed: false,
+        code: 'RATE_LIMIT_EXCEEDED',
+        message: `Free quick audit limit reached (maximum ${maxPerHour} per hour). Upgrade to Full Deep Crawl on Celo or wait before trying again.`,
+        retryAfterSec,
+      };
+    }
+
+    return { allowed: true };
   }
 }
 

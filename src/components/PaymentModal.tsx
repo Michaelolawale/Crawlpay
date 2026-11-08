@@ -23,12 +23,25 @@ import { FullAuditReport } from '@/types/audit';
 
 const PUBLIC_AGENT_ADDRESS =
   process.env.NEXT_PUBLIC_AGENT_ADDRESS || '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
+const CELO_USDT_ADDRESS = '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e';
+const USDT_DECIMALS = 6;
 const CELO_CHAIN_ID = 42220;
 const ATTRIBUTION_TAG = 'celo_757c2ac3b70c';
 const DATA_SUFFIX =
   '0x63656c6f5f373537633261633362373063110080218021802180218021802180218021';
 const CELO_PRICE_QUICK = process.env.NEXT_PUBLIC_CELO_PRICE_QUICK || '3.3';
 const CELO_PRICE_FULL = process.env.NEXT_PUBLIC_CELO_PRICE_FULL || '6.6';
+
+/**
+ * Encodes an ERC-20 transfer(address to, uint256 amount) call with attribution tag calldata suffix.
+ */
+function encodeErc20Transfer(to: string, amountUnits: bigint, dataSuffix?: string): `0x${string}` {
+  const methodId = 'a9059cbb';
+  const cleanTo = to.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+  const cleanAmount = amountUnits.toString(16).padStart(64, '0');
+  const cleanSuffix = dataSuffix ? dataSuffix.replace(/^0x/, '') : '';
+  return `0x${methodId}${cleanTo}${cleanAmount}${cleanSuffix}` as `0x${string}`;
+}
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -104,7 +117,7 @@ export function PaymentModal({
   const [manualTxInput, setManualTxInput] = useState('');
   const [manualVerifying, setManualVerifying] = useState(false);
   const [dynamicPrices, setDynamicPrices] = useState<{ quick: string; full: string }>({
-    quick: '0.25',
+    quick: '0.00',
     full: '0.50',
   });
 
@@ -189,7 +202,7 @@ export function PaymentModal({
   const executeAuditPipeline = async (proofTxHash: string, userWalletAddr?: string) => {
     setIsPaying(true);
     setStatusPhase('running_audit');
-    const runningMsg = 'Payment confirmed! Running multi-page crawler and deterministic SEO checks...';
+    const runningMsg = 'Payment confirmed! Running multi-page crawler and SEO checks...';
     setStatusMessage(runningMsg);
     setErrorMessage(null);
 
@@ -399,8 +412,8 @@ export function PaymentModal({
 
       // 5. Send transaction on Celo Mainnet with 45-second timeout guard
       let submittedTxHash: string;
-      const celoInWei = BigInt(Math.floor(Number(celoAmount) * 1e18));
-      const valueHex = '0x' + celoInWei.toString(16);
+      const usdtUnits = BigInt(Math.round(Number(priceUsd) * Math.pow(10, USDT_DECIMALS)));
+      const transferData = encodeErc20Transfer(payToAddress, usdtUnits, DATA_SUFFIX);
 
       try {
         const sendTxPromise = provider.request({
@@ -408,9 +421,9 @@ export function PaymentModal({
           params: [
             {
               from: userWallet,
-              to: payToAddress,
-              value: valueHex,
-              data: DATA_SUFFIX,
+              to: CELO_USDT_ADDRESS,
+              value: '0x0',
+              data: transferData,
             },
           ],
         });
@@ -435,18 +448,23 @@ export function PaymentModal({
         setIsPaying(false);
 
         if (txErr?.code === 4001 || txErr?.message?.toLowerCase().includes('reject') || txErr?.message?.toLowerCase().includes('denied')) {
-          setErrorMessage('Transaction was rejected in your wallet. You can try again whenever you’re ready.');
+          setErrorMessage('Nothing was charged. The transaction was rejected in your wallet. You can try again whenever you’re ready.');
           return;
         }
 
-        if (txErr?.message?.toLowerCase().includes('insufficient funds') || txErr?.message?.toLowerCase().includes('insufficient celo')) {
+        if (
+          txErr?.message?.toLowerCase().includes('insufficient funds') ||
+          txErr?.message?.toLowerCase().includes('exceeds balance') ||
+          txErr?.message?.toLowerCase().includes('transfer amount exceeds') ||
+          txErr?.message?.toLowerCase().includes('insufficient celo')
+        ) {
           setErrorMessage(
-            'Insufficient CELO for gas fees. Note: Gas on Celo is paid in CELO (typically < $0.001 per transaction). Please top up your wallet with a small amount of CELO or use Manual Transfer.'
+            'Nothing was charged. Insufficient USDT or CELO for gas. You need $0.50 USDT on Celo and a fraction of a cent of CELO for transaction gas (< $0.001). Please top up your wallet or use Manual Transfer.'
           );
           return;
         }
 
-        setErrorMessage(txErr?.message || 'Transaction could not be broadcast from your wallet.');
+        setErrorMessage(txErr?.message ? `Nothing was charged. ${txErr.message}` : 'Nothing was charged. Transaction could not be broadcast from your wallet.');
         return;
       }
 
@@ -629,14 +647,14 @@ export function PaymentModal({
 
               <div className="text-[11px] text-graphite-800 dark:text-graphite-400 pt-1.5 border-t border-graphite-100 dark:border-graphite-800">
                 {mode === 'quick'
-                  ? 'Includes single-page crawl, SEO, AEO & GEO engine checks, root cause grouping & AI fixes.'
-                  : 'Includes deep multi-page BFS crawl, AEO query mapping, GEO citability, sitewide indexability, and code patches.'}
+                  ? 'Includes single-page crawl, SEO, AEO & GEO engine checks, prioritized findings & paste-ready code fixes.'
+                  : 'Includes deep multi-page crawl, AEO query mapping, GEO citability, sitewide indexability, and ready code fixes.'}
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-graphite-100 dark:border-graphite-800">
                 <span className="text-sm font-bold text-ink dark:text-white">Total Fee:</span>
                 <span className="text-base font-bold text-ink dark:text-white font-mono">
-                  {celoAmount} CELO <span className="text-xs text-graphite-800 dark:text-graphite-400 font-normal">(${priceUsd} USD)</span>
+                  ${priceUsd} USDT <span className="text-xs text-graphite-600 dark:text-graphite-400 font-normal">(on Celo)</span>
                 </span>
               </div>
             </div>
@@ -679,7 +697,7 @@ export function PaymentModal({
                 className="w-full inline-flex h-[48px] items-center justify-center gap-2 rounded-[48px] bg-ink dark:bg-white px-4 text-sm font-semibold text-white dark:text-ink hover:opacity-90 transition-all shadow-sm disabled:opacity-50"
               >
                 {isPaying ? <Loader2 className="size-4 animate-spin text-white dark:text-ink" /> : <Wallet className="size-4" />}
-                <span>{isPaying ? 'Processing...' : `Pay ${celoAmount} CELO with wallet`}</span>
+                <span>{isPaying ? 'Processing...' : `Pay $${priceUsd} USDT with wallet`}</span>
               </button>
 
               <div className="mt-2.5 text-center">
@@ -707,7 +725,7 @@ export function PaymentModal({
               {showManualPay && (
                 <div className="mt-3 space-y-2.5 rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#111216] p-3.5 text-xs animate-in fade-in">
                   <p className="text-[11px] text-graphite-800 dark:text-graphite-300">
-                    Transfer exactly <strong className="text-ink dark:text-white">{celoAmount} CELO</strong> (${priceUsd} USDT/USD) to the agent address on Celo Mainnet:
+                    Transfer exactly <strong className="text-ink dark:text-white">${priceUsd} USDT</strong> to the agent address on Celo Mainnet:
                   </p>
                   <div className="flex items-center justify-between rounded-[32px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] px-3.5 py-2 font-mono text-[11px] min-w-0">
                     <span className="truncate mr-2 text-ink dark:text-white flex-1 min-w-0">{payToAddress}</span>
@@ -765,11 +783,27 @@ export function PaymentModal({
                     <strong className="text-ink dark:text-white">Celo Mainnet (Chain ID: {CELO_CHAIN_ID})</strong>
                   </div>
                   <div className="flex justify-between">
+                    <span>Accepted Token:</span>
+                    <strong className="text-ink dark:text-white">USDT (on Celo Mainnet)</strong>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>USDT Contract:</span>
+                    <a
+                      href={`https://celoscan.io/token/${CELO_USDT_ADDRESS}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-violet hover:underline inline-flex items-center gap-1 text-[10px]"
+                    >
+                      <span>{`${CELO_USDT_ADDRESS.slice(0, 8)}...${CELO_USDT_ADDRESS.slice(-6)}`}</span>
+                      <ExternalLink className="size-2.5" />
+                    </a>
+                  </div>
+                  <div className="flex justify-between">
                     <span>Attribution Tag:</span>
                     <strong className="font-mono text-violet">{ATTRIBUTION_TAG}</strong>
                   </div>
                   <div className="pt-1.5 text-[10px] text-graphite-800/80 dark:text-graphite-400 border-t border-graphite-100 dark:border-graphite-800">
-                    Settlements use the ERC-8021 calldata attribution standard for on-chain verification without custodial middlemen.
+                    Settlements use the ERC-8021 calldata attribution standard on Celo Mainnet.
                   </div>
                 </div>
               )}

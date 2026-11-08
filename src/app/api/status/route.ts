@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
-import { getAgentStatus } from '@/agent/wallet';
 
 export async function GET() {
   return NextResponse.json({
-    project: 'CrawlPay',
-    version: '1.0.0',
-    framework: 'Next.js 14 App Router',
-    description: 'Autonomous On-Demand SEO & Competitor Intelligence Agent on Celo',
-    agent: getAgentStatus(),
+    status: 'operational',
+    version: '2.0.0',
+    agent: 'CrawlPay Technical SEO, AEO & GEO Auditor',
+    network: 'Celo Mainnet (42220)',
     endpoints: {
-      audit: 'POST /api/audit',
-      compare: 'POST /api/compare',
-      bazaar: 'GET /api/x402-bazaar',
+      agentCard: '/.well-known/agent-card.json',
+      bazaar: '/api/x402-bazaar',
+      agentRegistration: '/api/agent-registration',
+      agentStatus: '/api/agent/status',
+      audit: '/api/audit',
+      verify: '/api/payment/verify',
+      reports: '/api/reports',
+      config: '/api/config',
     },
   });
 }

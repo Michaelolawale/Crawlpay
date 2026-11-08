@@ -99,7 +99,7 @@ export function OverviewAuditGraph({
       unit: 's',
       goodThreshold: 1.8,
       poorThreshold: 3.0,
-      description: 'Time until browser paints initial DOM text or hero graphic.',
+      description: 'Time until browser paints initial text or hero graphic.',
     },
     {
       name: 'Time to First Byte (TTFB)',
@@ -112,8 +112,8 @@ export function OverviewAuditGraph({
       description: 'Server processing and edge CDN response stream latency.',
     },
     {
-      name: 'DOM Interactive Time',
-      key: 'DOM',
+      name: 'Interactive Ready Time',
+      key: 'Ready',
       targetVal: targetDom,
       compVal: compDom,
       unit: 's',
@@ -240,14 +240,14 @@ export function OverviewAuditGraph({
                 <BarChart3 className="size-4" />
               </span>
               <h3 className="font-display text-sm font-bold sm:text-base text-ink dark:text-white">
-                Telemetry &amp; Benchmark Charts
+                Performance &amp; Benchmark Charts
               </h3>
               <span className="rounded-full border border-violet/20 bg-violet/5 dark:bg-violet/10 px-2 py-0.5 text-[10px] font-mono font-bold text-violet shrink-0">
                 Interactive
               </span>
             </div>
             <p className="mt-1 text-xs text-graphite-800 dark:text-graphite-400">
-              Deterministic metrics for <strong className="text-ink dark:text-white">{auditedDomain}</strong> vs{' '}
+              Audit performance metrics for <strong className="text-ink dark:text-white">{auditedDomain}</strong> vs{' '}
               <strong className="text-violet">{compDomain}</strong>
             </p>
           </div>
@@ -280,7 +280,7 @@ export function OverviewAuditGraph({
             }`}
           >
             <Activity className="size-3 shrink-0" />
-            <span>DOM Paint Curve</span>
+            <span>Load Speed Curve</span>
           </button>
           <button
             type="button"
@@ -362,7 +362,7 @@ export function OverviewAuditGraph({
       </div>
 
       {/* =======================================================================
-          TAB 1: CUMULATIVE DOM RENDER & PAINT TIMELINE
+          TAB 1: CUMULATIVE PAGE RENDER TIMELINE
           ======================================================================= */}
       {activeTab === 'timeline' && (
         <div className="space-y-3 tab-panel-enter">
@@ -370,7 +370,7 @@ export function OverviewAuditGraph({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-0.5 text-xs">
             <div className="flex items-center gap-1.5">
               <span className="font-sans font-bold text-ink dark:text-white text-xs sm:text-sm">
-                Cumulative DOM Paint Completion
+                Cumulative Page Render Completion
               </span>
               <span className="text-[10px] text-graphite-800 dark:text-graphite-400 font-mono hidden sm:inline">
                 (0% to 100%)
@@ -675,7 +675,7 @@ export function OverviewAuditGraph({
               </div>
 
               <div className="rounded-[12px] bg-white dark:bg-[#1a1b22] p-2.5 border border-graphite-100 dark:border-graphite-800 space-y-0.5">
-                <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block font-mono font-medium">DOM Interactive</span>
+                <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block font-mono font-medium">Interactive Ready</span>
                 <strong className="text-ink dark:text-white font-mono text-sm block">{targetDom}s</strong>
                 <span className="text-[10px] text-graphite-800/80 dark:text-graphite-400 block truncate">JavaScript ready</span>
               </div>
@@ -1073,7 +1073,7 @@ export function OverviewAuditGraph({
       )}
 
       {/* =======================================================================
-          TAB 4: RFC 9309 AI BOT ACCESS MATRIX
+          TAB 4: AI SEARCH BOT ACCESS MATRIX
           ======================================================================= */}
       {activeTab === 'bots' && (
         <div className="space-y-3 sm:space-y-4 tab-panel-enter">
@@ -1105,10 +1105,10 @@ export function OverviewAuditGraph({
                     </span>
                   </div>
                   <div className="text-[11px] font-mono text-graphite-800 dark:text-graphite-400 truncate">
-                    Matched: {bot.matchedRule || 'Default Allow (RFC 9309)'}
+                    Matched: {bot.matchedRule || 'Allowed by Default (Standard Rule)'}
                   </div>
                   <div className="text-[10px] text-graphite-800/80 dark:text-graphite-400">
-                    Rule Precedence: {bot.rulePrecedence?.replace(/_/g, ' ') || 'Longest Match'}
+                    Rule Precedence: {bot.rulePrecedence?.replace(/_/g, ' ') || 'Exact Match Rule'}
                   </div>
                 </div>
               );

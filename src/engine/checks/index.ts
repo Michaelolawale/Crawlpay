@@ -13,6 +13,8 @@ import { checkStructuredData } from './structuredData';
 import { checkMobilePerformance, MobileAuditMetrics } from './mobilePerformance';
 import { checkAEO, AeoAnalysisSignals } from './aeo';
 import { checkGEO, GeoAnalysisSignals } from './geo';
+import { checkAnalyticsTracking, AnalyticsSignals } from './analyticsTracking';
+import { checkLocalSeo, LocalSeoSignals } from './localSeo';
 
 export interface CheckSuiteResult {
   findings: Finding[];
@@ -20,6 +22,8 @@ export interface CheckSuiteResult {
   mobileMetrics?: MobileAuditMetrics;
   aeoSignals?: AeoAnalysisSignals;
   geoSignals?: GeoAnalysisSignals;
+  analyticsSignals?: AnalyticsSignals;
+  localSeoSignals?: LocalSeoSignals;
 }
 
 /**
@@ -35,6 +39,8 @@ export interface CheckSuiteResult {
  * 9. performance
  * 10. structured_data
  * 11. mobile_performance
+ * 12. analytics_and_conversion
+ * 13. local_seo_readiness
  */
 export async function runAllChecks(
   pages: PageCrawlData[],
@@ -43,12 +49,8 @@ export async function runAllChecks(
 ): Promise<CheckSuiteResult> {
   const allFindings: Finding[] = [];
   const notChecked: string[] = [
-    'Backlinks profile & external domain authority',
-    'Keyword search rankings & search impressions',
-    'Google Search Console API crawl stats',
-    'Google Analytics 4 & conversion tracking setup',
-    'Google Business Profile / Map pack verification',
-    'Protected pages behind authentication / paywalls',
+    'Off-page backlink profile & domain rating (requires third-party web crawler)',
+    'Historic keyword rank tracking (requires Google Search Console account connection)',
   ];
 
   // 1. Indexability
@@ -112,11 +114,21 @@ export async function runAllChecks(
   );
   allFindings.push(...geoFindings);
 
+  // 14. Analytics & Conversion Tracking Check (Without third-party access)
+  const { findings: analyticsFindings, signals: analyticsSignals } = checkAnalyticsTracking(pages, metadata);
+  allFindings.push(...analyticsFindings);
+
+  // 15. Local SEO & Google Business Profile Readiness Check (Without third-party access)
+  const { findings: localFindings, signals: localSeoSignals } = checkLocalSeo(pages, metadata);
+  allFindings.push(...localFindings);
+
   return {
     findings: allFindings,
     notChecked,
     mobileMetrics,
     aeoSignals,
     geoSignals,
+    analyticsSignals,
+    localSeoSignals,
   };
 }

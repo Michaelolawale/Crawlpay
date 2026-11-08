@@ -1,0 +1,36 @@
+# CrawlPay — Autonomous Technical SEO, AEO & GEO Audit Agent
+> Autonomous website crawler evaluating Technical SEO, Answer Engine Optimization (AEO), and Generative Engine Optimization (GEO) with on-chain micropayment settlement on Celo Mainnet.
+
+## Overview
+CrawlPay is an open protocol and crawler agent that audits websites for traditional search indexability (Google/Bing), conversational LLM retrieval (ChatGPT, Claude, Perplexity), and AI answer synthesis. It operates with zero subscriptions, charging per crawl via the x402 open standard on Celo Mainnet.
+
+## Core Capabilities
+- **Technical SEO**: Canonical tags, heading structures, Core Web Vitals (LCP, CLS, FID), redirect chains, meta robots, XML sitemap verification, and broken link detection up to 50 pages.
+- **AEO (Answer Engine Optimization)**: Question-Answer direct extraction, conversational JSON-LD FAQ/Article schema, and direct answer snippet readiness.
+- **GEO (Generative Engine Optimization)**: Entity prominence, brand citation frequency, llms.txt compliance, and AI crawler permissions (GPTBot, ClaudeBot, PerplexityBot).
+- **Competitor Benchmarking**: Side-by-side PageSpeed, Schema, and AEO comparison with actionable 3-step outranking plans.
+- **Framework Auto-Fixes**: Copy-pasteable code patches tailored to Next.js App Router, WordPress, Shopify, and Astro.
+
+## Settlement & Identity
+- **Blockchain**: Celo Mainnet (Chain ID 42220)
+- **Agent Address**: `0xf06c2b754d07cba299751f0985a48f8013bb6b39`
+- **ERC-8021 Attribution**: `celo_757c2ac3b70c`
+- **Identity Standard**: ERC-8004 Autonomous Agent Registry
+- **Payment Standard**: x402 HTTP micropayments (USDT on Celo)
+
+## Key Endpoints
+- `POST /api/audit`: Execute free single-page audit or $0.50 deep crawl
+- `POST /api/compare`: Benchmark target against competitor domain
+- `GET /api/status`: Real-time system health and RPC telemetry
+- `GET /api/x402-bazaar`: Machine-readable pricing and schema catalog
+- `GET /.well-known/agent-card.json`: A2A agent card v2.0
+- `GET /api/agent-registration`: ERC-8004 identity metadata
+- `GET /api/live-proof`: Live verified Celo transaction count
+
+## Human Links
+- Web App: https://crawlpay.vercel.app
+- Sample Report: https://crawlpay.vercel.app/example
+- Audit Tool: https://crawlpay.vercel.app/app/audit
+- Documentation: https://crawlpay.vercel.app/docs
+- Support / Refunds: Telegram @Noble249 (https://t.me/Noble249)
+

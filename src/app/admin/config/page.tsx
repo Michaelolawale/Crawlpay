@@ -7,7 +7,7 @@ import { getAdminToken } from '../../../utils/adminClient';
 
 export default function AdminConfigPage() {
   const [config, setConfig] = useState<DynamicConfig>({
-    quick_price_usd: '0.25',
+    quick_price_usd: '0.00',
     full_price_usd: '0.50',
     crawl_timeout_ms: 7000,
     max_pages_full: 50,
@@ -74,7 +74,7 @@ export default function AdminConfigPage() {
           {/* Quick Price */}
           <div>
             <label className="block text-[12px] font-mono uppercase tracking-wider text-graphite-600 dark:text-graphite-400 mb-1.5 font-medium">
-              Quick Audit Price ($ USDT)
+              Quick Audit Price ($ USDT — Free Tier is 0.00)
             </label>
             <input
               type="text"

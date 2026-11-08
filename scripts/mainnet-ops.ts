@@ -28,7 +28,7 @@ async function main() {
     console.log(`ERC-8004 Status:   ${status.isRegistered ? `Registered (Agent ID: ${status.agentId || 'Verified'})` : 'NOT Registered'}`);
     console.log(`Sufficient Gas:    ${status.hasSufficientGas ? 'YES (Ready to send mainnet tx)' : 'NO (Requires ~0.05 CELO for gas)'}`);
   } else if (command === 'register') {
-    const uri = process.argv[3] || 'https://crawlpay.org/api/agent-registration';
+    const uri = process.argv[3] || 'https://crawlpay.vercel.app/api/agent-registration';
     console.log(`Attempting ERC-8004 registration with URI: ${uri}`);
     const res = await identityService.registerIdentity(uri);
     if (res.success) {

@@ -120,17 +120,16 @@ export async function POST(req: NextRequest) {
           isVerifiedPaid = true;
           verifiedPaymentInfo = verification;
 
-          const isCelo = Boolean(verification.valueCelo && Number(verification.valueCelo) > 0);
+          const isUsdt = verification.token === 'USDT' || Boolean(verification.valueUsdt);
+          const isCelo = !isUsdt && Boolean(verification.valueCelo && Number(verification.valueCelo) > 0);
 
           // Log payment in database using dynamic pricing
           paymentId = `pay_${Date.now()}`;
           await db.addPayment({
             id: paymentId,
             wallet: verification.from || wallet || 'unknown',
-            amount: isCelo
-              ? verification.valueCelo || (crawlMode === 'full' ? CONFIG.CELO_PRICE_FULL : CONFIG.CELO_PRICE_QUICK)
-              : targetPriceUsd,
-            token: isCelo ? 'CELO' : 'USDT',
+            amount: isUsdt ? (verification.valueUsdt || targetPriceUsd) : (verification.valueCelo || CONFIG.CELO_PRICE_FULL),
+            token: isUsdt ? 'USDT' : 'CELO',
             chain_id: CONFIG.CELO_CHAIN_ID,
             tx_hash: incomingTxHash,
             status: 'confirmed',
@@ -148,15 +147,20 @@ export async function POST(req: NextRequest) {
       isVerifiedPaid = true;
     }
 
-    // 3. Challenge with compliant HTTP 402 if unpaid machine tier
+    // 3. Paid vs Free Quick Tier Policy:
+    // Full deep crawl ALWAYS requires verified payment or machine x402
     const acceptHeader = req.headers.get('accept') || '';
-    if ((requirePaid || acceptHeader.includes('application/x402+json')) && !isVerifiedPaid) {
+    const isExplicitlyPaidRequest = requirePaid || acceptHeader.includes('application/x402+json') || crawlMode === 'full';
+
+    if (isExplicitlyPaidRequest && !isVerifiedPaid) {
       return NextResponse.json(
         {
           status: 402,
-          error: 'Payment Required',
+          error: 'Payment Required for Deep Crawl',
           priceUsd: targetPriceUsd,
-          currency: 'USD₮ / USDC / CELO',
+          currency: 'USDT',
+          tokenAddress: CONFIG.CELO_USDT_ADDRESS,
+          tokenDecimals: CONFIG.USDT_DECIMALS,
           network: 'celo-mainnet',
           chainId: CONFIG.CELO_CHAIN_ID,
           payTo: CONFIG.AGENT_WALLET_ADDRESS,
@@ -170,13 +174,43 @@ export async function POST(req: NextRequest) {
           status: 402,
           headers: {
             'WWW-Authenticate': 'x402',
-            'X-Accept-Payment': `USDT; amount=${targetPriceUsd}; network=celo; recipient=${CONFIG.AGENT_WALLET_ADDRESS}; attribution=${CONFIG.ATTRIBUTION_TAG}`,
+            'X-Accept-Payment': `USDT; amount=${targetPriceUsd}; network=celo; chainId=${CONFIG.CELO_CHAIN_ID}; recipient=${CONFIG.AGENT_WALLET_ADDRESS}; tokenAddress=${CONFIG.CELO_USDT_ADDRESS}; decimals=${CONFIG.USDT_DECIMALS}; attribution=${CONFIG.ATTRIBUTION_TAG}`,
           },
         }
       );
     }
 
-    // 4. Log job in database as running
+    // 4. Rate Limiting for Free Quick Audits (Max 5/hr per IP + 10m domain cooldown)
+    if (!isVerifiedPaid && crawlMode === 'quick') {
+      const freeRateCheck = await db.checkFreeAuditLimit(ip, url, 5, 10);
+      if (!freeRateCheck.allowed) {
+        return NextResponse.json(
+          {
+            error: freeRateCheck.message || 'Free quick audit limit reached (5 per hour).',
+            code: freeRateCheck.code || 'RATE_LIMIT_EXCEEDED',
+            retryAfterSec: freeRateCheck.retryAfterSec,
+          },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': String(freeRateCheck.retryAfterSec || 3600),
+              'X-RateLimit-Limit': '5',
+              'X-RateLimit-Remaining': '0',
+            },
+          }
+        );
+      }
+
+      // If domain was audited within cooldown and has a completed report, return cache directly
+      if (freeRateCheck.cachedReportId) {
+        const cachedReport = await db.getReport(freeRateCheck.cachedReportId);
+        if (cachedReport) {
+          return NextResponse.json(cachedReport);
+        }
+      }
+    }
+
+    // 5. Log job in database as running
     createdJobId = `job_${Date.now()}`;
     const effectiveWallet = verifiedPaymentInfo?.from || wallet || undefined;
 
@@ -189,6 +223,7 @@ export async function POST(req: NextRequest) {
       started_at: new Date().toISOString(),
       is_test: false,
       wallet: effectiveWallet,
+      ip,
     });
 
     // 5. Execute audit pipeline with runtime dynamic configuration

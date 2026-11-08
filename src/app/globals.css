@@ -529,6 +529,160 @@ html.dark .border-2.border-ink {
   animation: fadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards, slideUp 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* =========================================================================
+   PRINT / PDF STYLESHEET (PROFESSIONAL CLIENT-READY AUDIT REPORT)
+   ========================================================================= */
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 12mm 14mm;
+    size: letter portrait;
+  }
+
+  /* Force light theme styling for clean, paper/PDF-ready contrast */
+  html, body {
+    color-scheme: light !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    font-size: 11pt !important;
+    line-height: 1.45 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide interactive web UI: navigation headers, footers, hamburger menus, and action buttons */
+  header,
+  footer,
+  nav,
+  .no-print,
+  button.no-print,
+  .theme-toggle {
+    display: none !important;
+  }
+
+  /* Reveal print-only headers and document summaries */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Ensure containers span full width of the PDF page without arbitrary horizontal clipping */
+  main,
+  .max-w-\[1176px\],
+  .max-w-\[1020px\],
+  .max-w-7xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Convert dark background containers to crisp white with light borders */
+  .dark,
+  [class*="dark:bg-"] {
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  .dark * {
+    border-color: #e5e7eb !important;
+  }
+
+  /* Audit Cards & Report Sections */
+  .rounded-\[20px\],
+  .rounded-\[24px\],
+  .rounded-\[16px\],
+  .rounded-\[12px\],
+  section {
+    border: 1px solid #e5e7eb !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 14px !important;
+  }
+
+  /* Typography Contrast */
+  h1, h2, h3, h4, h5, h6, strong, b {
+    color: #111827 !important;
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  p, span, td, th, li {
+    color: #374151 !important;
+  }
+
+  .text-graphite-600,
+  .text-graphite-700,
+  .text-graphite-800,
+  .text-graphite-400,
+  .text-graphite-500 {
+    color: #4b5563 !important;
+  }
+
+  .text-white {
+    color: #111827 !important;
+  }
+
+  /* Tables: clean full-width print layout */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    break-inside: auto !important;
+  }
+
+  tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  th, td {
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 6px 10px !important;
+  }
+
+  /* Code blocks & preformatted snippets: wrap text, no clipping or scrollbars */
+  pre, code {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow: visible !important;
+    max-height: none !important;
+    background: #f9fafb !important;
+    border: 1px solid #e5e7eb !important;
+    color: #1f2937 !important;
+    font-size: 8.5pt !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Expand all scrollable containers (prevent PDF clipping at fixed max-height) */
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .max-h-48,
+  .max-h-60,
+  .max-h-72,
+  .max-h-80 {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  /* Links: clean readable text */
+  a {
+    text-decoration: none !important;
+    color: #111827 !important;
+  }
+
+  /* Visual badges & progress rings retain accent colors */
+  .rounded-full,
+  svg circle {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+}
+
 
 
 

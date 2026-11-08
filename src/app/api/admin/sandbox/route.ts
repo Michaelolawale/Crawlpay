@@ -4,6 +4,7 @@ import { db } from '@/services/db';
 import { verifyAdminAuth } from '@/utils/adminAuth';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   // 1. Enforce Server-Side Auth
@@ -43,8 +44,10 @@ export async function POST(req: NextRequest) {
   });
 
   try {
-    // Run audit pipeline
-    const report = await runAuditPipeline(url, mode === 'full' ? 'full' : 'quick', false);
+    // In sandbox, if mode === 'full', simulate paid execution so crawler executes
+    // the full multi-page BFS crawl (up to 50 pages) without requiring live Celo payment
+    const isPaidSimulation = mode === 'full';
+    const report = await runAuditPipeline(url, mode === 'full' ? 'full' : 'quick', isPaidSimulation);
     const duration = Date.now() - startTime;
     const reportId = `rep_sandbox_${Date.now()}`;
 

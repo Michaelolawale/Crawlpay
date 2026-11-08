@@ -163,7 +163,7 @@ export function getFindingKnowledge(
         'Add explicit `Allow` directives for legitimate search and answer engine user agents.',
         'Ensure you do not have broad `Disallow: /` directives under `User-agent: *` that unintentionally lock out AI bots.',
       ],
-      suggestedFix: `# RFC 9309 Compliant AI Bot Permissions\nUser-agent: GPTBot\nAllow: /\n\nUser-agent: ClaudeBot\nAllow: /\n\nUser-agent: PerplexityBot\nAllow: /\n\nUser-agent: Google-Extended\nAllow: /\n\nUser-agent: CCBot\nDisallow: /`,
+      suggestedFix: `# AI Search Engine Bot Permissions\nUser-agent: GPTBot\nAllow: /\n\nUser-agent: ClaudeBot\nAllow: /\n\nUser-agent: PerplexityBot\nAllow: /\n\nUser-agent: Google-Extended\nAllow: /\n\nUser-agent: CCBot\nDisallow: /`,
       suggestedFixLanguage: 'robots',
       impactLevel: 'Critical Blocker',
     };
@@ -232,7 +232,7 @@ export function getFindingKnowledge(
         'Summarize your primary business purpose, main documentation links, and API specifications.',
         'Keep the syntax clean and hierarchical using markdown headings.',
       ],
-      suggestedFix: `# ${brand}\n\n> Official platform and resources for ${brand}.\n\n## Core Services\n- [API Documentation](https://${domain}/docs/api): REST & x402 endpoints\n- [Audit Engine](https://${domain}/app/audit): Deterministic crawler specifications`,
+      suggestedFix: `# ${brand}\n\n> Official platform and resources for ${brand}.\n\n## Core Services\n- [API Documentation](https://${domain}/docs/api): REST & x402 endpoints\n- [Audit Engine](https://${domain}/app/audit): Technical SEO, AEO & GEO site audits`,
       suggestedFixLanguage: 'robots',
       impactLevel: 'Quick Win',
     };
@@ -606,7 +606,7 @@ export function getFindingKnowledge(
       actionSteps: [
         `Verify your robots.txt file exists at \`https://${domain}/robots.txt\`.`,
         `Include a \`Sitemap: https://${domain}/sitemap.xml\` declaration at the bottom.`,
-        'Test using RFC 9309 rules to ensure critical paths are accessible.',
+        'Verify with robots testing tools to ensure critical landing pages are accessible.',
       ],
       suggestedFix: `User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\n\nSitemap: https://${domain}/sitemap.xml`,
       suggestedFixLanguage: 'robots',
@@ -666,6 +666,63 @@ export function getFindingKnowledge(
         'Add `defer` or `async` attributes to non-critical external JavaScript files.',
       ],
       suggestedFix: `<!-- Optimized image loading for LCP/CLS performance -->\n<img src="${imgSrc}" alt="${brand} Visual" width="1200" height="630" loading="eager" fetchpriority="high" />`,
+      suggestedFixLanguage: 'html',
+      impactLevel: 'High Impact',
+    };
+  }
+
+  // =========================================================================
+  // 9. ANALYTICS & CONVERSION TRACKING (MARKETER SIGNALS)
+  // =========================================================================
+  if (raw.includes('missing_ga4') || raw.includes('analytics')) {
+    return {
+      title: 'Missing Google Analytics 4 (GA4) or Google Tag Manager',
+      category: 'Core Technical',
+      whyItMatters:
+        'Without Google Analytics 4 or Google Tag Manager, you cannot track organic search visitors, session duration, top landing pages, or keyword conversions. You are flying blind on your search marketing ROI.',
+      actionSteps: [
+        'Create a free Google Analytics 4 property at analytics.google.com to get your Measurement ID (G-XXXXXXXXXX).',
+        `Insert the Google tag (gtag.js) script into the <head> of your ${cms} theme or layout template.`,
+        'Verify real-time visitor tracking in the GA4 dashboard.',
+      ],
+      suggestedFix: `<!-- Google tag (gtag.js) for Google Analytics 4 -->\n<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>\n<script>\n  window.dataLayer = window.dataLayer || [];\n  function gtag(){dataLayer.push(arguments);}\n  gtag('js', new Date());\n  gtag('config', 'G-XXXXXXXXXX');\n</script>`,
+      suggestedFixLanguage: 'html',
+      impactLevel: 'High Impact',
+    };
+  }
+
+  if (raw.includes('no_conversion_action')) {
+    return {
+      title: 'No Direct Conversion Action (Lead Form or Phone Link)',
+      category: 'On-Page Content',
+      whyItMatters:
+        'Search visitors need clear next steps to become paying customers. Pages without visible contact forms, phone links (tel:), or lead capture buttons lose up to 80% of incoming search traffic without generating business.',
+      actionSteps: [
+        'Add a primary Call-to-Action button above the fold (e.g. "Get a Quote", "Book Demo", or "Try Free").',
+        'Add a click-to-call link for mobile users: `<a href="tel:+1234567890">Call Us</a>`.',
+        'Add an email signup or inquiry contact form with email validation.',
+      ],
+      suggestedFix: `<div class="cta-section">\n  <a href="tel:+1234567890" class="btn-primary">Call Now: (123) 456-7890</a>\n  <a href="/contact" class="btn-secondary">Request Consultation</a>\n</div>`,
+      suggestedFixLanguage: 'html',
+      impactLevel: 'Medium Priority',
+    };
+  }
+
+  // =========================================================================
+  // 10. LOCAL SEO & GOOGLE BUSINESS PROFILE READINESS
+  // =========================================================================
+  if (raw.includes('local_seo') || raw.includes('localbusiness')) {
+    return {
+      title: 'Missing Schema.org LocalBusiness Structured Data',
+      category: 'Structured Data',
+      whyItMatters:
+        'Google uses LocalBusiness JSON-LD schema to verify your business name, address, phone number (NAP), and opening hours for the Google Maps 3-Pack. Without it, competitors with structured data will rank higher for "near me" and regional searches.',
+      actionSteps: [
+        'Add Schema.org LocalBusiness JSON-LD markup to your homepage <head>.',
+        'Ensure the business name, address, and telephone exactly match your Google Business Profile.',
+        'Include a link to your Google Maps listing or embed.',
+      ],
+      suggestedFix: `<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "LocalBusiness",\n  "name": "${brand}",\n  "image": "https://${domain}/logo.png",\n  "telephone": "+1-555-0199",\n  "address": {\n    "@type": "PostalAddress",\n    "streetAddress": "123 Main Street",\n    "addressLocality": "City",\n    "addressRegion": "State",\n    "postalCode": "10001",\n    "addressCountry": "US"\n  }\n}\n</script>`,
       suggestedFixLanguage: 'html',
       impactLevel: 'High Impact',
     };

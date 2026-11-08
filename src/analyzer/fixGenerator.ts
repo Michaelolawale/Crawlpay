@@ -335,8 +335,8 @@ ${JSON.stringify(schemaObj, null, 2)}
 }
 <\/script>`;
 
-  // 8. GEO AI-Friendly robots.txt configuration (RFC 9309 Compliant)
-  const geoRobotsBlock = `# CrawlPay Recommended robots.txt (RFC 9309 Compliant)
+  // 8. GEO AI-Friendly robots.txt configuration
+  const geoRobotsBlock = `# CrawlPay Recommended robots.txt (AI Search Enabled)
 User-agent: *
 Allow: /
 

@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { CrawlLogo } from '@/components/CrawlLogo';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { SiteFooter } from '@/components/SiteFooter';
+import { focusRing } from '@/components/SiteHeader';
 
 const PUBLIC_AGENT_ADDRESS = '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
 
@@ -205,35 +207,32 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
 
-        {/* Mobile Extra Menu Dropdown (Home, Docs, Demo Preview) */}
+        {/* Mobile Extra Menu Dropdown (Home, Sample report, Docs) */}
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#121317] px-4 py-3 space-y-2 shadow-lg animate-in slide-in-from-top-2 duration-200">
-            <div className="text-[11px] font-mono font-medium uppercase tracking-wider text-graphite-400 dark:text-graphite-500 px-2 pt-1">
-              Quick Links
-            </div>
+          <div className="sm:hidden border-t border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#121317] px-3.5 py-3 space-y-1 shadow-lg animate-in slide-in-from-top-2 duration-200">
             <Link
               href="/"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-2.5 py-2 rounded-[8px] text-[14px] font-medium text-graphite-800 dark:text-graphite-200 hover:bg-graphite-100/60 dark:hover:bg-[#1a1b22] transition-colors"
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-[14px] font-medium text-graphite-800 dark:text-graphite-200 hover:bg-graphite-100/80 dark:hover:bg-[#1a1b22] hover:text-ink dark:hover:text-white transition-colors ${focusRing}`}
             >
               <Home className="size-4 text-graphite-500" />
-              <span>Landing Page</span>
+              <span>Home</span>
             </Link>
             <Link
               href="/example"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-2.5 py-2 rounded-[8px] text-[14px] font-medium text-graphite-800 dark:text-graphite-200 hover:bg-graphite-100/60 dark:hover:bg-[#1a1b22] transition-colors"
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-[14px] font-medium text-graphite-800 dark:text-graphite-200 hover:bg-graphite-100/80 dark:hover:bg-[#1a1b22] hover:text-ink dark:hover:text-white transition-colors ${focusRing}`}
             >
               <CheckCircle2 className="size-4 text-graphite-500" />
-              <span>Verified Demo Preview</span>
+              <span>Sample report</span>
             </Link>
             <Link
               href="/docs"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2.5 px-2.5 py-2 rounded-[8px] text-[14px] font-medium text-graphite-800 dark:text-graphite-200 hover:bg-graphite-100/60 dark:hover:bg-[#1a1b22] transition-colors"
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-[8px] text-[14px] font-medium text-graphite-800 dark:text-graphite-200 hover:bg-graphite-100/80 dark:hover:bg-[#1a1b22] hover:text-ink dark:hover:text-white transition-colors ${focusRing}`}
             >
               <BookOpen className="size-4 text-graphite-500" />
-              <span>Documentation &amp; API</span>
+              <span>Docs</span>
             </Link>
           </div>
         )}
@@ -244,122 +243,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {/* 3. INK FOOTER */}
-      <footer className="w-full bg-ink border-t border-graphite-900 pt-[48px] sm:pt-[64px] pb-[36px] sm:pb-[48px] mt-16">
-        <div className="max-w-[1176px] mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-[32px] text-left">
-            <div className="space-y-[12px]">
-              <div className="flex items-center gap-2.5">
-                <span className="flex size-8 items-center justify-center rounded-[8px] bg-white text-ink shadow-sm shrink-0">
-                  <CrawlLogo className="size-4" />
-                </span>
-                <span className="font-sans font-[600] text-[20px] text-white tracking-tight">
-                  CrawlPay
-                </span>
-              </div>
-              <p className="font-footer text-[14px] leading-[20px] text-graphite-200 font-normal">
-                Autonomous technical SEO, AEO &amp; GEO audit agent settled per crawl on Celo mainnet.
-              </p>
-            </div>
-
-            <div className="space-y-[12px]">
-              <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 font-normal uppercase tracking-wider block">
-                NAVIGATION
-              </span>
-              <div className="space-y-[12px] font-footer text-[14px] leading-[20px]">
-                <div>
-                  <Link href="/" className="text-graphite-200 hover:text-white transition-colors">
-                    Home
-                  </Link>
-                </div>
-                <div>
-                  <Link href="/example" className="text-graphite-200 hover:text-white transition-colors">
-                    Verified Demo Preview
-                  </Link>
-                </div>
-                <div>
-                  <Link href="/app/audit" className="text-graphite-200 hover:text-white transition-colors">
-                    Site Audit
-                  </Link>
-                </div>
-                <div>
-                  <Link href="/app/reports" className="text-graphite-200 hover:text-white transition-colors">
-                    Reports Archive
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-[12px]">
-              <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 font-normal uppercase tracking-wider block">
-                DEVELOPERS
-              </span>
-              <div className="space-y-[12px] font-footer text-[14px] leading-[20px]">
-                <div>
-                  <Link href="/docs" className="text-graphite-200 hover:text-white transition-colors">
-                    Documentation &amp; API
-                  </Link>
-                </div>
-                <div>
-                  <Link href="/docs#mcp" className="text-graphite-200 hover:text-white transition-colors">
-                    MCP Agent Setup
-                  </Link>
-                </div>
-                <div>
-                  <a
-                    href="/api/status"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-graphite-200 hover:text-white transition-colors"
-                  >
-                    REST API Status
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-[12px]">
-              <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 font-normal uppercase tracking-wider block">
-                POLICIES
-              </span>
-              <div className="space-y-[12px] font-footer text-[14px] leading-[20px]">
-                <div>
-                  <Link href="/terms#about" className="text-graphite-200 hover:text-white transition-colors">
-                    Terms of Service
-                  </Link>
-                </div>
-                <div>
-                  <Link href="/terms#refund" className="text-graphite-200 hover:text-white transition-colors">
-                    Refund Guarantee Policy
-                  </Link>
-                </div>
-                <div>
-                  <Link href="/terms#security" className="text-graphite-200 hover:text-white transition-colors">
-                    SSRF Security Protections
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-graphite-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 font-footer text-[13px] sm:text-[14px] leading-[20px]">
-            <p className="text-graphite-300">
-              &copy; {new Date().getFullYear()} CrawlPay. All rights reserved. Zero subscriptions, on-demand execution.
-            </p>
-            <div className="flex items-center gap-2 text-graphite-300 text-[12px] font-mono">
-              <span>Agent:</span>
-              <a
-                href={`https://celoscan.io/address/${PUBLIC_AGENT_ADDRESS}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-graphite-200 hover:text-white hover:underline"
-              >
-                {PUBLIC_AGENT_ADDRESS.slice(0, 8)}...{PUBLIC_AGENT_ADDRESS.slice(-6)}
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* 3. SHARED SITE FOOTER */}
+      <SiteFooter />
     </div>
   );
 }

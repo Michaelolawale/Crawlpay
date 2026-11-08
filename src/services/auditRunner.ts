@@ -12,6 +12,7 @@ import { runAllChecks } from '../engine/checks';
 import { groupAndPrioritizeFindings } from '../engine/aggregator';
 import { summarizeAuditWithLlm } from '../engine/llmLayer';
 import { getFindingKnowledge } from '../analyzer/findingKnowledge';
+import { generateKeywordIntelligence } from '../analyzer/keywordEngine';
 
 import { DynamicConfig } from './db';
 
@@ -32,18 +33,20 @@ export async function runAuditPipeline(
 
   const normalizedUrl = validation.normalizedUrl;
 
-  // 1. Run BFS Crawler with multi-page discovery (5 pages for Quick, up to dynamicConfig.max_pages_full for Full)
-  const maxPages = mode === 'full' ? (dynamicConfig?.max_pages_full || 50) : 5;
+  // 1. Run BFS Crawler: Single-page strictly enforced for Quick/unpaid audit; multi-page (up to max_pages_full) for Paid Full crawl
+  const isQuick = mode === 'quick' || !isPaidExecution;
+  const maxPages = isQuick ? 1 : (dynamicConfig?.max_pages_full || 50);
+  const maxDepth = isQuick ? 0 : 3;
   const totalTimeoutMs = dynamicConfig?.crawl_timeout_ms ? Math.max(dynamicConfig.crawl_timeout_ms * 4, 15000) : 60000;
 
   const crawler = new PageCrawler({
-    mode,
+    mode: isQuick ? 'quick' : 'full',
     maxPages,
-    maxDepth: mode === 'full' ? 3 : 2,
+    maxDepth,
     maxResponseBytes: 2 * 1024 * 1024,
     totalTimeoutMs,
     requestsPerSecond: 4,
-    userAgent: 'CrawlPayBot/1.0 (+https://crawlpay.org/bot)',
+    userAgent: 'CrawlPayBot/1.0 (+https://crawlpay.vercel.app/bot)',
   });
 
   const crawlResult = await crawler.crawl(normalizedUrl);
@@ -74,8 +77,8 @@ export async function runAuditPipeline(
 
   const $ = cheerio.load(rootPage.html);
 
-  // 2. Run the deterministic checks (including mobile performance, AEO & GEO)
-  const { findings, notChecked, mobileMetrics, aeoSignals, geoSignals } = await runAllChecks(pages, metadata, robotsParser);
+  // 2. Run the deterministic checks (including mobile performance, AEO & GEO, Analytics & Local SEO)
+  const { findings, notChecked, mobileMetrics, aeoSignals, geoSignals, analyticsSignals, localSeoSignals } = await runAllChecks(pages, metadata, robotsParser);
 
   // 3. Group by root cause, compute page importance & priorities, attach stackFix
   const { groups, whatPassed } = groupAndPrioritizeFindings(findings, pages, metadata);
@@ -83,10 +86,34 @@ export async function runAuditPipeline(
   // 4. Summarize and prioritize via Zod-guarded LLM layer
   const llmResult = await summarizeAuditWithLlm(groups, metadata);
 
-  // 5. Archetype & Semantics
+  // 5. Archetype, Semantics & Keyword Intelligence Engine
   const archetype = detectSiteArchetype($, rootPage.html, normalizedUrl);
   const technical = parseTechnicalSeo($, normalizedUrl);
   const semantics = auditSemantics($, archetype.type, technical.headings.h1s, technical.title);
+
+  const h2s: string[] = [];
+  $('h2').each((_, el) => {
+    const text = $(el).text().trim();
+    if (text) h2s.push(text);
+  });
+  const h3s: string[] = [];
+  $('h3').each((_, el) => {
+    const text = $(el).text().trim();
+    if (text) h3s.push(text);
+  });
+
+  const keywordIntel = await generateKeywordIntelligence(
+    $,
+    normalizedUrl,
+    technical.title,
+    technical.metaDescription,
+    technical.headings.h1s,
+    h2s,
+    h3s,
+    archetype.type
+  );
+  semantics.primaryKeywordDetected = keywordIntel.primaryKeywordDetected;
+
   const performance = auditSpeedVitals($, rootPage.html.length);
   const codePatches = generateCodePatches(normalizedUrl, technical, archetype, metadata.detectedStack);
 
@@ -159,7 +186,7 @@ export async function runAuditPipeline(
     topNeedleMovers.push({
       priority: p,
       title,
-      description: sample ? sample.evidence.observed : `Affects ${group.affectedCount} URLs across the crawl.`,
+      description: sample ? sample.evidence.observed : (group.totalPagesChecked === 1 ? `Affects 1 page (${group.affectedCount} instances).` : `Affects ${group.affectedCount} instances across the crawl.`),
       snippet: sample ? sample.evidence.snippet : undefined,
       action: group.stackFix || (sample ? sample.evidence.expected : 'Review and correct on affected templates.'),
     });
@@ -180,6 +207,7 @@ export async function runAuditPipeline(
     auditVersion: '1.2.0',
     targetUrl: normalizedUrl,
     auditTimestamp: new Date().toISOString(),
+    isFreeTier: !isPaidExecution,
     coverage: {
       totalChecks: totalCheckFamilies,
       evaluatedChecks,
@@ -187,6 +215,13 @@ export async function runAuditPipeline(
       coveragePercentage,
     },
     summary: llmResult.summary,
+    siteSummary: keywordIntel.siteSummary,
+    keywords: {
+      suggestedKeywords: keywordIntel.suggestedKeywords,
+      questionMatrix: keywordIntel.questionMatrix,
+      plainLanguageAdvice: keywordIntel.plainLanguageAdvice,
+      keywordAlignment: keywordIntel.keywordAlignment,
+    },
     scores: {
       overall: overallScore,
       technical: technicalScore,
@@ -199,6 +234,8 @@ export async function runAuditPipeline(
     },
     aeoSignals,
     geoSignals,
+    analyticsSignals,
+    localSeoSignals,
     mobileMetrics,
     archetype,
     topNeedleMovers,

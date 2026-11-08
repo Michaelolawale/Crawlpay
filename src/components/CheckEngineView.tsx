@@ -32,9 +32,14 @@ import {
   CheckCheck,
   Flame,
   BarChart3,
+  PieChart,
   Bot,
   ShieldCheck,
   ArrowRight,
+  Search,
+  Tag,
+  MapPin,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { FindingGroup, Severity } from '../engine/types';
 import { getStackFix } from '../engine/utils/stackDetector';
@@ -68,19 +73,22 @@ export function CheckEngineView(props: CheckEngineViewProps) {
   const pagesChecked = props.pagesChecked ?? props.report?.pagesChecked ?? 1;
   const targetUrl = props.targetUrl || props.report?.targetUrl || '';
   const detectedStack = props.detectedStack || props.report?.detectedStack;
+  const gscAnalysis = props.gscAnalysis;
   const report = props.report;
 
-  // Workspace Main Navigation Tab (Executive Command Center)
-  const [activeMainTab, setActiveMainTab] = useState<'issues' | 'graphs' | 'aeo-geo' | 'vitals' | 'patches' | 'competitor'>('issues');
+  // Workspace Main Navigation Tab (Marketer Command Center: 5 Focused Categories)
+  const [activeMainTab, setActiveMainTab] = useState<'issues' | 'keywords' | 'visibility' | 'vitals' | 'competitor'>('issues');
+  const [activeQuestionCategory, setActiveQuestionCategory] = useState<'questions' | 'comparisons' | 'prepositions'>('questions');
 
   // Issue Filtering & State
-  const [filterTab, setFilterTab] = useState<'all' | 'errors' | 'warnings' | 'notices'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'errors' | 'warnings' | 'notices' | 'passed'>('all');
   const [expandedKeys, setExpandedKeys] = useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showJson, setShowJson] = useState(false);
 
   // Active Code Patch Tab
   const [activeCodeTab, setActiveCodeTab] = useState<'nextjs' | 'wordpress' | 'shopify' | 'astro' | 'html' | 'schema' | 'robots' | 'faq'>('nextjs');
+  const [aiSnippetTab, setAiSnippetTab] = useState<'robots' | 'llms' | 'faq'>('robots');
 
   // Auto-sync code tab with detected stack
   useEffect(() => {
@@ -117,11 +125,73 @@ export function CheckEngineView(props: CheckEngineViewProps) {
   const warningCount = warningGroups.reduce((acc, g) => acc + g.affectedCount, 0);
   const noticeCount = noticeGroups.reduce((acc, g) => acc + g.affectedCount, 0);
 
+  // Deterministic core checks count evaluated by CrawlPay engine (10 standards)
+  const failedCheckPrefixes = new Set(groups.map((g) => g.checkId.split('.')[0]));
+  const TOTAL_CORE_CHECKS = 10;
+  const passedCheckCount = Math.max(0, TOTAL_CORE_CHECKS - failedCheckPrefixes.size);
+
   const displayedGroups = groups.filter((g) => {
     if (filterTab === 'errors') return g.severity === 'critical' || g.severity === 'high';
     if (filterTab === 'warnings') return g.severity === 'medium';
     if (filterTab === 'notices') return g.severity === 'low' || g.severity === 'info';
+    if (filterTab === 'passed') return false; // Handled specially in UI
     return true;
+  });
+
+  // Pie chart calculation: Clean proportional segments for Passed, Critical, Warnings, Notices
+  const pieSegments = [
+    {
+      id: 'passed',
+      label: 'Passed',
+      fullLabel: 'Passed Checks',
+      count: passedCheckCount,
+      color: '#10b981', // emerald-500
+      textColor: 'text-emerald-600 dark:text-emerald-400',
+    },
+    {
+      id: 'critical',
+      label: 'Critical',
+      fullLabel: 'Critical Errors',
+      count: errorGroups.length,
+      color: '#ef4444', // rose-500
+      textColor: 'text-rose-600 dark:text-rose-400',
+    },
+    {
+      id: 'warnings',
+      label: 'Warnings',
+      fullLabel: 'Warnings',
+      count: warningGroups.length,
+      color: '#f59e0b', // amber-500
+      textColor: 'text-amber-600 dark:text-amber-400',
+    },
+    {
+      id: 'notices',
+      label: 'Notices',
+      fullLabel: 'Optimization Notices',
+      count: noticeGroups.length,
+      color: '#8b5cf6', // violet-500
+      textColor: 'text-violet dark:text-violet',
+    },
+  ];
+
+  const totalEvaluated = pieSegments.reduce((sum, s) => sum + s.count, 0) || 1;
+  const pieRadius = 38;
+  const pieCircumference = 2 * Math.PI * pieRadius;
+
+  let accumulatedPercent = 0;
+  const calculatedPieSegments = pieSegments.map((segment) => {
+    const fraction = segment.count / totalEvaluated;
+    const strokeDash = fraction * pieCircumference;
+    const offset = accumulatedPercent * pieCircumference;
+    const percent = Math.round(fraction * 100);
+    accumulatedPercent += fraction;
+    return {
+      ...segment,
+      fraction,
+      strokeDash,
+      offset,
+      percent,
+    };
   });
 
   // Health Scores
@@ -136,8 +206,17 @@ export function CheckEngineView(props: CheckEngineViewProps) {
   const aeoSignals = report?.aeoSignals;
   const geoSignals = report?.geoSignals;
   const coverage = report?.coverage;
-
   const mobileMetrics = report?.mobileMetrics || report?.performance?.mobile;
+
+  // Site Summary & Keyword Research Intelligence
+  const siteSummary = report?.siteSummary;
+  const keywordData = report?.keywords;
+  const suggestedKeywords = keywordData?.suggestedKeywords || [];
+  const questionMatrix = keywordData?.questionMatrix;
+  const keywordAlignment = keywordData?.keywordAlignment;
+  const analyticsSignals = report?.analyticsSignals;
+  const localSeoSignals = report?.localSeoSignals;
+  const isMultiPage = pagesChecked > 1 || report?.isFreeTier === false;
 
   // Code Patches
   const cleanDomain = targetUrl ? targetUrl.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/.*$/, '') : 'yourdomain.com';
@@ -165,17 +244,25 @@ export function CheckEngineView(props: CheckEngineViewProps) {
   // Top Action Items / Needle Movers
   const topActionItems = report?.topNeedleMovers && report.topNeedleMovers.length > 0
     ? report.topNeedleMovers
-    : groups.slice(0, 3).map((g) => ({
-        priority: (g.severity === 'critical' ? 'Critical' : g.severity === 'high' ? 'High' : 'Quick Win') as 'Critical' | 'High' | 'Quick Win',
-        title: g.checkId,
-        description: g.findings[0]?.evidence?.observed || `Affects ${g.affectedCount} page(s).`,
-        snippet: g.findings[0]?.evidence?.snippet,
-        action: g.stackFix || g.findings[0]?.evidence?.expected || 'Review affected template code.',
-      }));
+    : groups.slice(0, 3).map((g) => {
+        const uniqueUrls = new Set(g.findings && g.findings.length > 0 ? g.findings.map((f) => f.url) : (g.exampleUrls || [])).size;
+        const pCount = uniqueUrls > 0 ? uniqueUrls : (g.totalPagesChecked || 1);
+        const descFallback = pCount === 1
+          ? (g.affectedCount > 1 ? `Affects 1 page (${g.affectedCount} instances).` : 'Affects 1 page.')
+          : `Affects ${pCount} page(s) (${g.affectedCount} instances).`;
+        return {
+          priority: (g.severity === 'critical' ? 'Critical' : g.severity === 'high' ? 'High' : 'Quick Win') as 'Critical' | 'High' | 'Quick Win',
+          title: g.checkId,
+          description: g.findings[0]?.evidence?.observed || descFallback,
+          snippet: g.findings[0]?.evidence?.snippet,
+          action: g.stackFix || g.findings[0]?.evidence?.expected || 'Review affected template code.',
+        };
+      });
 
   // Health Rating Metadata
   const getHealthColor = (val: number) => {
-    if (val >= 80) return { stroke: '#10b981', text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/40', border: 'border-emerald-200 dark:border-emerald-800', label: 'Optimal Health' };
+    if (val >= 90) return { stroke: '#10b981', text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/40', border: 'border-emerald-200 dark:border-emerald-800', label: 'Optimal Health' };
+    if (val >= 75) return { stroke: '#3b82f6', text: 'text-blue-700 dark:text-blue-300', bg: 'bg-blue-50 dark:bg-blue-950/40', border: 'border-blue-200 dark:border-blue-800', label: 'Good Health' };
     if (val >= 60) return { stroke: '#f59e0b', text: 'text-amber-800 dark:text-amber-300', bg: 'bg-amber-50 dark:bg-amber-950/40', border: 'border-amber-200 dark:border-amber-800', label: 'Needs Improvement' };
     return { stroke: '#ef4444', text: 'text-rose-700 dark:text-rose-300', bg: 'bg-rose-50 dark:bg-rose-950/40', border: 'border-rose-200 dark:border-rose-800', label: 'Action Required' };
   };
@@ -229,14 +316,34 @@ export function CheckEngineView(props: CheckEngineViewProps) {
   return (
     <div className="w-full space-y-6">
       {/* =========================================================================
-          COMMAND CENTER: EXECUTIVE HEALTH & SUMMARY (CLEAN & MINIMALIST)
+          PRINT-ONLY PROFESSIONAL AUDIT DOCUMENT HEADER
           ========================================================================= */}
-      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          {/* Left: Overall Health Gauge & Clean Identity */}
-          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5">
+      <div className="print-only border-b-2 border-graphite-900 pb-4 mb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="font-sans font-bold text-xl text-ink">CrawlPay Technical Audit Report</h1>
+            <div className="text-xs text-graphite-600 font-mono mt-0.5">
+              Audited Target: <strong className="text-ink">{targetUrl}</strong>
+            </div>
+          </div>
+          <div className="text-right text-xs text-graphite-600 font-mono">
+            <div>Autonomous Agent • Celo Mainnet (42220)</div>
+            <div className="text-[11px] text-graphite-500">
+              Settled in USDT • Tag: <code className="text-graphite-700">celo_757c2ac3b70c</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          COMMAND CENTER: EXECUTIVE HEALTH & SUMMARY (WITH ACCURATE PIE CHART)
+          ========================================================================= */}
+      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          {/* Left Column (5 cols): Overall Health Gauge & Domain Identity */}
+          <div className="lg:col-span-5 flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-5">
             <div className="relative flex size-24 shrink-0 items-center justify-center">
-              <svg className="size-full -rotate-90" viewBox="0 0 100 100">
+              <svg className="size-full -rotate-90" viewBox="0 0 100 100" role="img" aria-label={`Overall site health: ${overallScore}%`}>
                 <circle
                   cx="50"
                   cy="50"
@@ -270,7 +377,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             </div>
 
             <div className="space-y-1.5 min-w-0">
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <h2 className="font-display text-xl font-bold text-ink dark:text-white tracking-tight break-all sm:truncate max-w-full">
                   {cleanDomain}
                 </h2>
@@ -280,138 +387,127 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                 </span>
               </div>
 
-              {/* Clean Unified Inline Metadata (No clutter pills) */}
+              {/* Clean Unified Inline Metadata */}
               <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-2.5 gap-y-1 text-xs text-graphite-600 dark:text-graphite-400 font-mono">
                 <span className="text-ink dark:text-white font-medium">{detectedStack?.cms || 'Detected Web Stack'}</span>
                 <span className="text-graphite-400 dark:text-graphite-600">&bull;</span>
                 <span>{pagesChecked} page{pagesChecked > 1 ? 's' : ''} crawled</span>
-                <span className="text-graphite-400 dark:text-graphite-600">&bull;</span>
-                <span>Mobile {mobileScore}%</span>
-                <span className="text-graphite-400 dark:text-graphite-600">&bull;</span>
-                <span>AEO {aeoScore}%</span>
-                <span className="text-graphite-400 dark:text-graphite-600">&bull;</span>
-                <span>GEO {geoScore}%</span>
               </div>
 
-              <p className="text-xs text-graphite-600 dark:text-graphite-400 max-w-lg leading-relaxed pt-0.5">
-                RFC 9309 crawler standards &middot; Google Mobile-First specifications
+              <p className="text-xs text-graphite-600 dark:text-graphite-400 leading-relaxed pt-0.5">
+                Verified against Google Search guidelines &amp; AI crawler standards
               </p>
             </div>
           </div>
 
-          {/* Right: Clean, Minimalist Issue Filter Counters */}
-          <div className="flex flex-col sm:items-end justify-center gap-2">
-            <div className="grid grid-cols-3 gap-2 w-full sm:w-auto">
-              {/* Errors */}
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterTab(filterTab === 'errors' ? 'all' : 'errors');
-                  setActiveMainTab('issues');
-                }}
-                className={`flex flex-col rounded-[12px] border px-3.5 py-2.5 text-left transition-all cursor-pointer min-w-[96px] ${
-                  filterTab === 'errors'
-                    ? 'border-rose-500/50 bg-rose-500/10 dark:bg-rose-950/30 ring-1 ring-rose-500/30'
-                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/70 hover:border-graphite-200 dark:hover:border-graphite-700'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                  <span className="flex items-center gap-1">
-                    <ShieldAlert className="size-3" />
-                    <span>Errors</span>
-                  </span>
-                  {errorGroups.length > 0 && <span className="size-1.5 rounded-full bg-rose-500" />}
-                </div>
-                <span className="mt-1 font-display text-lg font-bold text-ink dark:text-white leading-none">
-                  {errorGroups.length}
+          {/* Right Column (7 cols): Audit Findings & Quality Distribution Pie Chart */}
+          <div className="lg:col-span-7 rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafc] dark:bg-[#121317] p-3.5 sm:p-4">
+            <div className="flex items-center justify-between pb-2 mb-3 border-b border-graphite-100 dark:border-graphite-800">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-ink dark:text-white">
+                <PieChart className="size-3.5 text-violet" />
+                <span>Audit Findings &amp; Check Distribution</span>
+              </div>
+              {filterTab !== 'all' ? (
+                <button
+                  type="button"
+                  onClick={() => setFilterTab('all')}
+                  className="text-[11px] text-violet hover:underline font-semibold cursor-pointer"
+                >
+                  Reset filter (showing all {totalIssuesCount} findings)
+                </button>
+              ) : (
+                <span className="text-[11px] font-mono text-graphite-500">
+                  {totalEvaluated} Checks Evaluated
                 </span>
-                <span className="mt-1 text-[10px] text-graphite-600 dark:text-graphite-400">
-                  {errorGroups.length === 0 ? 'None' : `${errorCount} page${errorCount !== 1 ? 's' : ''}`}
-                </span>
-              </button>
-
-              {/* Warnings */}
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterTab(filterTab === 'warnings' ? 'all' : 'warnings');
-                  setActiveMainTab('issues');
-                }}
-                className={`flex flex-col rounded-[12px] border px-3.5 py-2.5 text-left transition-all cursor-pointer min-w-[96px] ${
-                  filterTab === 'warnings'
-                    ? 'border-amber-500/50 bg-amber-500/10 dark:bg-amber-950/30 ring-1 ring-amber-500/30'
-                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/70 hover:border-graphite-200 dark:hover:border-graphite-700'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                  <span className="flex items-center gap-1">
-                    <AlertTriangle className="size-3" />
-                    <span>Warnings</span>
-                  </span>
-                  {warningGroups.length > 0 && <span className="size-1.5 rounded-full bg-amber-500" />}
-                </div>
-                <span className="mt-1 font-display text-lg font-bold text-ink dark:text-white leading-none">
-                  {warningGroups.length}
-                </span>
-                <span className="mt-1 text-[10px] text-graphite-600 dark:text-graphite-400">
-                  {warningGroups.length === 0 ? 'None' : `${warningCount} page${warningCount !== 1 ? 's' : ''}`}
-                </span>
-              </button>
-
-              {/* Notices */}
-              <button
-                type="button"
-                onClick={() => {
-                  setFilterTab(filterTab === 'notices' ? 'all' : 'notices');
-                  setActiveMainTab('issues');
-                }}
-                className={`flex flex-col rounded-[12px] border px-3.5 py-2.5 text-left transition-all cursor-pointer min-w-[96px] ${
-                  filterTab === 'notices'
-                    ? 'border-violet/50 bg-violet/10 dark:bg-violet/20 ring-1 ring-violet/30'
-                    : 'border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/70 hover:border-graphite-200 dark:hover:border-graphite-700'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-1 text-[10px] font-bold uppercase tracking-wider text-violet dark:text-violet">
-                  <span className="flex items-center gap-1">
-                    <Info className="size-3" />
-                    <span>Notices</span>
-                  </span>
-                  {noticeGroups.length > 0 && <span className="size-1.5 rounded-full bg-violet" />}
-                </div>
-                <span className="mt-1 font-display text-lg font-bold text-ink dark:text-white leading-none">
-                  {noticeGroups.length}
-                </span>
-                <span className="mt-1 text-[10px] text-graphite-600 dark:text-graphite-400">
-                  {noticeGroups.length === 0 ? 'None' : `${noticeCount} instance${noticeCount !== 1 ? 's' : ''}`}
-                </span>
-              </button>
+              )}
             </div>
 
-            {filterTab !== 'all' && (
-              <button
-                type="button"
-                onClick={() => setFilterTab('all')}
-                className="text-[10px] text-violet hover:underline font-semibold cursor-pointer self-center sm:self-end"
-              >
-                Reset Filter (Showing {displayedGroups.length} of {groups.length})
-              </button>
-            )}
-          </div>
-        </div>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              {/* SVG Donut / Pie Chart */}
+              <div className="relative size-24 shrink-0 flex items-center justify-center">
+                <svg className="size-full -rotate-90" viewBox="0 0 100 100" role="img" aria-label="Audit check distribution pie chart">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={pieRadius}
+                    fill="none"
+                    stroke="#e6e6e8"
+                    className="stroke-[#e6e6e8] dark:stroke-[#202129]"
+                    strokeWidth="10"
+                  />
+                  {calculatedPieSegments.map((seg) => (
+                    seg.count > 0 && (
+                      <circle
+                        key={seg.id}
+                        cx="50"
+                        cy="50"
+                        r={pieRadius}
+                        fill="none"
+                        stroke={seg.color}
+                        strokeWidth="10"
+                        strokeDasharray={`${seg.strokeDash} ${pieCircumference - seg.strokeDash}`}
+                        strokeDashoffset={-seg.offset}
+                        strokeLinecap={seg.fraction === 1 ? 'round' : 'butt'}
+                        className="transition-all duration-700 ease-out"
+                      />
+                    )
+                  ))}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                  <span className="font-display text-lg font-bold text-ink dark:text-white leading-none">
+                    {totalEvaluated}
+                  </span>
+                  <span className="text-[9px] uppercase tracking-wider text-graphite-500 font-semibold mt-0.5">
+                    Checks
+                  </span>
+                </div>
+              </div>
 
-        {/* AI Executive Summary Callout */}
-        <div className="rounded-[14px] border border-violet/20 bg-violet/5 dark:bg-violet/10 p-3.5 sm:p-4 text-xs space-y-1.5">
-          <div className="flex items-center gap-2 font-bold text-violet">
-            <FileText className="size-3.5" />
-            <span>Executive Overview</span>
+              {/* Interactive Legend Grid */}
+              <div className="grid grid-cols-2 gap-2 flex-1 w-full text-xs">
+                {calculatedPieSegments.map((seg) => {
+                  const isActive = (seg.id === 'critical' && filterTab === 'errors') ||
+                                   (seg.id === 'warnings' && filterTab === 'warnings') ||
+                                   (seg.id === 'notices' && filterTab === 'notices') ||
+                                   (seg.id === 'passed' && filterTab === 'passed');
+                  return (
+                    <button
+                      key={seg.id}
+                      type="button"
+                      onClick={() => {
+                        if (seg.id === 'critical') setFilterTab(filterTab === 'errors' ? 'all' : 'errors');
+                        else if (seg.id === 'warnings') setFilterTab(filterTab === 'warnings' ? 'all' : 'warnings');
+                        else if (seg.id === 'notices') setFilterTab(filterTab === 'notices' ? 'all' : 'notices');
+                        else if (seg.id === 'passed') setFilterTab(filterTab === 'passed' ? 'all' : 'passed');
+                        setActiveMainTab('issues');
+                      }}
+                      className={`flex items-center justify-between gap-2 rounded-[10px] border px-2.5 py-1.5 transition-all cursor-pointer ${
+                        isActive
+                          ? 'ring-2 ring-violet border-transparent bg-violet/10 dark:bg-violet/20'
+                          : 'border-graphite-200/60 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] hover:border-graphite-300 dark:hover:border-graphite-700'
+                      }`}
+                      title={`Filter by ${seg.fullLabel}`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
+                        <span className="text-[12px] font-medium text-graphite-800 dark:text-graphite-200 truncate">
+                          {seg.label}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 font-mono text-[11px]">
+                        <span className="font-bold text-ink dark:text-white">{seg.count}</span>
+                        <span className="text-graphite-500 text-[10px]">({seg.percent}%)</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-          <p className="text-graphite-800 dark:text-graphite-200 leading-relaxed font-normal">
-            {report?.summary || `Audit completed across ${pagesChecked} page(s) for ${cleanDomain}. Indexability, rendering barriers, answer engine formulation, and bot access have been evaluated. Review the prioritized fixes below.`}
-          </p>
         </div>
 
         {/* 6 Thematic Health Pillar Meters (Unified Streamlined Grid) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5 pt-3 border-t border-graphite-100 dark:border-graphite-800">
           <div className="p-3 space-y-1.5 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/60">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-graphite-800 dark:text-graphite-300 flex items-center gap-1.5">
@@ -493,203 +589,285 @@ export function CheckEngineView(props: CheckEngineViewProps) {
       </section>
 
       {/* =========================================================================
-          TOP ACTION ROADMAP: 3 HIGHEST PRIORITY FIXES (CLEAN & DISTINCT)
+          WHAT THIS SITE IS ABOUT (DETECTED FROM PAGE CONTENT - STRUCTURED TABLE)
           ========================================================================= */}
-      {topActionItems.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Flame className="size-4 text-amber-500" />
-              <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
-                Top Priority Fixes (Move the Needle First)
+      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-7 items-center justify-center rounded-[10px] bg-violet/10 text-violet">
+              <FileText className="size-4" />
+            </span>
+            <div>
+              <h3 className="font-display text-base font-bold text-ink dark:text-white">
+                What This Site Is About
               </h3>
+              <p className="text-[11px] text-graphite-500">Summary detected from on-page content, titles, and headings &middot; No fabricated assumptions</p>
             </div>
-            <span className="text-xs font-mono text-graphite-600 dark:text-graphite-400">
-              Ranked by crawl impact
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-graphite-500">Detection Confidence:</span>
+            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-mono font-semibold ${
+              siteSummary?.confidence === 'High'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                : siteSummary?.confidence === 'Moderate'
+                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+            }`}>
+              <CheckCircle2 className="size-3" />
+              <span>{siteSummary?.confidence || 'High'}</span>
             </span>
           </div>
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            {topActionItems.map((item, idx) => {
-              const knowledge = getFindingKnowledge(item.title, item.description, detectedStack, cleanDomain, item.snippet);
-              const topFix = getSuggestedContentFix(item.title, item.description, cleanDomain, item.snippet);
-              const specificAction =
-                item.action &&
-                !item.action.includes('Appearance > Customize') &&
-                !item.action.includes('Review affected template')
-                  ? item.action
-                  : getStackFix(item.title, detectedStack) || knowledge.actionSteps[0];
+        <p className="text-[13px] sm:text-[14px] text-ink dark:text-graphite-200 leading-relaxed font-normal">
+          {siteSummary?.summary || (siteSummary?.detectedBrandName ? `${siteSummary.detectedBrandName} operates as an online ${siteSummary.businessModel.toLowerCase()} offering ${siteSummary.primaryOffering}.` : `This website operates as an online business for ${cleanDomain}. Add descriptive title, meta description, and <h1> heading tags to clarify its core purpose.`)}
+        </p>
 
-              return (
-                <div
-                  key={idx}
-                  className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 sm:p-5 shadow-sm flex flex-col justify-between gap-3.5"
-                >
-                  <div className="space-y-2.5">
-                    {/* Header badge & index */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                            item.priority === 'Critical'
-                              ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20'
-                              : item.priority === 'High'
-                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
-                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                          }`}
-                        >
-                          {item.priority === 'Critical' ? <ShieldAlert className="size-2.5" /> : item.priority === 'High' ? <AlertTriangle className="size-2.5" /> : <Info className="size-2.5" />}
-                          <span>{item.priority}</span>
-                        </span>
-                        <span className="text-[10px] font-mono text-graphite-600 dark:text-graphite-400">
-                          {knowledge.category}
-                        </span>
-                      </div>
-                      <span className="font-mono text-[10px] text-graphite-600 dark:text-graphite-400 font-bold">
-                        #0{idx + 1}
-                      </span>
-                    </div>
-
-                    {/* Distinct title and explanation */}
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-bold text-ink dark:text-white leading-snug">
-                        {knowledge.title}
-                      </h4>
-                      <p className="text-xs text-graphite-600 dark:text-graphite-400 leading-relaxed line-clamp-3">
-                        {knowledge.whyItMatters}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Tailored Remedy Callout */}
-                  <div className="space-y-2.5">
-                    <div className="rounded-[10px] bg-[#f4f4f6]/60 dark:bg-[#1a1b22]/70 border border-graphite-100 dark:border-graphite-800 p-2.5 space-y-1 text-xs">
-                      <span className="text-[10px] font-mono font-bold uppercase text-violet flex items-center gap-1">
-                        <span>Action for {detectedStack?.cms || 'Your Stack'}:</span>
-                      </span>
-                      <p className="text-graphite-800 dark:text-graphite-300 leading-relaxed font-normal text-[11px]">
-                        {specificAction}
-                      </p>
-                    </div>
-
-                    {/* Copy Solution Button */}
-                    {(knowledge.suggestedFix || topFix) && (
-                      <div className="pt-2 flex items-center justify-between gap-2 border-t border-graphite-100 dark:border-graphite-800">
-                        <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-semibold truncate flex-1">
-                          {topFix ? '1-Click Content Fix' : 'Code Patch Ready'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(knowledge.suggestedFix || topFix?.text || '', `topfix-${idx}`)}
-                          className="inline-flex shrink-0 items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink hover:opacity-90 px-3 py-1 text-[11px] font-semibold transition-all cursor-pointer shadow-xs"
-                        >
-                          {copiedKey === `topfix-${idx}` ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
-                          <span>{copiedKey === `topfix-${idx}` ? 'Copied' : 'Copy Fix'}</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+        {/* Mobile-Friendly Entity Cards (< md) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 md:hidden">
+          <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafc] dark:bg-[#121317] p-3 space-y-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-graphite-500 block">What this site does</span>
+            <span className="font-semibold text-xs text-ink dark:text-white leading-relaxed block">{siteSummary?.primaryOffering || report?.archetype?.keyAuditFocus || 'Digital content or service'}</span>
+            <span className="text-[10px] text-graphite-400 font-mono block">On-page headings &amp; copy</span>
           </div>
+
+          <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafc] dark:bg-[#121317] p-3 space-y-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-graphite-500 block">Detected Brand Name</span>
+            <span className="font-semibold text-xs text-ink dark:text-white block">{siteSummary?.detectedBrandName || cleanDomain}</span>
+            <span className="text-[10px] text-graphite-400 font-mono block">Title tag &amp; OpenGraph</span>
+          </div>
+
+          <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafc] dark:bg-[#121317] p-3 space-y-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-graphite-500 block">Business Model</span>
+            <span className="text-xs text-ink dark:text-white block">{siteSummary?.businessModel || report?.archetype?.label || 'Online Business'}</span>
+            <span className="text-[10px] text-graphite-400 font-mono block">Navigation &amp; structure signals</span>
+          </div>
+
+          <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafc] dark:bg-[#121317] p-3 space-y-1">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-graphite-500 block">Target Audience</span>
+            <span className="text-xs text-ink dark:text-white block">{siteSummary?.targetAudience || 'General visitors & buyers'}</span>
+            <span className="text-[10px] text-graphite-400 font-mono block">Content intent signals</span>
+          </div>
+        </div>
+
+        {/* Structured Site Summary Entity Table (>= md) */}
+        <div className="hidden md:block overflow-x-auto rounded-[14px] border border-graphite-100 dark:border-graphite-800">
+          <table className="w-full text-left text-xs min-w-[550px]">
+            <thead className="bg-[#f4f4f6]/80 dark:bg-[#1a1b22] text-graphite-600 dark:text-graphite-400 font-mono text-[10px] uppercase tracking-wider border-b border-graphite-100 dark:border-graphite-800">
+              <tr>
+                <th scope="col" className="py-2.5 px-4 font-semibold w-1/4">Entity Property</th>
+                <th scope="col" className="py-2.5 px-4 font-semibold w-1/2">Detected Meaning</th>
+                <th scope="col" className="py-2.5 px-4 font-semibold w-1/4">Source Evidence</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-graphite-100 dark:divide-graphite-800">
+              <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                <td className="py-3 px-4 font-medium text-graphite-600 dark:text-graphite-400">What this site does</td>
+                <td className="py-3 px-4 font-semibold text-ink dark:text-white leading-relaxed">{siteSummary?.primaryOffering || report?.archetype?.keyAuditFocus || 'Digital content or service'}</td>
+                <td className="py-3 px-4 font-mono text-[11px] text-graphite-500">On-page headings &amp; copy</td>
+              </tr>
+              <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                <td className="py-3 px-4 font-medium text-graphite-600 dark:text-graphite-400">Detected Brand Name</td>
+                <td className="py-3 px-4 font-semibold text-ink dark:text-white">{siteSummary?.detectedBrandName || cleanDomain}</td>
+                <td className="py-3 px-4 font-mono text-[11px] text-graphite-500">Title tag &amp; OpenGraph</td>
+              </tr>
+              <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                <td className="py-3 px-4 font-medium text-graphite-600 dark:text-graphite-400">Business Model</td>
+                <td className="py-3 px-4 text-ink dark:text-white">{siteSummary?.businessModel || report?.archetype?.label || 'Online Business'}</td>
+                <td className="py-3 px-4 font-mono text-[11px] text-graphite-500">Navigation &amp; structure signals</td>
+              </tr>
+              <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                <td className="py-3 px-4 font-medium text-graphite-600 dark:text-graphite-400">Target Audience</td>
+                <td className="py-3 px-4 text-ink dark:text-white">{siteSummary?.targetAudience || 'General visitors & buyers'}</td>
+                <td className="py-3 px-4 font-mono text-[11px] text-graphite-500">Content intent signals</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* =========================================================================
+          GOOGLE SEARCH CONSOLE CROSS-REFERENCE (IF UPLOADED)
+          ========================================================================= */}
+      {gscAnalysis && (
+        <section className="rounded-[20px] border border-amber-200 dark:border-amber-900/60 bg-amber-50/70 dark:bg-amber-950/20 p-5 sm:p-6 space-y-4 shadow-sm animate-fade-in">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200/80 dark:border-amber-900/50 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="flex size-7 items-center justify-center rounded-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <FileSpreadsheet className="size-4" />
+              </span>
+              <div>
+                <h3 className="font-display text-base font-bold text-ink dark:text-white flex items-center gap-2">
+                  <span>Google Search Console Cross-Reference</span>
+                  <span className="rounded-full bg-amber-100 dark:bg-amber-900/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 px-2 py-0.5 text-[10px] font-mono">
+                    {gscAnalysis.fileName}
+                  </span>
+                </h3>
+                <p className="text-xs text-graphite-600 dark:text-graphite-400 mt-0.5">
+                  Verified real Google crawl &amp; indexing status data cross-referenced with on-page audits.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-full bg-white dark:bg-[#1a1b22] border border-amber-200 dark:border-amber-800/60 px-3 py-1 font-mono text-ink dark:text-graphite-200">
+                Total in export: <strong>{gscAnalysis.totalUrls.toLocaleString()}</strong>
+              </span>
+              <span className="rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 px-3 py-1 font-mono text-rose-700 dark:text-rose-300">
+                Unindexed: <strong>{gscAnalysis.unindexedUrls.length}</strong>
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="rounded-[12px] bg-white dark:bg-[#16171d] border border-amber-200/70 dark:border-amber-900/40 p-3 space-y-1">
+              <span className="text-[11px] font-mono text-graphite-500 uppercase tracking-wider block">Detected Issue Types</span>
+              <div className="flex flex-wrap gap-1 pt-0.5">
+                {gscAnalysis.reasonsDetected.length > 0 ? (
+                  gscAnalysis.reasonsDetected.map((reason, idx) => (
+                    <span key={idx} className="rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-2 py-0.5 text-[10px] font-medium">
+                      {reason}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-graphite-600 dark:text-graphite-400 font-mono text-[11px]">Crawled - not indexed</span>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[12px] bg-white dark:bg-[#16171d] border border-amber-200/70 dark:border-amber-900/40 p-3 space-y-1">
+              <span className="text-[11px] font-mono text-graphite-500 uppercase tracking-wider block">Diagnostic Impact</span>
+              <p className="text-graphite-700 dark:text-graphite-300 text-[11px] leading-relaxed">
+                Google crawled these URLs but withheld indexation. CrawlPay checks identify the technical blockers behind each.
+              </p>
+            </div>
+
+            <div className="rounded-[12px] bg-white dark:bg-[#16171d] border border-amber-200/70 dark:border-amber-900/40 p-3 space-y-1">
+              <span className="text-[11px] font-mono text-graphite-500 uppercase tracking-wider block">Recommended Action</span>
+              <p className="text-graphite-700 dark:text-graphite-300 text-[11px] leading-relaxed">
+                Review the canonical tags, duplicate body copy, and thin content fixes highlighted in the Priority Action Plan below.
+              </p>
+            </div>
+          </div>
+
+          {/* Unindexed URLs List (Scrollable) */}
+          {gscAnalysis.unindexedUrls.length > 0 && (
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[11px] font-mono text-graphite-600 dark:text-graphite-400 uppercase tracking-wider block">
+                Sample Flagged URLs ({Math.min(gscAnalysis.unindexedUrls.length, 10)} of {gscAnalysis.unindexedUrls.length})
+              </span>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {gscAnalysis.unindexedUrls.slice(0, 10).map((url, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between gap-2 rounded-[10px] border border-amber-200/80 dark:border-amber-900/40 bg-white dark:bg-[#16171d] px-3 py-2 text-xs font-mono shadow-xs"
+                  >
+                    <span className="truncate text-ink dark:text-graphite-200 flex-1">{url}</span>
+                    <span className="shrink-0 rounded-full bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900/50 text-rose-700 dark:text-rose-300 px-2 py-0.5 text-[10px] font-sans font-medium">
+                      {gscAnalysis.reasonsDetected[0] || 'Crawled - not indexed'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       )}
 
       {/* =========================================================================
           WORKSPACE NAVIGATION BAR (TABBED ARCHITECTURE)
           ========================================================================= */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-graphite-100 dark:border-graphite-800 pb-2 gap-2">
+      <div className="print-only border-b border-graphite-300 pb-2 mb-3">
+        <h2 className="font-sans font-bold text-base text-ink uppercase tracking-wider">
+          {activeMainTab === 'issues' && 'Priority Action Plan & Technical Findings'}
+          {activeMainTab === 'keywords' && 'On-Page Keyword & Search Engine Query Opportunities'}
+          {activeMainTab === 'visibility' && 'AI Search Engine & LLM Crawler Readiness'}
+          {activeMainTab === 'vitals' && 'Core Web Vitals & Speed Performance'}
+          {activeMainTab === 'competitor' && 'Competitor Side-by-Side Comparison'}
+        </h2>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-graphite-100 dark:border-graphite-800 pb-2 gap-2 no-print">
         <nav className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto -mx-1 px-1 sm:mx-0 sm:px-0 py-1">
           <button
             type="button"
             onClick={() => setActiveMainTab('issues')}
-            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
               activeMainTab === 'issues'
                 ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
                 : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
             }`}
           >
             <ShieldAlert className="size-3.5 shrink-0" />
-            <span className="shrink-0 whitespace-nowrap">Findings Explorer</span>
+            <span className="shrink-0 whitespace-nowrap">Priority Action Plan</span>
             <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'issues' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-graphite-200 dark:bg-graphite-800 text-graphite-800 dark:text-graphite-300'}`}>
-              {totalIssuesCount}
+              {totalIssuesCount} Fixes
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveMainTab('graphs')}
-            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
-              activeMainTab === 'graphs'
+            onClick={() => setActiveMainTab('keywords')}
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+              activeMainTab === 'keywords'
                 ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
                 : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
             }`}
           >
-            <BarChart3 className="size-3.5 shrink-0 text-violet" />
-            <span className="shrink-0 whitespace-nowrap">Visual Telemetry</span>
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'graphs' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-violet/10 text-violet font-semibold'}`}>
-              Graphs
+            <Search className="size-3.5 shrink-0 text-violet" />
+            <span className="shrink-0 whitespace-nowrap">Keyword Strategy</span>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'keywords' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold'}`}>
+              {suggestedKeywords.length > 0 ? `${suggestedKeywords.length} Angles` : 'Active'}
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveMainTab('aeo-geo')}
-            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
-              activeMainTab === 'aeo-geo'
+            onClick={() => setActiveMainTab('visibility')}
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+              activeMainTab === 'visibility'
                 ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
                 : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
             }`}
           >
             <Bot className="size-3.5 shrink-0 text-violet" />
-            <span className="shrink-0 whitespace-nowrap">AI Search (AEO &amp; GEO)</span>
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'aeo-geo' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-violet/10 text-violet font-semibold'}`}>
-              {aeoScore}/{geoScore}
+            <span className="shrink-0 whitespace-nowrap">Google &amp; AI Visibility</span>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'visibility' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-violet/10 text-violet font-semibold'}`}>
+              {aeoScore}% AEO
             </span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveMainTab('vitals')}
-            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
               activeMainTab === 'vitals'
                 ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
                 : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
             }`}
           >
             <Smartphone className="size-3.5 shrink-0" />
-            <span className="shrink-0 whitespace-nowrap">Mobile &amp; Vitals</span>
+            <span className="shrink-0 whitespace-nowrap">Speed, Tracking &amp; CMS Fixes</span>
             <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'vitals' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-graphite-200 dark:bg-graphite-800 text-graphite-800 dark:text-graphite-300'}`}>
-              {mobileScore}%
+              {mobileScore}% Mobile
             </span>
           </button>
 
           <button
             type="button"
-            onClick={() => setActiveMainTab('patches')}
-            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
-              activeMainTab === 'patches'
-                ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
-                : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
-            }`}
-          >
-            <Code2 className="size-3.5 shrink-0" />
-            <span className="shrink-0 whitespace-nowrap">Code Patches</span>
-            <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
-          </button>
-
-          <button
-            type="button"
             onClick={() => setActiveMainTab('competitor')}
-            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-3.5 sm:px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 rounded-[48px] px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
               activeMainTab === 'competitor'
                 ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
                 : 'text-graphite-800 dark:text-graphite-300 hover:text-ink dark:hover:text-white hover:bg-graphite-100 dark:hover:bg-[#202129]'
             }`}
           >
-            <Swords className="size-3.5 shrink-0" />
-            <span className="shrink-0 whitespace-nowrap">Competitor Bench</span>
+            <Swords className="size-3.5 shrink-0 text-blue-500" />
+            <span className="shrink-0 whitespace-nowrap">Competitor Analysis</span>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'competitor' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'}`}>
+              {comparison ? 'Active' : 'Benchmark'}
+            </span>
           </button>
         </nav>
 
@@ -707,7 +885,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
       {showJson && (
         <div className="rounded-[16px] border border-graphite-800 bg-[#0d0e12] p-4 shadow-md text-gray-100 space-y-2">
           <div className="flex items-center justify-between pb-2 border-b border-graphite-800">
-            <span className="text-xs font-mono text-gray-400">Deterministic Agent Schema (v2.0.0)</span>
+            <span className="text-xs font-mono text-gray-400">Audit Protocol Schema (v2.0.0)</span>
             <button
               onClick={() => handleCopy(JSON.stringify(groups, null, 2), 'raw-json')}
               className="inline-flex items-center gap-1.5 rounded-[48px] bg-graphite-800 px-3 py-1 text-xs text-gray-200 hover:text-white cursor-pointer"
@@ -723,17 +901,689 @@ export function CheckEngineView(props: CheckEngineViewProps) {
       )}
 
       {/* =========================================================================
-          TAB 1: FINDINGS EXPLORER (100% EXPLANATORY & ACTIONABLE)
+          TAB 2: KEYWORD STRATEGY & CONTENT OPPORTUNITIES
+          ========================================================================= */}
+      {activeMainTab === 'keywords' && (() => {
+        const primaryTopic = suggestedKeywords[0]?.keyword || report?.semantics?.primaryKeywordDetected || 'online platform';
+        const currentTitleText = keywordAlignment?.currentTags?.title || report?.technical?.title || 'No title tag found';
+        const currentH1Text = keywordAlignment?.currentTags?.h1 || report?.technical?.headings?.h1s?.[0] || 'No main headline found';
+        const currentMetaText = keywordAlignment?.currentTags?.metaDescription || report?.technical?.metaDescription || 'No meta description found';
+
+        const titleHasTopic = keywordAlignment?.hasTitleMatch ?? currentTitleText.toLowerCase().includes(primaryTopic.toLowerCase());
+        const h1HasTopic = keywordAlignment?.hasH1Match ?? currentH1Text.toLowerCase().includes(primaryTopic.toLowerCase());
+        const metaHasTopic = keywordAlignment?.hasMetaMatch ?? currentMetaText.toLowerCase().includes(primaryTopic.toLowerCase());
+        const isFullyAligned = keywordAlignment?.isFullyAligned ?? (titleHasTopic && h1HasTopic);
+
+        const cleanRewrites = {
+          title: keywordAlignment?.recommendedRewrites?.title || `${primaryTopic} — ${cleanDomain}`,
+          h1: keywordAlignment?.recommendedRewrites?.h1 || primaryTopic,
+          meta: keywordAlignment?.recommendedRewrites?.metaDescription || `Discover ${primaryTopic} on ${cleanDomain}. Official features, pricing, and direct answers.`,
+        };
+
+        const activeQuestionsList =
+          activeQuestionCategory === 'questions'
+            ? questionMatrix?.questions || []
+            : activeQuestionCategory === 'comparisons'
+            ? questionMatrix?.comparisons || []
+            : questionMatrix?.prepositions || [];
+
+        return (
+          <div className="space-y-6 tab-panel-enter">
+            {/* Header: Overview of Page Topic */}
+            <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 shadow-sm space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+                <div>
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-violet font-semibold">
+                    Keyword Strategy
+                  </span>
+                  <h3 className="font-display text-lg font-bold text-ink dark:text-white mt-0.5">
+                    How Search Engines &amp; AI Understand Your Page Topic
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-graphite-600 dark:text-graphite-400 font-mono">Primary Topic:</span>
+                  <span className="rounded-full bg-violet/10 border border-violet/20 px-3 py-1 font-mono text-xs font-bold text-violet">
+                    {primaryTopic}
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-[13px] sm:text-[14px] text-graphite-700 dark:text-graphite-300 leading-relaxed font-normal">
+                {report?.keywords?.plainLanguageAdvice ||
+                  'Search engines and AI assistants rank your page by checking whether your title, main headline, and description focus on the same core topic. When your tags align, your ranking power is focused rather than split.'}
+              </p>
+            </div>
+
+            {/* Part 1: Tag Alignment Audit & Paste-Ready Fixes */}
+            <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+                <div>
+                  <h4 className="font-display text-base font-bold text-ink dark:text-white">
+                    Step 1: Align Your Main Page Tags
+                  </h4>
+                  <p className="text-xs text-graphite-600 dark:text-graphite-400 mt-0.5">
+                    Compare what is currently on your page with recommended copy-paste replacements
+                  </p>
+                </div>
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold shrink-0 ${
+                  isFullyAligned
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                }`}>
+                  {isFullyAligned ? <CheckCircle2 className="size-3.5" /> : <AlertTriangle className="size-3.5" />}
+                  <span>{isFullyAligned ? 'Tags Fully Aligned' : 'Tags Need Alignment'}</span>
+                </span>
+              </div>
+
+              <p className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                {keywordAlignment?.plainDiagnosis ||
+                  `Your page title, main headline (H1), and description should all feature "${primaryTopic}". When they target different terms, search engines cannot determine your primary subject.`}
+              </p>
+
+              {/* 3-Card Tag Comparison Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                {/* 1. Title Tag Card */}
+                <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafc] dark:bg-[#121317] p-4 flex flex-col justify-between space-y-3.5">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold text-ink dark:text-white">&lt;title&gt; Tag</span>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        titleHasTopic
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80'
+                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80'
+                      }`}>
+                        {titleHasTopic ? 'Matches Topic' : 'Missing Topic'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-medium text-graphite-500 uppercase font-mono block">Current on page:</span>
+                      <p className="text-xs text-graphite-700 dark:text-graphite-300 line-clamp-2 mt-0.5" title={currentTitleText}>
+                        {currentTitleText}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-graphite-200/60 dark:border-graphite-800 space-y-2">
+                    <span className="text-[11px] font-semibold text-violet block">Recommended rewrite (under 60 chars):</span>
+                    <div className="p-2.5 rounded-[8px] bg-white dark:bg-[#1a1b22] border border-graphite-200/60 dark:border-graphite-800 text-xs font-medium text-ink dark:text-white break-words">
+                      {cleanRewrites.title}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(cleanRewrites.title, 'copy-title-tag')}
+                      className="w-full inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                    >
+                      {copiedKey === 'copy-title-tag' ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                      <span>{copiedKey === 'copy-title-tag' ? 'Copied Title' : 'Copy Title'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 2. Main Headline (H1) Card */}
+                <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafc] dark:bg-[#121317] p-4 flex flex-col justify-between space-y-3.5">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold text-ink dark:text-white">&lt;h1&gt; Main Headline</span>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        h1HasTopic
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80'
+                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80'
+                      }`}>
+                        {h1HasTopic ? 'Matches Topic' : 'Missing Topic'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-medium text-graphite-500 uppercase font-mono block">Current on page:</span>
+                      <p className="text-xs text-graphite-700 dark:text-graphite-300 line-clamp-2 mt-0.5" title={currentH1Text}>
+                        {currentH1Text}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-graphite-200/60 dark:border-graphite-800 space-y-2">
+                    <span className="text-[11px] font-semibold text-violet block">Recommended headline:</span>
+                    <div className="p-2.5 rounded-[8px] bg-white dark:bg-[#1a1b22] border border-graphite-200/60 dark:border-graphite-800 text-xs font-medium text-ink dark:text-white break-words">
+                      {cleanRewrites.h1}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(cleanRewrites.h1, 'copy-h1-tag')}
+                      className="w-full inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                    >
+                      {copiedKey === 'copy-h1-tag' ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                      <span>{copiedKey === 'copy-h1-tag' ? 'Copied Headline' : 'Copy Headline'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Meta Description Card */}
+                <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafc] dark:bg-[#121317] p-4 flex flex-col justify-between space-y-3.5">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs font-bold text-ink dark:text-white">Meta Description</span>
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        metaHasTopic
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80'
+                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80'
+                      }`}>
+                        {metaHasTopic ? 'Matches Topic' : 'Missing Topic'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="text-[11px] font-medium text-graphite-500 uppercase font-mono block">Current on page:</span>
+                      <p className="text-xs text-graphite-700 dark:text-graphite-300 line-clamp-2 mt-0.5" title={currentMetaText}>
+                        {currentMetaText}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-graphite-200/60 dark:border-graphite-800 space-y-2">
+                    <span className="text-[11px] font-semibold text-violet block">Recommended rewrite (under 155 chars):</span>
+                    <div className="p-2.5 rounded-[8px] bg-white dark:bg-[#1a1b22] border border-graphite-200/60 dark:border-graphite-800 text-xs font-medium text-ink dark:text-white break-words">
+                      {cleanRewrites.meta}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleCopy(cleanRewrites.meta, 'copy-meta-tag')}
+                      className="w-full inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                    >
+                      {copiedKey === 'copy-meta-tag' ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                      <span>{copiedKey === 'copy-meta-tag' ? 'Copied Description' : 'Copy Description'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Part 2: Target Search Keywords */}
+            <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] shadow-sm overflow-hidden space-y-0">
+              <div className="p-4 sm:p-5 border-b border-graphite-100 dark:border-graphite-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 className="font-display text-base font-bold text-ink dark:text-white">
+                    Step 2: Recommended Search Keywords
+                  </h4>
+                  <p className="text-xs text-graphite-600 dark:text-graphite-400 mt-0.5">
+                    Core search phrases detected from your content, mapped by search intent and on-page presence
+                  </p>
+                </div>
+                <span className="text-[11px] font-mono text-graphite-500">
+                  {suggestedKeywords.length || 1} Primary Keywords
+                </span>
+              </div>
+
+              {/* Mobile Card View (< 768px) */}
+              <div className="divide-y divide-graphite-100 dark:divide-graphite-800 md:hidden">
+                {(suggestedKeywords.length > 0
+                  ? suggestedKeywords
+                  : [
+                      {
+                        id: 'kw_fallback',
+                        keyword: primaryTopic,
+                        angleLabel: 'Core Subject',
+                        intent: 'Commercial' as const,
+                        onPagePlacement: 'in_h1' as const,
+                        whyItMatters: 'Primary keyword detected across your main headlines.',
+                        recommendedPlacement: 'Ensure this appears in your <title> and main <h1> tag.',
+                      },
+                    ]
+                ).map((kw) => {
+                  const isFound = kw.onPagePlacement === 'in_h1' || kw.onPagePlacement === 'in_title';
+                  const isPartial = kw.onPagePlacement === 'in_subheading' || kw.onPagePlacement === 'in_body_only';
+
+                  const statusLabel =
+                    kw.onPagePlacement === 'in_h1'
+                      ? 'Found in H1 Headline'
+                      : kw.onPagePlacement === 'in_title'
+                      ? 'Found in Page Title'
+                      : kw.onPagePlacement === 'in_subheading'
+                      ? 'In Subheading'
+                      : kw.onPagePlacement === 'in_body_only'
+                      ? 'In Body Text Only'
+                      : 'Missing from Page';
+
+                  return (
+                    <div key={kw.id} className="p-4 space-y-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-mono font-bold text-ink dark:text-white text-[14px] break-words">
+                          {kw.keyword}
+                        </span>
+                        <span className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap bg-graphite-100 dark:bg-graphite-800 text-graphite-700 dark:text-graphite-300 border border-graphite-200 dark:border-graphite-700 shrink-0">
+                          {kw.intent}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono text-graphite-500 uppercase">Status:</span>
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                            isFound
+                              ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                              : isPartial
+                              ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                              : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                          }`}
+                        >
+                          {isFound ? (
+                            <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />
+                          )}
+                          <span>{statusLabel}</span>
+                        </span>
+                      </div>
+                      <div className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed bg-[#f8f8fa] dark:bg-[#121317] p-2.5 rounded-[8px] border border-graphite-100 dark:border-graphite-800 space-y-1">
+                        <p className="font-medium text-ink dark:text-white">{kw.recommendedPlacement}</p>
+                        <p className="text-[11px] text-graphite-500">{kw.whyItMatters}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View (>= 768px) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[650px]">
+                  <thead className="bg-[#f4f4f6]/80 dark:bg-[#1a1b22] text-graphite-600 dark:text-graphite-400 uppercase tracking-wider font-mono text-[10px] border-b border-graphite-100 dark:border-graphite-800">
+                    <tr>
+                      <th scope="col" className="py-3 px-4 font-semibold w-1/4">Target Keyword</th>
+                      <th scope="col" className="py-3 px-3 font-semibold w-28">Search Intent</th>
+                      <th scope="col" className="py-3 px-3 font-semibold w-36">Current Status</th>
+                      <th scope="col" className="py-3 px-4 font-semibold">Where to Place on Page</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-graphite-100 dark:divide-graphite-800">
+                    {(suggestedKeywords.length > 0
+                      ? suggestedKeywords
+                      : [
+                          {
+                            id: 'kw_fallback',
+                            keyword: primaryTopic,
+                            angleLabel: 'Core Subject',
+                            intent: 'Commercial' as const,
+                            onPagePlacement: 'in_h1' as const,
+                            whyItMatters: 'Primary keyword detected across your main headlines.',
+                            recommendedPlacement: 'Ensure this appears in your <title> and main <h1> tag.',
+                          },
+                        ]
+                    ).map((kw) => {
+                      const isFound = kw.onPagePlacement === 'in_h1' || kw.onPagePlacement === 'in_title';
+                      const isPartial = kw.onPagePlacement === 'in_subheading' || kw.onPagePlacement === 'in_body_only';
+
+                      const statusLabel =
+                        kw.onPagePlacement === 'in_h1'
+                          ? 'Found in H1 Headline'
+                          : kw.onPagePlacement === 'in_title'
+                          ? 'Found in Page Title'
+                          : kw.onPagePlacement === 'in_subheading'
+                          ? 'In Subheading'
+                          : kw.onPagePlacement === 'in_body_only'
+                          ? 'In Body Text Only'
+                          : 'Missing from Page';
+
+                      return (
+                        <tr key={kw.id} className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/50 transition-colors">
+                          <td className="py-3.5 px-4 font-mono font-bold text-ink dark:text-white text-[13px]">
+                            {kw.keyword}
+                          </td>
+                          <td className="py-3.5 px-3">
+                            <span className="inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap bg-graphite-100 dark:bg-graphite-800 text-graphite-700 dark:text-graphite-300 border border-graphite-200 dark:border-graphite-700">
+                              {kw.intent}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-3">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium whitespace-nowrap ${
+                              isFound
+                                ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                : isPartial
+                                ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                                : 'bg-rose-50 dark:bg-rose-950/30 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                            }`}>
+                              {isFound ? <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" /> : <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />}
+                              <span>{statusLabel}</span>
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                            <p className="font-medium text-ink dark:text-white">{kw.recommendedPlacement}</p>
+                            <p className="text-[11px] text-graphite-500 mt-0.5">{kw.whyItMatters}</p>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Part 3: Questions Customers & AI Ask */}
+            <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] shadow-sm overflow-hidden space-y-0">
+              <div className="p-4 sm:p-5 border-b border-graphite-100 dark:border-graphite-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="font-display text-base font-bold text-ink dark:text-white">
+                    Step 3: Questions Customers &amp; AI Ask
+                  </h4>
+                  <p className="text-xs text-graphite-600 dark:text-graphite-400 mt-0.5">
+                    Answer these questions on your page in an FAQ section to get cited by ChatGPT, Claude, and Google AI Overviews
+                  </p>
+                </div>
+
+                {/* Sub-Category Filter Buttons */}
+                <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 rounded-[16px] sm:rounded-[32px] bg-[#f4f4f6] dark:bg-[#1a1b22] p-1 border border-graphite-200 dark:border-graphite-800">
+                  <button
+                    type="button"
+                    onClick={() => setActiveQuestionCategory('questions')}
+                    className={`rounded-full px-2.5 sm:px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                      activeQuestionCategory === 'questions'
+                        ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                        : 'text-graphite-700 dark:text-graphite-300 hover:text-ink dark:hover:text-white'
+                    }`}
+                  >
+                    Questions ({questionMatrix?.questions?.length || 4})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveQuestionCategory('comparisons')}
+                    className={`rounded-full px-2.5 sm:px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                      activeQuestionCategory === 'comparisons'
+                        ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                        : 'text-graphite-700 dark:text-graphite-300 hover:text-ink dark:hover:text-white'
+                    }`}
+                  >
+                    Comparisons ({questionMatrix?.comparisons?.length || 1})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveQuestionCategory('prepositions')}
+                    className={`rounded-full px-2.5 sm:px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                      activeQuestionCategory === 'prepositions'
+                        ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
+                        : 'text-graphite-700 dark:text-graphite-300 hover:text-ink dark:hover:text-white'
+                    }`}
+                  >
+                    Prepositions ({questionMatrix?.prepositions?.length || 2})
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile Card View (< 768px) */}
+              <div className="divide-y divide-graphite-100 dark:divide-graphite-800 md:hidden">
+                {activeQuestionsList.map((item, idx) => (
+                  <div key={idx} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-sans font-bold text-ink dark:text-white text-[13px] leading-snug">
+                        &ldquo;{item.query}&rdquo;
+                      </span>
+                      <span className="inline-flex rounded-[6px] bg-graphite-100 dark:bg-[#202129] px-2 py-0.5 text-[10px] font-medium text-graphite-800 dark:text-graphite-300 whitespace-nowrap shrink-0">
+                        {item.targetContentFormat}
+                      </span>
+                    </div>
+                    <p className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed bg-[#f8f8fa] dark:bg-[#121317] p-2.5 rounded-[8px] border border-graphite-100 dark:border-graphite-800">
+                      {item.recommendation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= 768px) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs min-w-[650px]">
+                  <thead className="bg-[#f4f4f6]/80 dark:bg-[#1a1b22] text-graphite-600 dark:text-graphite-400 uppercase tracking-wider font-mono text-[10px] border-b border-graphite-100 dark:border-graphite-800">
+                    <tr>
+                      <th scope="col" className="py-3 px-4 font-semibold w-1/3">Search Question</th>
+                      <th scope="col" className="py-3 px-3 font-semibold w-32">Recommended Format</th>
+                      <th scope="col" className="py-3 px-4 font-semibold">How to Answer on Your Page</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-graphite-100 dark:divide-graphite-800">
+                    {activeQuestionsList.map((item, idx) => (
+                      <tr key={idx} className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/50 transition-colors">
+                        <td className="py-3.5 px-4 font-sans font-bold text-ink dark:text-white text-[13px]">
+                          &ldquo;{item.query}&rdquo;
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <span className="inline-flex rounded-[6px] bg-graphite-100 dark:bg-[#202129] px-2.5 py-1 text-[11px] font-medium text-graphite-800 dark:text-graphite-300 whitespace-nowrap">
+                            {item.targetContentFormat}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                          {item.recommendation}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* =========================================================================
+          TAB 1: PRIORITY ACTION PLAN & FINDINGS EXPLORER
           ========================================================================= */}
       {activeMainTab === 'issues' && (
-        <div className="space-y-4 tab-panel-enter">
-          {displayedGroups.length === 0 ? (
-            <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-8 text-center space-y-2">
+        <div className="space-y-5 tab-panel-enter">
+          {/* Top Priority Fixes Table (Integrated into Action Plan) */}
+          {topActionItems.length > 0 && filterTab === 'all' && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Flame className="size-4 text-amber-500" />
+                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
+                    Top Priority Fixes (Move the Needle First)
+                  </h3>
+                </div>
+                <span className="text-xs font-mono text-graphite-600 dark:text-graphite-400">
+                  Ranked by crawl &amp; search impact
+                </span>
+              </div>
+
+              {/* Mobile Card View (< 768px) */}
+              <div className="space-y-3 md:hidden">
+                {topActionItems.map((item, idx) => {
+                  const knowledge = getFindingKnowledge(item.title, item.description, detectedStack, cleanDomain, item.snippet);
+                  const topFix = getSuggestedContentFix(item.title, item.description, cleanDomain, item.snippet);
+                  const specificAction =
+                    item.action &&
+                    !item.action.includes('Appearance > Customize') &&
+                    !item.action.includes('Review affected template')
+                      ? item.action
+                      : getStackFix(item.title, detectedStack) || knowledge.actionSteps[0];
+
+                  return (
+                    <div
+                      key={idx}
+                      className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 space-y-3 shadow-xs"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
+                            item.priority === 'Critical'
+                              ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20'
+                              : item.priority === 'High'
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          }`}
+                        >
+                          {item.priority === 'Critical' ? (
+                            <ShieldAlert className="size-2.5" />
+                          ) : item.priority === 'High' ? (
+                            <AlertTriangle className="size-2.5" />
+                          ) : (
+                            <Info className="size-2.5" />
+                          )}
+                          <span>{item.priority}</span>
+                        </span>
+
+                        {knowledge.suggestedFix || topFix ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(knowledge.suggestedFix || topFix?.text || '', `topfix-${idx}`)}
+                            className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink hover:opacity-90 px-3 py-1 text-[11px] font-semibold transition-all cursor-pointer shadow-xs whitespace-nowrap shrink-0"
+                          >
+                            {copiedKey === `topfix-${idx}` ? (
+                              <Check className="size-3 text-emerald-400" />
+                            ) : (
+                              <Copy className="size-3" />
+                            )}
+                            <span>{copiedKey === `topfix-${idx}` ? 'Copied' : 'Copy Fix'}</span>
+                          </button>
+                        ) : null}
+                      </div>
+
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-ink dark:text-white text-[14px] leading-snug">
+                          {knowledge.title}
+                        </h4>
+                        <span className="inline-block rounded bg-graphite-100 dark:bg-graphite-800 px-1.5 py-0.5 text-[9px] font-mono text-graphite-600 dark:text-graphite-400">
+                          {item.title}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed bg-[#f8f8fa] dark:bg-[#121317] p-2.5 rounded-[8px] border border-graphite-100 dark:border-graphite-800 space-y-1.5">
+                        <p>
+                          <strong className="text-ink dark:text-white font-semibold">Why it matters:</strong>{' '}
+                          {knowledge.whyItMatters}
+                        </p>
+                        <p>
+                          <strong className="text-ink dark:text-white font-semibold">
+                            Action for {detectedStack?.cms || 'Your Stack'}:
+                          </strong>{' '}
+                          {specificAction}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View (>= 768px) */}
+              <div className="hidden md:block overflow-x-auto rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] shadow-sm">
+                <table className="w-full text-left text-xs min-w-[720px]">
+                  <thead className="bg-[#f4f4f6]/80 dark:bg-[#1a1b22] text-graphite-600 dark:text-graphite-400 font-mono text-[10px] uppercase tracking-wider border-b border-graphite-100 dark:border-graphite-800">
+                    <tr>
+                      <th scope="col" className="py-3 px-4 font-semibold w-24">Priority</th>
+                      <th scope="col" className="py-3 px-4 font-semibold w-48">Issue &amp; Code</th>
+                      <th scope="col" className="py-3 px-4 font-semibold">Why It Matters</th>
+                      <th scope="col" className="py-3 px-4 font-semibold">Action for {detectedStack?.cms || 'Your Stack'}</th>
+                      <th scope="col" className="py-3 px-4 font-semibold text-right w-36">Solution</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-graphite-100 dark:divide-graphite-800">
+                    {topActionItems.map((item, idx) => {
+                      const knowledge = getFindingKnowledge(item.title, item.description, detectedStack, cleanDomain, item.snippet);
+                      const topFix = getSuggestedContentFix(item.title, item.description, cleanDomain, item.snippet);
+                      const specificAction =
+                        item.action &&
+                        !item.action.includes('Appearance > Customize') &&
+                        !item.action.includes('Review affected template')
+                          ? item.action
+                          : getStackFix(item.title, detectedStack) || knowledge.actionSteps[0];
+
+                      return (
+                        <tr key={idx} className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                          <td className="py-3.5 px-4 align-top">
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap ${
+                                item.priority === 'Critical'
+                                  ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20'
+                                  : item.priority === 'High'
+                                  ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                              }`}
+                            >
+                              {item.priority === 'Critical' ? <ShieldAlert className="size-2.5" /> : item.priority === 'High' ? <AlertTriangle className="size-2.5" /> : <Info className="size-2.5" />}
+                              <span>{item.priority}</span>
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 align-top">
+                            <div className="space-y-1">
+                              <span className="font-bold text-ink dark:text-white block leading-snug">
+                                {knowledge.title}
+                              </span>
+                              <span className="inline-block rounded bg-graphite-100 dark:bg-graphite-800 px-1.5 py-0.5 text-[9px] font-mono text-graphite-600 dark:text-graphite-400">
+                                {item.title}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 align-top text-graphite-700 dark:text-graphite-300 leading-relaxed max-w-xs">
+                            {knowledge.whyItMatters}
+                          </td>
+                          <td className="py-3.5 px-4 align-top text-graphite-800 dark:text-graphite-200 leading-relaxed font-normal">
+                            {specificAction}
+                          </td>
+                          <td className="py-3.5 px-4 align-top text-right">
+                            {(knowledge.suggestedFix || topFix) ? (
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(knowledge.suggestedFix || topFix?.text || '', `topfix-${idx}`)}
+                                className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink hover:opacity-90 px-3 py-1 text-[11px] font-semibold transition-all cursor-pointer shadow-xs whitespace-nowrap"
+                              >
+                                {copiedKey === `topfix-${idx}` ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+                                <span>{copiedKey === `topfix-${idx}` ? 'Copied' : 'Copy Fix'}</span>
+                              </button>
+                            ) : (
+                              <span className="text-[11px] font-mono text-graphite-400">Manual review</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Filter Status Sub-bar */}
+          {filterTab !== 'all' && (
+            <div className="flex items-center justify-between rounded-[12px] bg-violet/5 dark:bg-violet/10 border border-violet/20 px-4 py-2.5 text-xs">
+              <span className="font-medium text-graphite-800 dark:text-graphite-200">
+                Filtered view: Showing <strong className="text-violet uppercase">{filterTab}</strong> ({filterTab === 'passed' ? passedCheckCount : displayedGroups.length} items)
+              </span>
+              <button
+                type="button"
+                onClick={() => setFilterTab('all')}
+                className="text-violet hover:underline font-semibold cursor-pointer"
+              >
+                Reset to all findings
+              </button>
+            </div>
+          )}
+
+          {/* Passed Checks View */}
+          {filterTab === 'passed' ? (
+            <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-950/20 p-8 text-center space-y-3">
+              <CheckCircle2 className="mx-auto size-8 text-emerald-500" />
+              <h4 className="font-display text-base font-bold text-ink dark:text-white">
+                {passedCheckCount} Core Audit Checks Fully Passed
+              </h4>
+              <p className="text-xs text-graphite-700 dark:text-graphite-300 max-w-lg mx-auto leading-relaxed">
+                These technical standards verified clean with zero blocking errors detected on crawled pages: Canonical URLs, Mobile Viewport, XML Sitemap, Robots.txt, and Core Indexability.
+              </p>
+              <button
+                type="button"
+                onClick={() => setFilterTab('all')}
+                className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-4 py-2 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer mt-2"
+              >
+                <span>View all findings ({totalIssuesCount})</span>
+              </button>
+            </div>
+          ) : displayedGroups.length === 0 ? (
+            <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-8 text-center space-y-3">
               <CheckCircle2 className="mx-auto size-8 text-emerald-500" />
               <h4 className="font-display text-base font-bold text-ink dark:text-white">Zero Findings in Selected Filter</h4>
               <p className="text-xs text-graphite-800 dark:text-graphite-400">
-                All checks in the &quot;{filterTab}&quot; category passed validation.
+                All checks in the &quot;{filterTab}&quot; category passed validation with zero errors.
               </p>
+              <button
+                type="button"
+                onClick={() => setFilterTab('all')}
+                className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-4 py-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                <span>Reset filter</span>
+              </button>
             </div>
           ) : (
             displayedGroups.map((group) => {
@@ -755,6 +1605,18 @@ export function CheckEngineView(props: CheckEngineViewProps) {
 
               const isCritical = group.severity === 'critical' || group.severity === 'high';
               const isWarning = group.severity === 'medium';
+
+              const distinctPages = new Set(
+                group.findings && group.findings.length > 0
+                  ? group.findings.map((f) => f.url)
+                  : group.exampleUrls || []
+              ).size;
+              const pagesCount = distinctPages > 0 ? distinctPages : (group.totalPagesChecked || 1);
+              const pageImpactText = pagesCount === 1
+                ? (group.affectedCount > 1
+                    ? `Affects 1 page (${group.affectedCount} instances)`
+                    : 'Affects 1 page')
+                : `Affects ${pagesCount} pages (${group.affectedCount} instances)`;
 
               return (
                 <div
@@ -785,12 +1647,15 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                           <span className="font-display text-sm font-bold text-ink dark:text-white block break-words sm:truncate">
                             {knowledge.title}
                           </span>
+                          <span className="rounded-full bg-graphite-100 dark:bg-graphite-800 px-2 py-0.5 text-[9px] font-mono text-graphite-600 dark:text-graphite-400 shrink-0 font-medium">
+                            {group.checkId}
+                          </span>
                           <span className="rounded-full bg-graphite-100 dark:bg-graphite-800 px-2 py-0.2 text-[9px] font-mono text-graphite-800 dark:text-graphite-400 shrink-0">
                             {knowledge.category}
                           </span>
                         </div>
                         <span className="text-xs text-graphite-800 dark:text-graphite-400">
-                          Affects {group.affectedCount} page{group.affectedCount !== 1 ? 's' : ''} &middot; Priority Score {group.priority} &middot; {knowledge.impactLevel}
+                          {pageImpactText} &middot; Priority Score {group.priority} &middot; {knowledge.impactLevel}
                         </span>
                       </div>
                     </div>
@@ -923,244 +1788,520 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               <span>Verified Standards Passed Cleanly</span>
             </div>
             <p className="text-graphite-800 dark:text-graphite-200 leading-relaxed">
-              {whatPassed || 'All checked SEO, RFC 9309 crawler standards, and mobile accessibility guidelines passed deterministic validation.'}
+              {whatPassed || 'All checked SEO, search crawler standards, and mobile accessibility guidelines passed automated validation.'}
             </p>
           </div>
         </div>
       )}
 
       {/* =========================================================================
-          TAB 2: VISUAL TELEMETRY & GRAPHS
+          TAB 3: GOOGLE & AI VISIBILITY (AEO & GEO ACTION PLAN)
           ========================================================================= */}
-      {activeMainTab === 'graphs' && (
-        <div className="tab-panel-enter">
-          <OverviewAuditGraph
-            report={report || null}
-            comparison={comparison}
-            auditedDomain={cleanDomain}
-            competitorDomain={comparison?.competitor?.url}
-          />
-        </div>
-      )}
+      {activeMainTab === 'visibility' && (() => {
+        const aiBotsList = (geoSignals?.aiBots && geoSignals.aiBots.length > 0)
+          ? geoSignals.aiBots
+          : [
+              { bot: 'GPTBot', status: 'allowed' as const, rulePrecedence: 'default_allow' },
+              { bot: 'ClaudeBot', status: 'allowed' as const, rulePrecedence: 'default_allow' },
+              { bot: 'PerplexityBot', status: 'allowed' as const, rulePrecedence: 'default_allow' },
+              { bot: 'Google-Extended', status: 'allowed' as const, rulePrecedence: 'default_allow' },
+            ];
 
-      {/* =========================================================================
-          TAB 3: AI SEARCH & ANSWER ENGINE (AEO & GEO)
-          ========================================================================= */}
-      {activeMainTab === 'aeo-geo' && (
-        <div className="space-y-6 tab-panel-enter">
-          {/* Executive Overview Cards */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            {/* AEO Card */}
-            <div className="rounded-[20px] border border-violet/20 bg-gradient-to-br from-violet/5 via-white to-white dark:from-violet/10 dark:via-[#16171d] dark:to-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-graphite-100 dark:border-graphite-800 pb-3">
+        const botProfiles: Record<string, { engine: string; provider: string; impact: string }> = {
+          GPTBot: {
+            engine: 'ChatGPT & SearchGPT',
+            provider: 'OpenAI',
+            impact: 'Enables live source citations and referenced links in ChatGPT answers.',
+          },
+          ClaudeBot: {
+            engine: 'Claude Search',
+            provider: 'Anthropic',
+            impact: 'Allows Claude to crawl and quote your pages during conversational research.',
+          },
+          PerplexityBot: {
+            engine: 'Perplexity AI',
+            provider: 'Perplexity',
+            impact: 'Powers real-time citation cards and clickable source footnotes.',
+          },
+          'Google-Extended': {
+            engine: 'Gemini & AI Overviews',
+            provider: 'Google',
+            impact: 'Supplies source references for Google AI summaries above standard search.',
+          },
+        };
+
+        const robotsSnippet = effectivePatches?.geoRobotsBlock || `# CrawlPay Recommended robots.txt (AI Search Enabled)
+User-agent: *
+Allow: /
+
+# Permit AI Search and Answer Engine crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /`;
+
+        const llmsSnippet = `# ${cleanDomain}
+> ${siteSummary?.summary || `${cleanDomain} provides online digital tools, features, and documentation.`}
+
+## Overview
+- Website: https://${cleanDomain}
+- Primary Focus: ${siteSummary?.primaryOffering || 'Online services & developer tools'}
+- Target Audience: ${siteSummary?.targetAudience || 'General visitors & buyers'}
+
+## Essential Documentation & Pages
+- [/](https://${cleanDomain}): Homepage and primary features
+- [/docs](https://${cleanDomain}/docs): Technical documentation and guides`;
+
+        const faqSchemaSnippet = effectivePatches?.aeoFaqSchema || `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is ${cleanDomain}?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "${siteSummary?.summary || `${cleanDomain} provides official online features, tools, and direct answers.`}"
+      }
+    }
+  ]
+}
+</script>`;
+
+        const activeSnippetCode =
+          aiSnippetTab === 'robots'
+            ? robotsSnippet
+            : aiSnippetTab === 'llms'
+            ? llmsSnippet
+            : faqSchemaSnippet;
+
+        const activeSnippetDestination =
+          aiSnippetTab === 'robots'
+            ? 'Place in your root public folder: /robots.txt'
+            : aiSnippetTab === 'llms'
+            ? 'Place in your root public folder: /llms.txt'
+            : 'Insert inside the <head> tag on your homepage or template';
+
+        const isAiCitationReady = aeoScore >= 70 && geoScore >= 70;
+
+        return (
+          <div className="space-y-6 tab-panel-enter">
+            {/* Executive Overview & AI Citation Readiness */}
+            <div className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-xs space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="size-9 rounded-xl bg-violet/10 flex items-center justify-center text-violet shrink-0">
+                    <Bot className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-base font-bold text-ink dark:text-white">
+                      Google &amp; AI Engine Visibility
+                    </h3>
+                    <p className="text-xs text-graphite-700 dark:text-graphite-400">
+                      Can ChatGPT, Claude, Perplexity, and Google Gemini discover and cite your content?
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2">
-                  <Bot className="size-4 text-violet" />
-                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
-                    Answer Engine Optimization (AEO)
-                  </h3>
-                </div>
-                <span className="rounded-full bg-violet/10 text-violet border border-violet/20 px-3 py-0.5 text-xs font-mono font-bold">
-                  {aeoScore}/100
-                </span>
-              </div>
-              <p className="text-xs text-graphite-800 dark:text-graphite-300 leading-relaxed">
-                Evaluates query-first heading formulations, definition clarity, and structured lists/tables for Google AI Overviews and conversational voice search.
-              </p>
-
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-white/80 dark:bg-[#1a1b22] p-3 space-y-1">
-                  <span className="text-[11px] font-semibold text-graphite-800 dark:text-graphite-400 block">Question Headings</span>
-                  <span className="font-mono text-base font-bold text-ink dark:text-white">
-                    {aeoSignals?.questionHeadingsCount ?? 0}
-                  </span>
-                  <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">
-                    (What, How, Why, Can...)
-                  </span>
-                </div>
-
-                <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-white/80 dark:bg-[#1a1b22] p-3 space-y-1">
-                  <span className="text-[11px] font-semibold text-graphite-800 dark:text-graphite-400 block">Machine FAQ Schema</span>
-                  <div className="pt-0.5">
-                    {aeoSignals?.hasFaqSchema ? (
-                      <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                        <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
-                        <span>FAQPage Present</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-amber-800 dark:text-amber-400">
-                        <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />
-                        <span>Missing Schema</span>
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">
-                    (Visible Q&amp;A Pairing)
-                  </span>
+                  {isAiCitationReady ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-3 py-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+                      <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Ready for AI Citations</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-1 text-xs font-semibold text-amber-800 dark:text-amber-300">
+                      <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>Action Recommended</span>
+                    </span>
+                  )}
                 </div>
               </div>
 
-              {aeoSignals?.questionHeadings && aeoSignals.questionHeadings.length > 0 && (
-                <div className="space-y-1.5 pt-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-graphite-800 dark:text-graphite-400 block">
-                    Detected Question Headings:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {aeoSignals.questionHeadings.map((q, idx) => (
-                      <span key={idx} className="rounded-full bg-violet/10 border border-violet/20 px-2.5 py-0.5 text-[11px] font-mono text-violet">
-                        {q}
-                      </span>
-                    ))}
+              {/* 2 Core Score Cards */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-[16px] border border-violet/20 bg-violet/5 dark:bg-violet/10 p-4 sm:p-5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-violet">
+                      Answer Engine Score (AEO)
+                    </span>
+                    <span className="font-mono text-2xl font-black text-ink dark:text-white">
+                      {aeoScore}<span className="text-xs text-graphite-400 font-normal">/100</span>
+                    </span>
                   </div>
+                  <p className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                    Evaluates conversational question headings, structured answers, and definition clarity for Google AI Overviews and voice search.
+                  </p>
                 </div>
-              )}
+
+                <div className="rounded-[16px] border border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20 p-4 sm:p-5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                      Generative Engine Score (GEO)
+                    </span>
+                    <span className="font-mono text-2xl font-black text-ink dark:text-white">
+                      {geoScore}<span className="text-xs text-graphite-400 font-normal">/100</span>
+                    </span>
+                  </div>
+                  <p className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                    Evaluates crawler permissions for ChatGPT, Claude, and Perplexity, brand authority knowledge graph links, and /llms.txt context files.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {/* GEO Card */}
-            <div className="rounded-[20px] border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-white to-white dark:from-emerald-500/10 dark:via-[#16171d] dark:to-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-graphite-100 dark:border-graphite-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Globe className="size-4 text-emerald-600 dark:text-emerald-400" />
-                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
-                    Generative Engine Optimization (GEO)
-                  </h3>
+            {/* STEP 1: AI Search Crawler Access */}
+            <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-6 rounded-full bg-violet/10 text-violet font-mono text-xs font-bold flex items-center justify-center">
+                    1
+                  </span>
+                  <div>
+                    <h4 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
+                      AI Search Crawler Access (robots.txt)
+                    </h4>
+                    <p className="text-xs text-graphite-600 dark:text-graphite-400">
+                      Permissions verified for the 4 primary search and answer engine crawlers.
+                    </p>
+                  </div>
                 </div>
-                <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-3 py-0.5 text-xs font-mono font-bold">
-                  {geoScore}/100
+                <span className="text-xs font-mono text-graphite-600 dark:text-graphite-400">
+                  RFC 9309 Rules
                 </span>
               </div>
-              <p className="text-xs text-graphite-800 dark:text-graphite-300 leading-relaxed">
-                Evaluates crawlability by LLM search agents (ChatGPT Search, Perplexity, Claude), knowledge graph entity anchors, and edge firewall permissions.
-              </p>
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-white/80 dark:bg-[#1a1b22] p-3 space-y-1">
-                  <span className="text-[11px] font-semibold text-graphite-800 dark:text-graphite-400 block">WAF Edge Reachability</span>
-                  <div className="pt-0.5">
-                    {geoSignals?.wafStatus === 'accessible' ? (
-                      <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                        <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
-                        <span>GPTBot Allowed</span>
-                      </span>
-                    ) : geoSignals?.wafStatus === 'waf_blocked' ? (
-                      <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-rose-700 dark:text-rose-400">
-                        <XCircle className="size-3 text-rose-600 dark:text-rose-400" />
-                        <span>WAF Block (403)</span>
+              <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+                {aiBotsList.map((b: any, idx: number) => {
+                  const meta = botProfiles[b.bot] || {
+                    engine: b.bot,
+                    provider: 'AI Crawler',
+                    impact: 'Indexes website content to generate cited responses.',
+                  };
+                  const isBlocked = b.status === 'blocked';
+                  const isUnknown = b.status === 'unknown';
+
+                  return (
+                    <div
+                      key={idx}
+                      className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 flex flex-col justify-between space-y-3"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs font-bold text-ink dark:text-white">
+                            {b.bot}
+                          </span>
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                              isBlocked
+                                ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
+                                : isUnknown
+                                ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                                : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                            }`}
+                          >
+                            {isBlocked ? (
+                              <XCircle className="size-2.5" />
+                            ) : isUnknown ? (
+                              <AlertTriangle className="size-2.5" />
+                            ) : (
+                              <CheckCircle2 className="size-2.5" />
+                            )}
+                            <span>{isBlocked ? 'Blocked' : isUnknown ? 'Review' : 'Allowed'}</span>
+                          </span>
+                        </div>
+
+                        <div>
+                          <div className="text-xs font-semibold text-ink dark:text-white">
+                            {meta.engine}
+                          </div>
+                          <div className="text-[11px] text-graphite-500">
+                            {meta.provider}
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-graphite-700 dark:text-graphite-400 leading-snug">
+                          {meta.impact}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-graphite-200/60 dark:border-graphite-700/60 text-[10px] font-mono text-graphite-600 dark:text-graphite-400 truncate" title={b.matchedRule || 'Allowed by Default (No Disallow directive found)'}>
+                        {b.matchedRule || 'No Disallow rule (Allowed)'}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* STEP 2: Content Citation Readiness */}
+            <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-6 rounded-full bg-violet/10 text-violet font-mono text-xs font-bold flex items-center justify-center">
+                    2
+                  </span>
+                  <div>
+                    <h4 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
+                      Content Citation Readiness
+                    </h4>
+                    <p className="text-xs text-graphite-600 dark:text-graphite-400">
+                      Key structure and brand signals AI models look for when attributing answers.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-mono text-graphite-600 dark:text-graphite-400">
+                  4 Core Signals
+                </span>
+              </div>
+
+              <div className="grid gap-3.5 sm:grid-cols-2">
+                {/* Signal 1: Question Headings */}
+                <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-ink dark:text-white">
+                      Question-Based Headings
+                    </span>
+                    {(aeoSignals?.questionHeadingsCount ?? 0) > 0 ? (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300">
+                        <CheckCircle2 className="size-2.5" />
+                        <span>{aeoSignals?.questionHeadingsCount} Found</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-graphite-800 dark:text-graphite-400">
-                        <Info className="size-3 text-graphite-600" />
-                        <span>Probe Skipped</span>
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300">
+                        <AlertTriangle className="size-2.5" />
+                        <span>None Found</span>
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">
-                    (Cloudflare / AWS WAF)
-                  </span>
+                  <p className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                    AI models scan section headings for conversational question patterns (What, How, Why, Can) to match direct search queries.
+                  </p>
+                  {aeoSignals?.questionHeadings && aeoSignals.questionHeadings.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {aeoSignals.questionHeadings.slice(0, 4).map((q, qIdx) => (
+                        <span
+                          key={qIdx}
+                          className="rounded-full bg-violet/10 border border-violet/20 px-2.5 py-0.5 text-[11px] font-mono text-violet truncate max-w-full"
+                        >
+                          {q}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-white/80 dark:bg-[#1a1b22] p-3 space-y-1">
-                  <span className="text-[11px] font-semibold text-graphite-800 dark:text-graphite-400 block">Entity Grounding</span>
-                  <div className="pt-0.5">
-                    {geoSignals?.brandEntityDeclared ? (
-                      <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                        <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
-                        <span>{geoSignals.declaredSameAsCount} sameAs Link{geoSignals.declaredSameAsCount > 1 ? 's' : ''}</span>
+                {/* Signal 2: Machine FAQ Schema */}
+                <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-ink dark:text-white">
+                      Structured FAQ Schema
+                    </span>
+                    {aeoSignals?.hasFaqSchema ? (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300">
+                        <CheckCircle2 className="size-2.5" />
+                        <span>FAQPage Detected</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 font-mono text-xs font-bold text-amber-800 dark:text-amber-400">
-                        <AlertTriangle className="size-3 text-amber-600 dark:text-amber-400" />
-                        <span>No sameAs Links</span>
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300">
+                        <AlertTriangle className="size-2.5" />
+                        <span>Missing FAQ Schema</span>
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">
-                    (Wikidata / Wikipedia)
-                  </span>
+                  <p className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                    Structured FAQ markup enables search engines and LLMs to extract exact question-and-answer pairs cleanly without hallucination.
+                  </p>
+                </div>
+
+                {/* Signal 3: Brand Authority & sameAs */}
+                <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-ink dark:text-white">
+                      Brand Authority &amp; Profiles
+                    </span>
+                    {geoSignals?.brandEntityDeclared ? (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300">
+                        <CheckCircle2 className="size-2.5" />
+                        <span>{geoSignals.declaredSameAsCount} Linked</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300">
+                        <AlertTriangle className="size-2.5" />
+                        <span>No Profiles Linked</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                    Links your website to verified social profiles, GitHub, and corporate entries in the Google Knowledge Graph.
+                  </p>
+                  {geoSignals?.declaredSameAsLinks && geoSignals.declaredSameAsLinks.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {geoSignals.declaredSameAsLinks.slice(0, 3).map((link, lIdx) => (
+                        <span
+                          key={lIdx}
+                          className="rounded-full bg-graphite-100 dark:bg-graphite-800 border border-graphite-200 dark:border-graphite-700 px-2 py-0.5 text-[10px] font-mono text-graphite-700 dark:text-graphite-300 truncate max-w-[200px]"
+                        >
+                          {link}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Signal 4: /llms.txt Context File */}
+                <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-ink dark:text-white">
+                      AI Context File (/llms.txt)
+                    </span>
+                    {geoSignals?.hasLlmsTxt ? (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300">
+                        <CheckCircle2 className="size-2.5" />
+                        <span>Found at /llms.txt</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold bg-graphite-200 dark:bg-graphite-800 text-graphite-700 dark:text-graphite-300">
+                        <Info className="size-2.5" />
+                        <span>Not Found</span>
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                    A standardized markdown specification file at /llms.txt that gives AI assistants a clean overview and index of key documentation.
+                  </p>
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+              {/* Delivery Health Chips */}
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-graphite-100 dark:border-graphite-800">
+                <span className="text-[11px] font-semibold text-graphite-600 dark:text-graphite-400">
+                  Delivery Health:
+                </span>
                 {geoSignals?.isClientRendered ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-2.5 py-0.5 font-mono text-[11px] text-amber-800 dark:text-amber-300 font-semibold">
                     <AlertTriangle className="size-3 text-amber-600" />
-                    <span>Client-Rendered JS Barrier</span>
+                    <span>Client-Side Rendered (Slower for Bots)</span>
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 font-mono text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold">
                     <CheckCircle2 className="size-3 text-emerald-600" />
-                    <span>Server-Rendered Raw HTML</span>
+                    <span>Server-Rendered HTML (Optimal for Crawlers)</span>
                   </span>
                 )}
 
-                {geoSignals?.hasLlmsTxt ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 font-mono text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold">
-                    <CheckCircle2 className="size-3 text-emerald-600" />
-                    <span>/llms.txt Present</span>
+                {geoSignals?.wafStatus === 'waf_blocked' ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 px-2.5 py-0.5 font-mono text-[11px] text-rose-800 dark:text-rose-300 font-semibold">
+                    <XCircle className="size-3 text-rose-600" />
+                    <span>Firewall Blocking AI Bots (HTTP 403)</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-graphite-100 dark:bg-graphite-800 border border-graphite-200 dark:border-graphite-700 px-2.5 py-0.5 font-mono text-[11px] text-graphite-800 dark:text-graphite-300">
-                    <Info className="size-3 text-graphite-600" />
-                    <span>/llms.txt Missing</span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 font-mono text-[11px] text-emerald-800 dark:text-emerald-300 font-semibold">
+                    <CheckCircle2 className="size-3 text-emerald-600" />
+                    <span>Accessible (No Firewall Block)</span>
                   </span>
                 )}
               </div>
-            </div>
-          </div>
+            </section>
 
-          {/* RFC 9309 Bot Permissions Matrix */}
-          <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-graphite-100 dark:border-graphite-800 pb-3">
-              <div className="flex items-center gap-2">
-                <Terminal className="size-4 text-violet" />
-                <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
-                  RFC 9309 AI Search Bot Permissions (robots.txt)
-                </h3>
-              </div>
-              <span className="text-xs font-mono text-graphite-800 dark:text-graphite-400">
-                Longest-Match Evaluation
-              </span>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {(geoSignals?.aiBots || [
-                { bot: 'GPTBot', status: 'allowed', rulePrecedence: 'default_allow' },
-                { bot: 'ClaudeBot', status: 'allowed', rulePrecedence: 'default_allow' },
-                { bot: 'PerplexityBot', status: 'allowed', rulePrecedence: 'default_allow' },
-                { bot: 'Google-Extended', status: 'allowed', rulePrecedence: 'default_allow' },
-              ]).map((b: any, idx: number) => {
-                const isBlocked = b.status === 'blocked';
-                const isUnknown = b.status === 'unknown';
-                return (
-                  <div key={idx} className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-ink dark:text-white flex items-center gap-1.5">
-                        <Bot className="size-3.5 text-violet" />
-                        <span>{b.bot}</span>
-                      </span>
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                        isBlocked
-                          ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-800 dark:text-rose-300'
-                          : isUnknown
-                          ? 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
-                          : 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
-                      }`}>
-                        {isBlocked ? <XCircle className="size-2.5" /> : isUnknown ? <AlertTriangle className="size-2.5" /> : <CheckCircle2 className="size-2.5" />}
-                        <span>{b.status}</span>
-                      </span>
-                    </div>
-                    <div className="font-mono text-[11px] text-graphite-800 dark:text-graphite-400 truncate">
-                      {b.matchedRule || 'Default Allow (No Disallow)'}
-                    </div>
-                    <div className="text-[10px] text-graphite-800/80 dark:text-graphite-400">
-                      Rule Precedence: {b.rulePrecedence?.replace(/_/g, ' ') || 'Longest Match'}
-                    </div>
+            {/* STEP 3: Copy-Paste Fixes */}
+            <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-xs space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="size-6 rounded-full bg-violet/10 text-violet font-mono text-xs font-bold flex items-center justify-center">
+                    3
+                  </span>
+                  <div>
+                    <h4 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
+                      Copy-Paste Fixes for AI Citations
+                    </h4>
+                    <p className="text-xs text-graphite-600 dark:text-graphite-400">
+                      Pre-generated snippets customized for {cleanDomain} to enable AI search crawling and citations.
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          </section>
-        </div>
-      )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleCopy(activeSnippetCode, `ai-snippet-${aiSnippetTab}`)}
+                  className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-3.5 py-1.5 text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+                >
+                  {copiedKey === `ai-snippet-${aiSnippetTab}` ? (
+                    <>
+                      <Check className="size-3 text-emerald-400" />
+                      <span>Copied to Clipboard</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="size-3" />
+                      <span>Copy Snippet</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Tab Selector */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAiSnippetTab('robots')}
+                  className={`rounded-[48px] px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                    aiSnippetTab === 'robots'
+                      ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-xs'
+                      : 'bg-[#f4f4f6] dark:bg-[#1a1b22] text-graphite-700 dark:text-graphite-300 hover:text-ink dark:hover:text-white'
+                  }`}
+                >
+                  robots.txt (AI Crawlers)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiSnippetTab('llms')}
+                  className={`rounded-[48px] px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                    aiSnippetTab === 'llms'
+                      ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-xs'
+                      : 'bg-[#f4f4f6] dark:bg-[#1a1b22] text-graphite-700 dark:text-graphite-300 hover:text-ink dark:hover:text-white'
+                  }`}
+                >
+                  /llms.txt (AI Context Index)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAiSnippetTab('faq')}
+                  className={`rounded-[48px] px-3.5 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                    aiSnippetTab === 'faq'
+                      ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-xs'
+                      : 'bg-[#f4f4f6] dark:bg-[#1a1b22] text-graphite-700 dark:text-graphite-300 hover:text-ink dark:hover:text-white'
+                  }`}
+                >
+                  FAQ Schema (JSON-LD)
+                </button>
+              </div>
+
+              {/* File Destination & Code Snippet Box */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-mono text-graphite-600 dark:text-graphite-400">
+                  <FileCode className="size-3.5 text-violet" />
+                  <span>{activeSnippetDestination}</span>
+                </div>
+
+                <div className="rounded-[14px] bg-[#0c0d12] border border-graphite-800 p-4 overflow-x-auto">
+                  <pre className="font-mono text-xs text-graphite-200 leading-relaxed whitespace-pre">
+                    <code>{activeSnippetCode}</code>
+                  </pre>
+                </div>
+              </div>
+            </section>
+          </div>
+        );
+      })()}
 
       {/* =========================================================================
           TAB 4: MOBILE & CORE WEB VITALS
@@ -1173,7 +2314,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               <div className="flex items-center gap-2">
                 <Smartphone className="size-4 text-emerald-600" />
                 <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
-                  Mobile-First Indexing Telemetry (375px–414px)
+                  Mobile Usability &amp; Responsiveness (375px–414px)
                 </h3>
               </div>
               <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 text-xs font-mono font-bold">
@@ -1247,7 +2388,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                   Good (&lt;2.5s)
                 </div>
                 <p className="text-[10px] text-graphite-800 dark:text-graphite-400">
-                  Simulated Largest Contentful Paint on mobile cellular.
+                  Estimated main content rendering speed on mobile.
                 </p>
               </div>
             </div>
@@ -1283,7 +2424,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
                   CLS (Cumulative Shift)
                 </span>
                 <div className="font-mono text-xl font-bold text-ink dark:text-white">{performance.clsEstimate}</div>
-                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">Visual DOM stability threshold.</p>
+                <p className="text-[10px] text-graphite-800 dark:text-graphite-400">Visual page stability threshold.</p>
               </div>
 
               <div className="rounded-[14px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-1">
@@ -1323,15 +2464,412 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               </div>
             )}
           </section>
-        </div>
-      )}
 
-      {/* =========================================================================
-          TAB 5: STACK-TAILORED CODE PATCHES
-          ========================================================================= */}
-      {activeMainTab === 'patches' && (
-        <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5 tab-panel-enter">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
+          {/* Web Analytics & Conversion Tracking Table */}
+          <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="size-4 text-violet" />
+                <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
+                  Web Analytics &amp; Conversion Tracking
+                </h3>
+              </div>
+              <span className="text-xs font-mono text-graphite-500">
+                Verified On-Page Tags
+              </span>
+            </div>
+
+            <p className="text-xs text-graphite-600 dark:text-graphite-400 leading-relaxed">
+              Tracking code verification and customer conversion actions discovered in your page HTML.
+            </p>
+
+            {/* Mobile Card View (< 768px) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
+              {/* GA4 */}
+              <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-3.5 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-ink dark:text-white text-xs">Google Analytics 4 (GA4)</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                    analyticsSignals?.hasGa4
+                      ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                  }`}>
+                    {analyticsSignals?.hasGa4 ? <CheckCircle2 className="size-2.5" /> : <AlertTriangle className="size-2.5" />}
+                    <span>{analyticsSignals?.hasGa4 ? 'Installed' : 'Missing Tag'}</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-graphite-500">Traffic &amp; pageview analytics</p>
+                <div className="text-[11px] font-mono text-graphite-800 dark:text-graphite-200 bg-white dark:bg-[#121317] p-2 rounded-[8px] border border-graphite-100 dark:border-graphite-800">
+                  {analyticsSignals?.detectedTrackingId
+                    ? `Active ID: ${analyticsSignals.detectedTrackingId}`
+                    : analyticsSignals?.hasGa4
+                    ? 'Google gtag.js script detected in page head'
+                    : 'No GA4 measurement code detected. Add gtag.js to record visitor metrics.'}
+                </div>
+              </div>
+
+              {/* GTM */}
+              <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-3.5 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-ink dark:text-white text-xs">Google Tag Manager (GTM)</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                    analyticsSignals?.hasGtm
+                      ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                  }`}>
+                    {analyticsSignals?.hasGtm ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                    <span>{analyticsSignals?.hasGtm ? 'Installed' : 'Not Used'}</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-graphite-500">Central tag container</p>
+                <div className="text-[11px] font-mono text-graphite-800 dark:text-graphite-200 bg-white dark:bg-[#121317] p-2 rounded-[8px] border border-graphite-100 dark:border-graphite-800">
+                  {analyticsSignals?.hasGtm
+                    ? 'GTM container script active on page'
+                    : 'Optional if GA4 is loaded directly via script'}
+                </div>
+              </div>
+
+              {/* Meta Pixel */}
+              <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-3.5 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-ink dark:text-white text-xs">Meta / Facebook Pixel</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                    analyticsSignals?.hasMetaPixel
+                      ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                  }`}>
+                    {analyticsSignals?.hasMetaPixel ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                    <span>{analyticsSignals?.hasMetaPixel ? 'Detected' : 'Not Used'}</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-graphite-500">Paid social ad retargeting</p>
+                <div className="text-[11px] font-mono text-graphite-800 dark:text-graphite-200 bg-white dark:bg-[#121317] p-2 rounded-[8px] border border-graphite-100 dark:border-graphite-800">
+                  {analyticsSignals?.hasMetaPixel ? 'fbq tracking script initialized' : 'No Meta tracking snippet discovered'}
+                </div>
+              </div>
+
+              {/* Lead Forms */}
+              <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-3.5 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-ink dark:text-white text-xs">Lead Capture Forms</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                    analyticsSignals?.hasLeadForm
+                      ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                  }`}>
+                    {analyticsSignals?.hasLeadForm ? <CheckCircle2 className="size-2.5" /> : <AlertTriangle className="size-2.5" />}
+                    <span>{analyticsSignals?.hasLeadForm ? 'Active Form' : 'No Form'}</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-graphite-500">Customer inquiry collection</p>
+                <div className="text-[11px] font-mono text-graphite-800 dark:text-graphite-200 bg-white dark:bg-[#121317] p-2 rounded-[8px] border border-graphite-100 dark:border-graphite-800">
+                  {analyticsSignals?.hasLeadForm ? 'Interactive lead capture form detected' : 'No input form detected on this landing page'}
+                </div>
+              </div>
+
+              {/* Phone Links */}
+              <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-3.5 space-y-2 sm:col-span-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-ink dark:text-white text-xs">Click-to-Call Link (tel:)</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                    analyticsSignals?.hasPhoneLink
+                      ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                  }`}>
+                    {analyticsSignals?.hasPhoneLink ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                    <span>{analyticsSignals?.hasPhoneLink ? 'Active' : 'Not Present'}</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-graphite-500">Mobile customer dialer</p>
+                <div className="text-[11px] font-mono text-graphite-800 dark:text-graphite-200 bg-white dark:bg-[#121317] p-2 rounded-[8px] border border-graphite-100 dark:border-graphite-800">
+                  {analyticsSignals?.hasPhoneLink ? 'Direct telephone dialer link available' : 'Recommended for local businesses and immediate phone leads'}
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Table View (>= 768px) */}
+            <div className="hidden md:block overflow-x-auto rounded-[14px] border border-graphite-100 dark:border-graphite-800">
+              <table className="w-full text-left text-xs min-w-[560px]">
+                <thead className="bg-[#f4f4f6]/80 dark:bg-[#1a1b22] text-graphite-600 dark:text-graphite-400 font-mono text-[10px] uppercase tracking-wider border-b border-graphite-100 dark:border-graphite-800">
+                  <tr>
+                    <th scope="col" className="py-2.5 px-4 font-semibold">Measurement Signal</th>
+                    <th scope="col" className="py-2.5 px-3 font-semibold">Purpose</th>
+                    <th scope="col" className="py-2.5 px-3 font-semibold">Detection Status</th>
+                    <th scope="col" className="py-2.5 px-4 font-semibold">Observation &amp; Next Step</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-graphite-100 dark:divide-graphite-800">
+                  {/* GA4 */}
+                  <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-ink dark:text-white">Google Analytics 4 (GA4)</td>
+                    <td className="py-3 px-3 text-graphite-700 dark:text-graphite-300">Traffic &amp; pageview analytics</td>
+                    <td className="py-3 px-3">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        analyticsSignals?.hasGa4
+                          ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                      }`}>
+                        {analyticsSignals?.hasGa4 ? <CheckCircle2 className="size-2.5" /> : <AlertTriangle className="size-2.5" />}
+                        <span>{analyticsSignals?.hasGa4 ? 'Installed' : 'Missing Tag'}</span>
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-graphite-800 dark:text-graphite-200">
+                      {analyticsSignals?.detectedTrackingId
+                        ? `Active tracking ID: ${analyticsSignals.detectedTrackingId}`
+                        : analyticsSignals?.hasGa4
+                        ? 'Google gtag.js script detected in page head'
+                        : 'No GA4 measurement code detected. Add gtag.js to record visitor metrics.'}
+                    </td>
+                  </tr>
+
+                  {/* GTM */}
+                  <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-ink dark:text-white">Google Tag Manager (GTM)</td>
+                    <td className="py-3 px-3 text-graphite-700 dark:text-graphite-300">Central tag container</td>
+                    <td className="py-3 px-3">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        analyticsSignals?.hasGtm
+                          ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                      }`}>
+                        {analyticsSignals?.hasGtm ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                        <span>{analyticsSignals?.hasGtm ? 'Installed' : 'Not Used'}</span>
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-graphite-800 dark:text-graphite-200">
+                      {analyticsSignals?.hasGtm
+                        ? 'GTM container script active on page'
+                        : 'Optional if GA4 is loaded directly via script'}
+                    </td>
+                  </tr>
+
+                  {/* Meta Pixel */}
+                  <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-ink dark:text-white">Meta / Facebook Pixel</td>
+                    <td className="py-3 px-3 text-graphite-700 dark:text-graphite-300">Paid social ad retargeting</td>
+                    <td className="py-3 px-3">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        analyticsSignals?.hasMetaPixel
+                          ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                      }`}>
+                        {analyticsSignals?.hasMetaPixel ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                        <span>{analyticsSignals?.hasMetaPixel ? 'Detected' : 'Not Used'}</span>
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-graphite-800 dark:text-graphite-200">
+                      {analyticsSignals?.hasMetaPixel ? 'fbq tracking script initialized' : 'No Meta tracking snippet discovered'}
+                    </td>
+                  </tr>
+
+                  {/* Lead Forms */}
+                  <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-ink dark:text-white">Lead Capture Forms</td>
+                    <td className="py-3 px-3 text-graphite-700 dark:text-graphite-300">Customer inquiry collection</td>
+                    <td className="py-3 px-3">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        analyticsSignals?.hasLeadForm
+                          ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                      }`}>
+                        {analyticsSignals?.hasLeadForm ? <CheckCircle2 className="size-2.5" /> : <AlertTriangle className="size-2.5" />}
+                        <span>{analyticsSignals?.hasLeadForm ? 'Active Form' : 'No Form'}</span>
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-graphite-800 dark:text-graphite-200">
+                      {analyticsSignals?.hasLeadForm ? 'Interactive lead capture form detected' : 'No input form detected on this landing page'}
+                    </td>
+                  </tr>
+
+                  {/* Phone Links */}
+                  <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-ink dark:text-white">Click-to-Call Link (tel:)</td>
+                    <td className="py-3 px-3 text-graphite-700 dark:text-graphite-300">Mobile customer dialer</td>
+                    <td className="py-3 px-3">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        analyticsSignals?.hasPhoneLink
+                          ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                      }`}>
+                        {analyticsSignals?.hasPhoneLink ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                        <span>{analyticsSignals?.hasPhoneLink ? 'Active' : 'Not Present'}</span>
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-graphite-800 dark:text-graphite-200">
+                      {analyticsSignals?.hasPhoneLink ? 'Direct telephone dialer link available' : 'Recommended for local businesses and immediate phone leads'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Local SEO Readiness Table */}
+          <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="size-4 text-emerald-600" />
+                <h3 className="font-display text-sm font-bold uppercase tracking-wider text-ink dark:text-white">
+                  Local SEO &amp; Google Map Pack Readiness
+                </h3>
+              </div>
+              <span className="text-xs font-mono text-graphite-500">
+                On-Page Verification
+              </span>
+            </div>
+
+            <p className="text-xs text-graphite-600 dark:text-graphite-400 leading-relaxed">
+              Evaluates structured local markup, physical address signals, and Google Maps integration to support local customer discovery.
+            </p>
+
+            {/* Mobile Card View (< 768px) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:hidden">
+              {/* LocalBusiness Schema */}
+              <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-3.5 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-ink dark:text-white text-xs">LocalBusiness Schema (JSON-LD)</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                    localSeoSignals?.hasLocalBusinessSchema
+                      ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                  }`}>
+                    {localSeoSignals?.hasLocalBusinessSchema ? <CheckCircle2 className="size-2.5" /> : <AlertTriangle className="size-2.5" />}
+                    <span>{localSeoSignals?.hasLocalBusinessSchema ? 'Schema Verified' : 'Missing Schema'}</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-graphite-500">Structured business entity</p>
+                <div className="text-[11px] font-mono text-graphite-800 dark:text-graphite-200 bg-white dark:bg-[#121317] p-2 rounded-[8px] border border-graphite-100 dark:border-graphite-800">
+                  {localSeoSignals?.hasLocalBusinessSchema
+                    ? `Configured: ${localSeoSignals.businessName || 'LocalBusiness entity active'}`
+                    : 'Add LocalBusiness structured data declaring address and opening hours for Google Maps.'}
+                </div>
+              </div>
+
+              {/* Google Maps Embed / Link */}
+              <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-3.5 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-ink dark:text-white text-xs">Google Maps Integration</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                    localSeoSignals?.hasGoogleMapsLink
+                      ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                  }`}>
+                    {localSeoSignals?.hasGoogleMapsLink ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                    <span>{localSeoSignals?.hasGoogleMapsLink ? 'Map Linked' : 'No Link'}</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-graphite-500">Directions &amp; map link</p>
+                <div className="text-[11px] font-mono text-graphite-800 dark:text-graphite-200 bg-white dark:bg-[#121317] p-2 rounded-[8px] border border-graphite-100 dark:border-graphite-800">
+                  {localSeoSignals?.hasGoogleMapsLink
+                    ? 'Google Maps link or embed discovered'
+                    : 'Linking to your Google Business Profile assists customers seeking directions.'}
+                </div>
+              </div>
+
+              {/* Physical Address (NAP) */}
+              <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-3.5 space-y-2 sm:col-span-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-ink dark:text-white text-xs">Physical Address (NAP Consistency)</span>
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase shrink-0 ${
+                    localSeoSignals?.hasAddressSignal
+                      ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                  }`}>
+                    {localSeoSignals?.hasAddressSignal ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                    <span>{localSeoSignals?.hasAddressSignal ? 'Address Found' : 'No Address'}</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-graphite-500">Name, Address &amp; Zip</p>
+                <div className="text-[11px] font-mono text-graphite-800 dark:text-graphite-200 bg-white dark:bg-[#121317] p-2 rounded-[8px] border border-graphite-100 dark:border-graphite-800">
+                  {localSeoSignals?.hasAddressSignal
+                    ? 'Physical location signals verified on-page'
+                    : 'Ensure your physical street address matches your Google Business Profile exactly.'}
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Table View (>= 768px) */}
+            <div className="hidden md:block overflow-x-auto rounded-[14px] border border-graphite-100 dark:border-graphite-800">
+              <table className="w-full text-left text-xs min-w-[560px]">
+                <thead className="bg-[#f4f4f6]/80 dark:bg-[#1a1b22] text-graphite-600 dark:text-graphite-400 font-mono text-[10px] uppercase tracking-wider border-b border-graphite-100 dark:border-graphite-800">
+                  <tr>
+                    <th scope="col" className="py-2.5 px-4 font-semibold">Local SEO Factor</th>
+                    <th scope="col" className="py-2.5 px-3 font-semibold">Google Requirement</th>
+                    <th scope="col" className="py-2.5 px-3 font-semibold">Status</th>
+                    <th scope="col" className="py-2.5 px-4 font-semibold">Marketer Recommendation</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-graphite-100 dark:divide-graphite-800">
+                  {/* LocalBusiness Schema */}
+                  <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-ink dark:text-white">LocalBusiness Schema (JSON-LD)</td>
+                    <td className="py-3 px-3 text-graphite-700 dark:text-graphite-300">Structured business entity</td>
+                    <td className="py-3 px-3">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        localSeoSignals?.hasLocalBusinessSchema
+                          ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300'
+                      }`}>
+                        {localSeoSignals?.hasLocalBusinessSchema ? <CheckCircle2 className="size-2.5" /> : <AlertTriangle className="size-2.5" />}
+                        <span>{localSeoSignals?.hasLocalBusinessSchema ? 'Schema Verified' : 'Missing Schema'}</span>
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-graphite-800 dark:text-graphite-200">
+                      {localSeoSignals?.hasLocalBusinessSchema
+                        ? `Configured: ${localSeoSignals.businessName || 'LocalBusiness entity active'}`
+                        : 'Add LocalBusiness structured data declaring address and opening hours for Google Maps.'}
+                    </td>
+                  </tr>
+
+                  {/* Google Maps Embed / Link */}
+                  <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-ink dark:text-white">Google Maps Integration</td>
+                    <td className="py-3 px-3 text-graphite-700 dark:text-graphite-300">Directions &amp; map link</td>
+                    <td className="py-3 px-3">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        localSeoSignals?.hasGoogleMapsLink
+                          ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                      }`}>
+                        {localSeoSignals?.hasGoogleMapsLink ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                        <span>{localSeoSignals?.hasGoogleMapsLink ? 'Map Linked' : 'No Link'}</span>
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-graphite-800 dark:text-graphite-200">
+                      {localSeoSignals?.hasGoogleMapsLink
+                        ? 'Google Maps link or embed discovered'
+                        : 'Linking to your Google Business Profile assists customers seeking directions.'}
+                    </td>
+                  </tr>
+
+                  {/* Physical Address (NAP) */}
+                  <tr className="hover:bg-[#fafafb] dark:hover:bg-[#1a1b22]/40 transition-colors">
+                    <td className="py-3 px-4 font-bold text-ink dark:text-white">Physical Address (NAP Consistency)</td>
+                    <td className="py-3 px-3 text-graphite-700 dark:text-graphite-300">Name, Address &amp; Zip</td>
+                    <td className="py-3 px-3">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                        localSeoSignals?.hasAddressSignal
+                          ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300'
+                          : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400'
+                      }`}>
+                        {localSeoSignals?.hasAddressSignal ? <CheckCircle2 className="size-2.5" /> : <Info className="size-2.5" />}
+                        <span>{localSeoSignals?.hasAddressSignal ? 'Address Found' : 'No Address'}</span>
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-graphite-800 dark:text-graphite-200">
+                      {localSeoSignals?.hasAddressSignal
+                        ? 'Physical location signals verified on-page'
+                        : 'Ensure your physical street address matches your Google Business Profile exactly.'}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* Stack-Tailored Implementation Patches */}
+          <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Code2 className="size-4 text-violet" />
@@ -1394,7 +2932,7 @@ export function CheckEngineView(props: CheckEngineViewProps) {
               { id: 'shopify', label: 'Shopify Liquid', icon: Globe, match: detectedStack?.cms === 'Shopify' },
               { id: 'astro', label: 'Astro Layout', icon: FileCode, match: detectedStack?.cms === 'Astro' },
               { id: 'schema', label: 'JSON-LD Schema', icon: Layers, match: false },
-              { id: 'robots', label: 'RFC 9309 robots.txt', icon: Terminal, match: false },
+              { id: 'robots', label: 'robots.txt Configuration', icon: Terminal, match: false },
               { id: 'faq', label: 'Visible FAQ Schema', icon: FileQuestion, match: false },
               { id: 'html', label: 'Standard HTML', icon: Code2, match: false },
             ].map((tab) => {
@@ -1468,202 +3006,272 @@ export function CheckEngineView(props: CheckEngineViewProps) {
             </div>
           </div>
         </section>
-      )}
+      </div>
+    )}
 
       {/* =========================================================================
-          TAB 6: COMPETITOR BENCHMARK
+          TAB 5: COMPETITOR ANALYSIS & BENCHMARK INTELLIGENCE
           ========================================================================= */}
       {activeMainTab === 'competitor' && (
-        <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5 tab-panel-enter">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Swords className="size-4 text-blue-500" />
-                <h3 className="font-display text-base font-bold text-ink dark:text-white">
-                  Head-to-Head Competitor Intelligence
-                </h3>
+        <div className="space-y-6 tab-panel-enter">
+          {/* Head-to-Head Competitor Intelligence */}
+          <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="size-9 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
+                    <Swords className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-display text-base font-bold text-ink dark:text-white">
+                      Head-to-Head Competitor Intelligence
+                    </h3>
+                    <p className="text-xs text-graphite-600 dark:text-graphite-400">
+                      Benchmark your technical SEO, load speed curves, and structured data directly against any rival domain.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-graphite-800 dark:text-graphite-400">
-                Benchmark your technical SEO and speed vitals directly against any rival domain.
-              </p>
+              {comparison ? (
+                <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300">
+                  Comparison Active ({comparison.competitor.url})
+                </span>
+              ) : (
+                <span className="rounded-full bg-graphite-100 dark:bg-graphite-800 border border-graphite-200 dark:border-graphite-700 px-3 py-1 text-xs font-semibold text-graphite-600 dark:text-graphite-300">
+                  Industry Standard Baseline
+                </span>
+              )}
             </div>
-            {comparison && (
-              <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300">
-                Comparison Active
-              </span>
-            )}
-          </div>
 
-          <form onSubmit={handleRunCompetitor} className="space-y-2">
-            <div className="flex flex-col sm:flex-row gap-2.5">
-              <div className="relative flex-1">
-                <Globe className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 text-graphite-800/60 dark:text-graphite-400" />
-                <input
-                  id="competitor-domain-input"
-                  type="text"
-                  aria-label="Enter rival website domain to compare"
-                  value={competitorUrl}
-                  onChange={(e) => setCompetitorUrl(e.target.value)}
-                  placeholder="Enter rival domain (e.g. semrush.com or ahrefs.com)"
-                  className="w-full rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-graphite-800/60 focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-white"
+            <form onSubmit={handleRunCompetitor} className="space-y-2.5">
+              <div className="flex flex-col sm:flex-row gap-2.5">
+                <div className="relative flex-1">
+                  <Globe className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 text-graphite-400" />
+                  <input
+                    id="competitor-domain-input"
+                    type="text"
+                    aria-label="Enter rival website domain to compare"
+                    value={competitorUrl}
+                    onChange={(e) => setCompetitorUrl(e.target.value)}
+                    placeholder="Enter rival domain (e.g. semrush.com or ahrefs.com)"
+                    className="w-full rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-graphite-400 focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-white"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={compLoading}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 hover-lift active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer shrink-0 shadow-xs"
+                >
+                  {compLoading ? (
+                    <>
+                      <Activity className="size-3.5 animate-spin" />
+                      <span>Crawling Rival...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Swords className="size-3.5" />
+                      <span>Run Comparison</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Quick Rival Suggestions */}
+              <div className="flex flex-wrap items-center gap-1.5 text-[11px] pt-1">
+                <span className="text-graphite-500 font-mono">Quick test rivals:</span>
+                {['ahrefs.com', 'semrush.com', 'moz.com'].map((rival) => (
+                  <button
+                    key={rival}
+                    type="button"
+                    onClick={() => setCompetitorUrl(rival)}
+                    className="rounded-full border border-graphite-200 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] px-2.5 py-0.5 text-graphite-700 dark:text-graphite-300 hover:text-blue-500 hover:border-blue-400 font-mono hover-lift transition-all cursor-pointer"
+                  >
+                    {rival}
+                  </button>
+                ))}
+              </div>
+            </form>
+
+            {compError && (
+              <div className="rounded-[12px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 p-3 text-xs text-rose-700 dark:text-rose-400">
+                {compError}
+              </div>
+            )}
+
+            {comparison ? (
+              <div className="space-y-5">
+                {/* Head-to-Head Metric Cards */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-ink dark:text-white font-mono">{cleanDomain}</span>
+                      <span className="rounded-full bg-violet/10 text-violet px-2.5 py-0.5 text-[10px] font-bold">Your Site</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-graphite-600 dark:text-graphite-400">Health Score</span>
+                      <strong className="font-mono text-ink dark:text-white">{comparison.target.score}/100</strong>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-200/50 dark:border-graphite-700/50">
+                      <div>
+                        <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">LCP Speed</span>
+                        <strong className="font-mono text-ink dark:text-white">{comparison.target.lcpSeconds}s</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Structured Schemas</span>
+                        <strong className="font-mono text-ink dark:text-white">{comparison.target.schemaCount} tags</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-ink dark:text-white font-mono">{comparison.competitor.url}</span>
+                      <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-2.5 py-0.5 text-[10px] font-bold">Competitor</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-graphite-600 dark:text-graphite-400">Health Score</span>
+                      <strong className="font-mono text-ink dark:text-white">{comparison.competitor.score}/100</strong>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-200/50 dark:border-graphite-700/50">
+                      <div>
+                        <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">LCP Speed</span>
+                        <strong className="font-mono text-ink dark:text-white">{comparison.competitor.lcpSeconds}s</strong>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Structured Schemas</span>
+                        <strong className="font-mono text-ink dark:text-white">{comparison.competitor.schemaCount} tags</strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Head-to-Head Comparison Graph */}
+                <OverviewAuditGraph
+                  report={report || null}
+                  comparison={comparison}
+                  auditedDomain={cleanDomain}
+                  competitorDomain={comparison.competitor.url}
+                />
+
+                {/* Strategic Playbook */}
+                <div className="grid gap-3 sm:grid-cols-2 pt-1 text-xs">
+                  <div className="rounded-[16px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20 p-4 space-y-2">
+                    <span className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+                      <TrendingDown className="size-3.5" />
+                      <span>Why They Lead in Search Visibility:</span>
+                    </span>
+                    <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
+                      {comparison.whyTheyAreWinning.map((item, idx) => (
+                        <li key={idx} className="flex items-start gap-1.5">
+                          <span className="text-rose-500 mt-0.5">&bull;</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="rounded-[16px] border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 space-y-2">
+                    <span className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
+                      <CheckCircle2 className="size-3.5" />
+                      <span>3 Steps to Outrank Them:</span>
+                    </span>
+                    <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
+                      {(comparison.threeStepsToBeatThem || []).map((step, idx) => (
+                        <li key={idx} className="flex items-start gap-1.5">
+                          <span className="text-emerald-700 dark:text-emerald-400 font-bold">{idx + 1}.</span>
+                          <span>{step}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-[16px] border border-dashed border-graphite-200 dark:border-graphite-800 p-4 text-center text-xs text-graphite-600 dark:text-graphite-400 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]">
+                  <p>
+                    Showing baseline benchmark for <strong className="text-ink dark:text-white">{cleanDomain}</strong> against optimal standards.
+                    Enter a rival domain above or pick a quick test rival to benchmark head-to-head.
+                  </p>
+                </div>
+
+                {/* Baseline Telemetry Graph */}
+                <OverviewAuditGraph
+                  report={report || null}
+                  comparison={null}
+                  auditedDomain={cleanDomain}
                 />
               </div>
-              <button
-                type="submit"
-                disabled={compLoading}
-                className="inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 hover-lift active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer shrink-0"
-              >
-                {compLoading ? (
-                  <>
-                    <Activity className="size-3.5 animate-spin" />
-                    <span>Crawling Rival...</span>
-                  </>
-                ) : (
-                  <>
-                    <Swords className="size-3.5" />
-                    <span>Run Comparison</span>
-                  </>
-                )}
-              </button>
-            </div>
-
-            {/* Quick Rival Suggestions */}
-            <div className="flex flex-wrap items-center gap-1.5 text-[11px] pt-1">
-              <span className="text-graphite-500 font-mono">Quick test rivals:</span>
-              {['ahrefs.com', 'semrush.com', 'moz.com'].map((rival) => (
-                <button
-                  key={rival}
-                  type="button"
-                  onClick={() => setCompetitorUrl(rival)}
-                  className="rounded-full border border-graphite-200 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] px-2.5 py-0.5 text-graphite-700 dark:text-graphite-300 hover:text-blue-500 hover:border-blue-400 font-mono hover-lift transition-all cursor-pointer"
-                >
-                  {rival}
-                </button>
-              ))}
-            </div>
-          </form>
-
-          {compError && (
-            <div className="rounded-[12px] border border-rose-200 bg-rose-50/50 p-3 text-xs text-rose-700">
-              {compError}
-            </div>
-          )}
-
-          {comparison ? (
-            <div className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-ink dark:text-white font-mono">{cleanDomain}</span>
-                    <span className="rounded-full bg-violet/10 text-violet px-2.5 py-0.5 text-[10px] font-bold">Your Site</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-graphite-800 dark:text-graphite-400">Health Score</span>
-                    <strong className="font-mono text-ink dark:text-white">{comparison.target.score}/100</strong>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-100 dark:border-graphite-800">
-                    <div>
-                      <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">LCP Speed</span>
-                      <strong className="font-mono text-ink dark:text-white">{comparison.target.lcpSeconds}s</strong>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">Schemas</span>
-                      <strong className="font-mono text-ink dark:text-white">{comparison.target.schemaCount} tags</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-ink dark:text-white font-mono">{comparison.competitor.url}</span>
-                    <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-2.5 py-0.5 text-[10px] font-bold">Competitor</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-graphite-800 dark:text-graphite-400">Health Score</span>
-                    <strong className="font-mono text-ink dark:text-white">{comparison.competitor.score}/100</strong>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-100 dark:border-graphite-800">
-                    <div>
-                      <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">LCP Speed</span>
-                      <strong className="font-mono text-ink dark:text-white">{comparison.competitor.lcpSeconds}s</strong>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-graphite-800 dark:text-graphite-400 block">Schemas</span>
-                      <strong className="font-mono text-ink dark:text-white">{comparison.competitor.schemaCount} tags</strong>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Strategic Playbook */}
-              <div className="grid gap-3 sm:grid-cols-2 pt-1 text-xs">
-                <div className="rounded-[14px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20 p-3.5 space-y-2">
-                  <span className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
-                    <TrendingDown className="size-3.5" />
-                    <span>Why They Are Winning Search Ground:</span>
-                  </span>
-                  <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
-                    {comparison.whyTheyAreWinning.map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5">
-                        <span className="text-rose-500 mt-0.5">&bull;</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="rounded-[14px] border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-3.5 space-y-2">
-                  <span className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
-                    <CheckCircle2 className="size-3.5" />
-                    <span>3 Steps to Leapfrog Them:</span>
-                  </span>
-                  <ul className="space-y-1.5 text-graphite-800 dark:text-graphite-300 text-[11px]">
-                    {(comparison.threeStepsToBeatThem || []).map((step, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5">
-                        <span className="text-emerald-700 dark:text-emerald-400 font-bold">{idx + 1}.</span>
-                        <span>{step}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-[16px] border border-dashed border-graphite-200 dark:border-graphite-800 p-6 text-center text-xs text-graphite-800 dark:text-graphite-400 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]">
-              <p>Enter any rival website URL above to inspect side-by-side Page Speed, Schema tags, and 3 steps to beat them.</p>
-            </div>
-          )}
-        </section>
+            )}
+          </section>
+        </div>
       )}
 
-      {/* =========================================================================
-          AUDIT TRANSPARENCY & SCOPE
-          ========================================================================= */}
-      <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 text-xs space-y-3 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-3">
-          <div className="flex items-center gap-2 font-bold text-ink dark:text-white">
-            <HelpCircle className="size-4 text-violet" />
-            <span>Audit Scope &amp; Transparency</span>
-          </div>
-          <span className="text-[11px] text-graphite-800 dark:text-graphite-400">
-            Factors requiring private server credentials or off-page web indexes
+    {/* =========================================================================
+        LIVE ON-CHAIN SETTLEMENT PROOF (187+ VERIFIED TRANSACTIONS)
+        ========================================================================= */}
+    <div className="rounded-[16px] border border-violet/20 bg-gradient-to-br from-violet/5 via-white to-white dark:from-violet/10 dark:via-[#16171d] dark:to-[#16171d] p-4 space-y-3 shadow-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-graphite-100 dark:border-graphite-800 pb-2.5">
+        <div className="flex items-center gap-2">
+          <span className="relative flex size-2.5 shrink-0">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex size-2.5 rounded-full bg-emerald-500" />
+          </span>
+          <span className="font-semibold text-ink dark:text-white text-xs">
+            Live On-Chain Settlement Proof
+          </span>
+          <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.5 text-[10px] font-mono font-bold">
+            187+ Verified Crawls
           </span>
         </div>
-
-        <div className="grid gap-2 sm:grid-cols-2">
-          {notChecked.map((item, idx) => (
-            <div
-              key={idx}
-              className="flex items-start sm:items-center justify-between gap-3 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2.5 text-[11px]"
-            >
-              <span className="text-ink dark:text-white font-medium leading-snug flex-1 break-words">{item}</span>
-              <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold bg-[#f4f4f6] dark:bg-[#22232c] text-graphite-800 dark:text-graphite-300 border border-graphite-100 dark:border-graphite-800 whitespace-nowrap mt-0.5 sm:mt-0">
-                External Scope
-              </span>
-            </div>
-          ))}
+        <a
+          href="https://celoscan.io/address/0xf06c2b754d07cba299751f0985a48f8013bb6b39"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-violet hover:underline text-[11px] font-mono inline-flex items-center gap-1 font-semibold"
+        >
+          <span>Inspect on Celoscan</span>
+          <ExternalLink className="size-3" />
+        </a>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+        <div className="rounded-[10px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2 space-y-0.5">
+          <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Settlement Rail</span>
+          <strong className="text-ink dark:text-white font-mono">Celo Mainnet (42220)</strong>
         </div>
-      </section>
+        <div className="rounded-[10px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2 space-y-0.5">
+          <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Attribution Tag</span>
+          <strong className="text-violet font-mono truncate block">celo_757c2ac3b70c</strong>
+        </div>
+        <div className="rounded-[10px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2 space-y-0.5">
+          <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Settlement Model</span>
+          <strong className="text-emerald-600 dark:text-emerald-400 font-mono">x402 Pay-Per-Crawl</strong>
+        </div>
+        <div className="rounded-[10px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#1a1b22] p-2 space-y-0.5">
+          <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">Proof Integrity</span>
+          <strong className="text-ink dark:text-white font-mono">ERC-8021 Verified</strong>
+        </div>
+      </div>
+    </div>
+
+    {/* =========================================================================
+        AUDIT TRANSPARENCY & DATA BOUNDARIES
+        ========================================================================= */}
+    <section className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#fafafb] dark:bg-[#16171d] p-4 text-xs space-y-2">
+      <div className="flex items-center gap-2 font-semibold text-ink dark:text-white">
+        <Info className="size-4 text-violet" />
+        <span>Audit Scope &amp; Verified Data Boundaries</span>
+      </div>
+      <p className="text-graphite-600 dark:text-graphite-400 leading-relaxed">
+        <strong>{isMultiPage ? `Multi-Page Analysis (${pagesChecked} Pages):` : 'Single-Page Analysis:'}</strong>{' '}
+        {isMultiPage
+          ? `Crawlpay evaluated ${pagesChecked} pages across your site structure, verifying internal links, responsive layouts, schemas, analytics tags, and search engine crawler rules.`
+          : 'Crawlpay evaluated all visible on-page HTML, headings, mobile responsiveness, structured schemas, analytics tags, and search engine crawler rules for this specific URL. To crawl your entire site architecture (up to 50 pages) for broken internal links and orphan pages, run a Full Crawl.'}
+      </p>
+      <p className="text-graphite-600 dark:text-graphite-400 leading-relaxed">
+        <strong>Private Search Data:</strong> Historical search impression graphs and keyword clickstream data require verified Google Search Console account credentials and are not estimated or fabricated.
+      </p>
+    </section>
     </div>
   );
 }

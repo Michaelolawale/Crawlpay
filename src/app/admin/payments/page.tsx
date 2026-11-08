@@ -2,12 +2,22 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CreditCard, ExternalLink, RefreshCw, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { CreditCard, ExternalLink, RefreshCw, CheckCircle2, Clock, AlertCircle, FileText, Globe } from 'lucide-react';
 import { PaymentRecord } from '../../../services/db';
 import { getAdminToken } from '../../../utils/adminClient';
 
+interface EnrichedPaymentRecord extends PaymentRecord {
+  job?: {
+    id: string;
+    url: string;
+    depth: 'quick' | 'full';
+    status: 'queued' | 'running' | 'done' | 'failed';
+    report_id?: string;
+  } | null;
+}
+
 export default function AdminPaymentsPage() {
-  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [payments, setPayments] = useState<EnrichedPaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPayments = async () => {
@@ -66,17 +76,18 @@ export default function AdminPaymentsPage() {
               <tr>
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Payer Wallet</th>
+                <th className="px-4 py-3">Target Domain</th>
                 <th className="px-4 py-3">Amount</th>
                 <th className="px-4 py-3">Token</th>
-                <th className="px-4 py-3">Chain ID</th>
                 <th className="px-4 py-3">Transaction Hash</th>
-                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Payment</th>
+                <th className="px-4 py-3 text-right">Audit Report</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-graphite-100 dark:divide-graphite-800">
               {payments.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-graphite-800 dark:text-graphite-400">
+                  <td colSpan={8} className="px-4 py-8 text-center text-graphite-800 dark:text-graphite-400">
                     No payment records logged yet.
                   </td>
                 </tr>
@@ -89,11 +100,30 @@ export default function AdminPaymentsPage() {
                     <td className="px-4 py-3 font-mono font-semibold text-ink dark:text-white whitespace-nowrap">
                       {`${p.wallet.slice(0, 8)}...${p.wallet.slice(-6)}`}
                     </td>
+                    <td className="px-4 py-3 max-w-[200px]">
+                      {p.job?.url ? (
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={p.job.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-mono font-medium text-ink dark:text-white hover:text-violet hover:underline truncate inline-flex items-center gap-1"
+                          >
+                            <span>{p.job.url.replace(/^https?:\/\//, '')}</span>
+                            <ExternalLink className="size-2.5 opacity-60 shrink-0" />
+                          </a>
+                          <span className="text-[10px] uppercase font-bold text-graphite-400 font-mono">
+                            ({p.job.depth})
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-graphite-400 text-xs italic">Unassigned</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 font-bold font-mono text-ink dark:text-white">
                       ${p.amount}
                     </td>
                     <td className="px-4 py-3 font-semibold text-ink dark:text-white">{p.token}</td>
-                    <td className="px-4 py-3 font-mono text-graphite-800 dark:text-graphite-400">{p.chain_id}</td>
                     <td className="px-4 py-3 font-mono">
                       <a
                         href={`https://celoscan.io/tx/${p.tx_hash}`}
@@ -110,6 +140,29 @@ export default function AdminPaymentsPage() {
                         <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
                         <span>{p.status}</span>
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      {p.job?.report_id ? (
+                        <Link
+                          href={`/admin/reports/${p.job.report_id}?from=payments`}
+                          className="inline-flex items-center gap-1 rounded-[32px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] px-2.5 py-1 text-[11px] font-semibold text-ink dark:text-white hover:text-violet transition-colors shadow-sm"
+                        >
+                          <FileText className="size-3 text-emerald-600 dark:text-emerald-400" />
+                          <span>View Report</span>
+                        </Link>
+                      ) : p.job?.status === 'running' ? (
+                        <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 text-[11px] font-semibold animate-pulse">
+                          <RefreshCw className="size-3 animate-spin" />
+                          <span>Crawling</span>
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/admin/jobs`}
+                          className="inline-flex items-center gap-1 text-violet hover:underline text-[11px] font-medium"
+                        >
+                          <span>Manage Job →</span>
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))

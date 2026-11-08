@@ -14,7 +14,7 @@ export async function GET() {
   } catch (err: any) {
     return NextResponse.json(
       {
-        quick_price_usd: '0.25',
+        quick_price_usd: '0.00',
         full_price_usd: '0.50',
         crawl_timeout_ms: 7000,
         max_pages_full: 50,

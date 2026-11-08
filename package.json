@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postinstall": "node scripts/patch-next.js",
     "start": "next start",
     "lint": "next lint",
     "mcp": "tsx scripts/mcp-server.ts",
+    "test:regression": "tsx scripts/test-regression-suite.ts",
     "test:api": "tsx scripts/test-endpoints.ts",
     "test:mcp": "tsx scripts/test-mcp-x402.ts",
     "ops:status": "tsx scripts/mainnet-ops.ts status",

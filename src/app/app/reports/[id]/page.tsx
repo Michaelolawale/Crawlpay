@@ -8,10 +8,7 @@ import {
   Share2,
   Download,
   Printer,
-  Copy,
   Check,
-  ExternalLink,
-  ShieldCheck,
   Calendar,
   Globe,
   Loader2,
@@ -20,6 +17,7 @@ import {
 } from 'lucide-react';
 import { CheckEngineView } from '@/components/CheckEngineView';
 import { FullAuditReport } from '@/types/audit';
+import { focusRing } from '@/components/SiteHeader';
 
 export default function SingleReportPage() {
   const params = useParams();
@@ -30,6 +28,14 @@ export default function SingleReportPage() {
   const [loading, setLoading] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (report?.targetUrl) {
+      document.title = `${report.targetUrl} — Audit report | CrawlPay`;
+    } else {
+      document.title = 'Audit report | CrawlPay';
+    }
+  }, [report]);
 
   useEffect(() => {
     if (!reportId) return;
@@ -66,7 +72,7 @@ export default function SingleReportPage() {
             setReport(exampleData);
             setLoading(false);
           })
-          .catch((err) => {
+          .catch(() => {
             setErrorMsg('Unable to locate the specified audit report.');
             setLoading(false);
           });
@@ -99,97 +105,121 @@ export default function SingleReportPage() {
   if (loading) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-3">
-        <Loader2 className="size-8 animate-spin text-ink" />
-        <p className="text-sm font-medium text-graphite-800">Loading audit report...</p>
+        <Loader2 className="size-8 animate-spin text-ink dark:text-white" />
+        <p className="text-[14px] font-medium text-graphite-700 dark:text-graphite-300">Loading audit report...</p>
       </div>
     );
   }
 
   if (errorMsg || !report) {
     return (
-      <div className="mx-auto max-w-lg rounded-[20px] border border-rose-200 bg-rose-50/50 p-8 text-center space-y-4">
-        <AlertCircle className="mx-auto size-8 text-rose-600" />
-        <h2 className="text-base font-bold text-ink">Report Not Found</h2>
-        <p className="text-xs text-graphite-800">
+      <div className="mx-auto max-w-lg rounded-[20px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 p-8 text-center space-y-4">
+        <AlertCircle className="mx-auto size-8 text-rose-600 dark:text-rose-400" />
+        <h2 className="text-[18px] font-semibold text-ink dark:text-white">Report not found</h2>
+        <p className="text-[14px] text-graphite-700 dark:text-graphite-300">
           {errorMsg || 'The requested audit report could not be found or has expired.'}
         </p>
         <Link
           href="/app/reports"
-          className="inline-flex h-[42px] items-center gap-1.5 rounded-[48px] bg-ink px-5 text-xs font-semibold text-white hover:opacity-90"
+          className={`inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 py-2.5 text-[14px] font-medium text-white dark:text-ink hover:opacity-90 ${focusRing}`}
         >
-          <ArrowLeft className="size-3.5" />
-          <span>Back to Reports</span>
+          <ArrowLeft className="size-4" />
+          <span>Back to reports</span>
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="w-full space-y-6 animate-in fade-in duration-300">
+    <div className="w-full space-y-6 animate-fade-in">
       {/* Top Action Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-graphite-100 pb-6">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between border-b border-graphite-100 dark:border-graphite-800 pb-5">
+        <div className="flex items-start sm:items-center gap-3 min-w-0">
           <button
             type="button"
             onClick={() => router.push('/app/reports')}
-            className="rounded-[12px] border border-graphite-100 bg-white p-2 text-graphite-800 hover:bg-[#f4f4f6] hover:text-ink transition-colors shadow-sm"
-            title="Back to Reports"
+            className={`inline-flex items-center gap-1.5 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3 py-1.5 sm:px-3.5 text-xs sm:text-[13px] font-medium text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors shadow-xs cursor-pointer shrink-0 mt-0.5 sm:mt-0 ${focusRing}`}
+            title="Back to all reports"
+            aria-label="Back to all reports"
           >
-            <ArrowLeft className="size-4" />
+            <ArrowLeft className="size-3.5" />
+            <span className="hidden sm:inline">All reports</span>
           </button>
+
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
               <Globe className="size-4 text-violet shrink-0" />
-              <h1 className="font-mono text-base sm:text-lg font-bold text-ink truncate">{report.targetUrl}</h1>
+              <h1 className="font-sans text-[17px] sm:text-[22px] font-bold text-ink dark:text-white break-all sm:truncate">
+                {report.targetUrl}
+              </h1>
+              {(() => {
+                const isDeepCrawl = report.isFreeTier === false || (report.pagesChecked && report.pagesChecked > 1) || Boolean((report as any).mode === 'full');
+                return (
+                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-mono font-medium shrink-0 ${
+                    isDeepCrawl
+                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/60'
+                      : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-700 dark:text-graphite-300 border border-graphite-200 dark:border-graphite-700'
+                  }`}>
+                    {isDeepCrawl ? `Deep crawl (${report.pagesChecked || 50} pages)` : 'Quick audit (1 page)'}
+                  </span>
+                );
+              })()}
             </div>
-            <p className="text-xs text-graphite-800 flex flex-wrap items-center gap-2 mt-0.5">
-              <span className="flex items-center gap-1">
-                <Calendar className="size-3 shrink-0" />
+            <div className="text-xs text-graphite-600 dark:text-graphite-400 flex flex-wrap items-center gap-2 mt-1">
+              <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                <Calendar className="size-3.5 shrink-0 text-graphite-400" />
                 <span>{new Date(report.auditTimestamp).toLocaleString()}</span>
               </span>
-              <span>•</span>
-              <span className="font-mono text-[11px] text-graphite-800">ID: {reportId}</span>
-            </p>
+              <span className="font-mono text-[11px] text-graphite-500 dark:text-graphite-400 rounded-md bg-graphite-100 dark:bg-graphite-800/80 px-2 py-0.5 border border-graphite-200/50 dark:border-graphite-700/50 whitespace-nowrap">
+                ID: {reportId}
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Share and Export Actions */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full lg:w-auto shrink-0 pt-2 lg:pt-0 no-print">
           <button
             type="button"
             onClick={copyShareLink}
-            className="inline-flex h-[38px] items-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] px-3.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#20212b] transition-colors shadow-sm cursor-pointer"
+            className={`inline-flex items-center justify-center gap-1.5 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3.5 py-2 text-xs sm:text-[13px] font-medium text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors shadow-xs cursor-pointer w-full sm:w-auto ${focusRing}`}
           >
-            {copiedLink ? <Check className="size-3.5 text-emerald-600" /> : <Share2 className="size-3.5 text-graphite-800 dark:text-graphite-400" />}
-            <span>{copiedLink ? 'Link Copied!' : 'Share Link'}</span>
+            {copiedLink ? <Check className="size-3.5 text-emerald-600 dark:text-emerald-400" /> : <Share2 className="size-3.5 text-graphite-500" />}
+            <span>{copiedLink ? 'Link copied' : 'Share link'}</span>
           </button>
 
           <button
             type="button"
             onClick={exportJson}
-            className="inline-flex h-[38px] items-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] px-3.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#20212b] transition-colors shadow-sm cursor-pointer"
+            className={`inline-flex items-center justify-center gap-1.5 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3.5 py-2 text-xs sm:text-[13px] font-medium text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors shadow-xs cursor-pointer w-full sm:w-auto ${focusRing}`}
           >
-            <Download className="size-3.5 text-graphite-800 dark:text-graphite-400" />
+            <Download className="size-3.5 text-graphite-500" />
             <span>Export JSON</span>
           </button>
 
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex h-[38px] items-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] px-3.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#20212b] transition-colors shadow-sm cursor-pointer"
+            className={`inline-flex items-center justify-center gap-1.5 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3.5 py-2 text-xs sm:text-[13px] font-medium text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors shadow-xs cursor-pointer w-full sm:w-auto ${focusRing}`}
           >
-            <Printer className="size-3.5 text-graphite-800 dark:text-graphite-400" />
+            <Printer className="size-3.5 text-graphite-500" />
             <span>Print / PDF</span>
           </button>
 
-          <Link
-            href={`/app/audit?target=${encodeURIComponent(report.targetUrl)}`}
-            className="inline-flex h-[38px] items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-4 text-xs font-semibold text-white dark:text-ink hover:opacity-90 transition-opacity shadow-sm cursor-pointer shrink-0"
-            title="Deploy fixes and re-audit on Celo Mainnet ($0.25)"
-          >
-            <RotateCcw className="size-3.5" />
-            <span>Re-audit Live ($0.25)</span>
-          </Link>
+          {(() => {
+            const isDeepCrawl = report.isFreeTier === false || (report.pagesChecked && report.pagesChecked > 1) || Boolean((report as any).mode === 'full');
+            const rerunMode = isDeepCrawl ? 'full' : 'quick';
+            return (
+              <Link
+                href={`/app/audit?target=${encodeURIComponent(report.targetUrl)}&mode=${rerunMode}`}
+                className={`inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-4 py-2 text-xs sm:text-[13px] font-semibold text-white dark:text-ink hover:opacity-90 transition-opacity shadow-xs cursor-pointer w-full sm:w-auto shrink-0 ${focusRing}`}
+                title={isDeepCrawl ? 'Re-run deep crawl ($0.50 in USDT)' : 'Re-run free quick audit'}
+              >
+                <RotateCcw className="size-3.5" />
+                <span>{isDeepCrawl ? 'Run again ($0.50)' : 'Run again'}</span>
+              </Link>
+            );
+          })()}
         </div>
       </div>
 

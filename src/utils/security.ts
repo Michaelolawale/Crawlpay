@@ -185,66 +185,103 @@ class SlidingWindowRateLimiter {
 export const auditRateLimiter = new SlidingWindowRateLimiter(20, 10); // 20 audits per 10 minutes per IP
 
 /**
- * Hard Crawl caps:
- * Streams response up to maxBytes, aborting if exceeded.
+ * Hard Crawl caps & SSRF-Hardened HTML Fetcher:
+ * - Checks DNS and private IP ranges before initial request.
+ * - Manually follows redirects up to maxRedirects, verifying every hop against SSRF / DNS rebinding.
+ * - Streams response up to maxBytes (default 2MB), aborting if exceeded.
+ * - Enforces timeoutMs (default 7000ms).
  */
 export async function safeFetchHtml(
   url: string,
   maxBytes: number = 2 * 1024 * 1024,
-  timeoutMs: number = 7000
-): Promise<string> {
+  timeoutMs: number = 7000,
+  maxRedirects: number = 5
+): Promise<{ html: string; finalUrl: string; status: number; redirectChain: string[] }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+  let currentUrl = url;
+  const redirectChain: string[] = [];
+  let redirectCount = 0;
+
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; CrawlPayBot/1.0; +https://github.com/Michaelolawale/Crawlpay)',
-        Accept: 'text/html,application/xhtml+xml,application/xml,text/xml;q=0.9,*/*;q=0.8',
-      },
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status} ${res.statusText}`);
-    }
-
-    // Check content-type header
-    const contentType = res.headers.get('content-type') || '';
-    if (!contentType.includes('text/html') && !contentType.includes('application/xhtml') && !contentType.includes('xml')) {
-      // Still accept if empty or text, but block binary/media
-      if (contentType.includes('image/') || contentType.includes('video/') || contentType.includes('application/zip')) {
-        throw new Error(`Invalid content-type: ${contentType}`);
-      }
-    }
-
-    // Stream and check byte length cap
-    if (!res.body) {
-      return await res.text();
-    }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let accumulatedHtml = '';
-    let totalBytes = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      totalBytes += value.byteLength;
-      if (totalBytes > maxBytes) {
-        reader.cancel();
-        throw new Error(`Response exceeded maximum crawl size cap of ${Math.round(maxBytes / 1024 / 1024)}MB`);
+    while (redirectCount <= maxRedirects) {
+      // Validate IP and DNS before every hop
+      const check = await validateAndNormalizeTargetUrl(currentUrl);
+      if (!check.valid || !check.normalizedUrl) {
+        throw new Error(check.error || 'Target URL blocked by SSRF protection');
       }
 
-      accumulatedHtml += decoder.decode(value, { stream: true });
+      const res = await fetch(currentUrl, {
+        signal: controller.signal,
+        redirect: 'manual',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; CrawlPayBot/1.0; +https://crawlpay.vercel.app/bot)',
+          Accept: 'text/html,application/xhtml+xml,application/xml,text/xml;q=0.9,*/*;q=0.8',
+        },
+      });
+
+      const status = res.status;
+
+      // Handle redirect
+      if ([301, 302, 303, 307, 308].includes(status)) {
+        const location = res.headers.get('location');
+        if (!location) {
+          throw new Error(`Redirect response (${status}) missing Location header`);
+        }
+        redirectChain.push(currentUrl);
+        const nextUrl = new URL(location, currentUrl).toString();
+        currentUrl = nextUrl;
+        redirectCount++;
+        continue;
+      }
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} ${res.statusText}`);
+      }
+
+      // Check content-type header
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('text/html') && !contentType.includes('application/xhtml') && !contentType.includes('xml')) {
+        if (contentType.includes('image/') || contentType.includes('video/') || contentType.includes('application/zip')) {
+          throw new Error(`Invalid content-type: ${contentType}`);
+        }
+      }
+
+      // Read response body with byte cap
+      let accumulatedHtml = '';
+      if (!res.body) {
+        accumulatedHtml = await res.text();
+      } else {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let totalBytes = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          totalBytes += value.byteLength;
+          if (totalBytes > maxBytes) {
+            reader.cancel();
+            throw new Error(`Response exceeded maximum crawl size cap of ${Math.round(maxBytes / 1024 / 1024)}MB`);
+          }
+
+          accumulatedHtml += decoder.decode(value, { stream: true });
+        }
+        accumulatedHtml += decoder.decode();
+      }
+
+      clearTimeout(timeoutId);
+      return {
+        html: accumulatedHtml,
+        finalUrl: currentUrl,
+        status,
+        redirectChain,
+      };
     }
 
-    accumulatedHtml += decoder.decode(); // Flush any trailing bytes
-    return accumulatedHtml;
+    throw new Error(`Exceeded maximum redirect depth of ${maxRedirects}`);
   } catch (err: any) {
     clearTimeout(timeoutId);
     throw err;

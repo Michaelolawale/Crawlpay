@@ -11,23 +11,29 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { jobId } = body;
+  const { jobId, url } = body;
 
   const job = await db.getJob(jobId);
   if (!job) {
     return NextResponse.json({ error: 'Job not found' }, { status: 404 });
   }
 
+  const targetUrl = (url && typeof url === 'string' && url.trim()) ? url.trim() : job.url;
+
   const startTime = Date.now();
-  await db.updateJob(job.id, { status: 'running', started_at: new Date().toISOString() });
+  await db.updateJob(job.id, {
+    status: 'running',
+    started_at: new Date().toISOString(),
+    url: targetUrl,
+  });
 
   try {
-    const report = await runAuditPipeline(job.url, job.depth, false);
+    const report = await runAuditPipeline(targetUrl, job.depth, false);
     const duration = Date.now() - startTime;
     const reportId = `rep_${Date.now()}`;
     await db.saveReport(reportId, report, {
       jobId: job.id,
-      targetUrl: job.url,
+      targetUrl,
       wallet: job.wallet,
       mode: job.depth,
     });
@@ -38,6 +44,7 @@ export async function POST(req: NextRequest) {
       duration_ms: duration,
       error: undefined,
       report_id: reportId,
+      url: targetUrl,
     });
 
     const updatedJob = await db.getJob(job.id);

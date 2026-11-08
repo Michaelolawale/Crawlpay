@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/services/db';
 import { identityService } from '@/services/identityService';
 import { verifyAdminAuth } from '@/utils/adminAuth';
+import { CONFIG } from '@/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,8 +34,8 @@ export async function GET(req: NextRequest) {
       const amt = parseFloat(p.amount) || 0;
       if (p.token === 'CELO') {
         totalCelo += amt;
-        // 3.3 CELO = $0.25 USD, 6.6 CELO = $0.50 USD
-        totalUsd += amt >= 6 ? 0.50 : 0.25;
+        // 6.6 CELO = $0.50 USD
+        totalUsd += 0.50;
       } else {
         totalUsd += amt;
       }
@@ -52,6 +53,27 @@ export async function GET(req: NextRequest) {
   }
 
   const activeConfig = await db.getConfig();
+  const blocklist = await db.listBlocklist();
+
+  // Enriched recent payments with linked job info
+  const paymentJobMap = new Map(jobs.filter((j) => j.payment_id).map((j) => [j.payment_id, j]));
+
+  const enrichedRecentPayments = payments.slice(0, 6).map((p) => {
+    const job = paymentJobMap.get(p.id);
+    return {
+      id: p.id,
+      timestamp: p.created_at,
+      tx_hash: p.tx_hash,
+      amount: p.amount,
+      token: p.token,
+      payer_wallet: p.wallet,
+      attribution_tag: CONFIG.ATTRIBUTION_TAG,
+      status: p.status,
+      jobUrl: job?.url || null,
+      jobDepth: job?.depth || null,
+      reportId: job?.report_id || null,
+    };
+  });
 
   return NextResponse.json({
     revenueUsd,
@@ -62,5 +84,8 @@ export async function GET(req: NextRequest) {
     onchainStatus,
     activeConfig,
     recentJobs: jobs.slice(0, 10),
+    recentPayments: enrichedRecentPayments,
+    totalPaymentsCount: payments.length,
+    blocklistCount: blocklist.length,
   });
 }

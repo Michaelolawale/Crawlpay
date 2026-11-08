@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
-    const host = req.headers.get('host') || 'crawlpay.org';
+    const host = req.headers.get('host') || 'crawlpay.vercel.app';
     const protocol = host.includes('localhost') ? 'http' : 'https';
     const defaultUri = `${protocol}://${host}/api/agent-registration`;
 

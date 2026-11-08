@@ -38,7 +38,7 @@ import { getSuggestedContentFix } from '../src/analyzer/contentFixes';
 // Initialize the MCP Server
 const server = new McpServer({
   name: 'crawlpay-celo-mcp',
-  version: '1.0.0',
+  version: '2.0.0',
 });
 
 // Tool 1: crawlpay_audit_site
@@ -97,10 +97,31 @@ server.tool(
         `## 🤖 AEO & GEO Intelligence Signals`,
         `- **Question-Led Headings:** ${report.aeoSignals?.questionHeadingsCount || 0} detected (${report.aeoSignals?.questionHeadings.slice(0, 3).map((q) => `"${q}"`).join(', ') || 'None'})`,
         `- **Machine FAQ Schema:** ${report.aeoSignals?.hasFaqSchema ? '✅ Present (Q&A Machine Readable)' : '⚠️ Missing (Recommend adding FAQPage JSON-LD)'}`,
-        `- **AI Bot Accessibility (RFC 9309):** ${report.geoSignals?.aiBots.map((b) => `${b.bot}: ${b.status}`).join(' | ') || 'Default Allowed'}`,
+        `- **AI Search Bot Access Matrix:** ${report.geoSignals?.aiBots.map((b) => `${b.bot}: ${b.status}`).join(' | ') || 'Default Allowed'}`,
         `- **Brand Entity Anchors:** ${report.geoSignals?.brandEntityDeclared ? `✅ Declared (${report.geoSignals.declaredSameAsCount} external anchors)` : '⚠️ None declared (Recommend adding schema.org sameAs)'}`,
         `- **Freshness & Attribution:** ${report.geoSignals?.hasAuthorAttribution ? 'Author attribution present' : 'No author attribution'} · ${report.geoSignals?.hasPublicationDates ? 'ISO timestamps present' : 'No publication dates'}`,
         `- **llms.txt Standard:** ${report.geoSignals?.hasLlmsTxt ? '✅ Found (/llms.txt present)' : 'ℹ️ None detected (Optional)'}`,
+        ``,
+        `## 📈 Web Analytics & Conversion Signals`,
+        `- **Google Analytics 4 (GA4):** ${report.analyticsSignals?.hasGa4 ? '✅ Active (gtag / G- tag detected)' : '⚠️ Not detected'}`,
+        `- **Google Tag Manager (GTM):** ${report.analyticsSignals?.hasGtm ? '✅ Active (GTM container detected)' : '⚠️ Not detected'}`,
+        `- **Meta Pixel:** ${report.analyticsSignals?.hasMetaPixel ? '✅ Active (fbq detected)' : 'ℹ️ Not detected'}`,
+        `- **Lead Conversion Forms:** ${report.analyticsSignals?.hasLeadForm ? '✅ Detected on-page' : '⚠️ No forms detected'}`,
+        `- **Phone & Click-to-Call Links:** ${report.analyticsSignals?.hasPhoneLink ? '✅ Active (tel: links)' : 'ℹ️ None detected'}`,
+        ``,
+        `## 📍 Local SEO Readiness`,
+        `- **LocalBusiness Schema:** ${report.localSeoSignals?.hasLocalBusinessSchema ? '✅ Present (JSON-LD LocalBusiness)' : '⚠️ Missing LocalBusiness schema'}`,
+        `- **Google Maps Presence:** ${report.localSeoSignals?.hasGoogleMapsLink ? '✅ Present (Google Maps linked or embedded)' : 'ℹ️ No Google Maps link found'}`,
+        `- **Address / Phone On-Page:** ${report.localSeoSignals?.hasAddressSignal ? '✅ Address found' : 'ℹ️ Address not detected'} · ${report.localSeoSignals?.hasPhoneSignal ? 'Phone found' : 'Phone not detected'}`,
+        ``,
+        `## 🎯 Keyword Strategy & 1-Click Tag Rewrites`,
+        `- **Primary Keyword Detected:** \`${report.keywords?.keywordAlignment?.primaryKeyword || 'Website service / topic'}\``,
+        `- **Title Tag Alignment:** ${report.keywords?.keywordAlignment?.hasTitleMatch ? '✅ Keyword in Title' : '⚠️ Keyword missing from Title'} (${report.keywords?.keywordAlignment?.currentTags?.title?.length || 0} chars)`,
+        report.keywords?.keywordAlignment?.recommendedRewrites?.title ? `- **Suggested Title Rewrite (<60 chars):** \`${report.keywords.keywordAlignment.recommendedRewrites.title}\`` : '',
+        `- **Meta Description Alignment:** ${report.keywords?.keywordAlignment?.hasMetaMatch ? '✅ Keyword in Meta Description' : '⚠️ Keyword missing from Meta'} (${report.keywords?.keywordAlignment?.currentTags?.metaDescription?.length || 0} chars)`,
+        report.keywords?.keywordAlignment?.recommendedRewrites?.metaDescription ? `- **Suggested Meta Rewrite (<155 chars):** \`${report.keywords.keywordAlignment.recommendedRewrites.metaDescription}\`` : '',
+        `- **H1 Heading Alignment:** ${report.keywords?.keywordAlignment?.hasH1Match ? '✅ Keyword in H1' : '⚠️ Keyword missing from H1'}`,
+        report.keywords?.keywordAlignment?.recommendedRewrites?.h1 ? `- **Suggested H1 Rewrite:** \`${report.keywords.keywordAlignment.recommendedRewrites.h1}\`` : '',
         ``,
         `## 🚀 Top Priority Needle Movers`,
         ...(report.topNeedleMovers && report.topNeedleMovers.length > 0
@@ -127,7 +148,7 @@ server.tool(
           outputLines.push(`**Structured Schema (JSON-LD):**\n\`\`\`json\n${report.codePatches.schemaJsonLd.trim()}\n\`\`\``);
         }
         if (report.codePatches.geoRobotsBlock) {
-          outputLines.push(`**AI-Optimized robots.txt (RFC 9309):**\n\`\`\`txt\n${report.codePatches.geoRobotsBlock.trim()}\n\`\`\``);
+          outputLines.push(`**AI-Optimized robots.txt:**\n\`\`\`txt\n${report.codePatches.geoRobotsBlock.trim()}\n\`\`\``);
         }
         outputLines.push(``);
       }

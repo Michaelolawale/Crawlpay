@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Search,
@@ -9,38 +10,59 @@ import {
   X,
   Zap,
   Globe,
-  Clock,
   CheckCircle2,
   AlertCircle,
-  FileCode,
   ShieldCheck,
   Layers,
   ArrowRight,
+  Loader2,
 } from 'lucide-react';
 import { PaymentModal } from '@/components/PaymentModal';
 import { CheckEngineView } from '@/components/CheckEngineView';
-import { parseGscFile, parseGscExport, GscAnalysisResult } from '@/utils/gscParser';
+import { parseGscFile, GscAnalysisResult } from '@/utils/gscParser';
+import exampleReportData from '@/data/exampleReport.json';
 import { FullAuditReport } from '@/types/audit';
+import { focusRing } from '@/components/SiteHeader';
 
 function AuditPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTarget = searchParams.get('target') || '';
+  const initialMode = searchParams.get('mode') || searchParams.get('depth');
 
   const [targetUrl, setTargetUrl] = useState(initialTarget);
-  const [depth, setDepth] = useState<'quick' | 'full'>('quick');
+  const [depth, setDepth] = useState<'quick' | 'full'>(
+    initialMode === 'full' || initialMode === 'deep' ? 'full' : 'quick'
+  );
   const [gscAnalysis, setGscAnalysis] = useState<GscAnalysisResult | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRunningFreeAudit, setIsRunningFreeAudit] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [completedReport, setCompletedReport] = useState<FullAuditReport | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    document.title = 'Audit your website | CrawlPay';
+  }, []);
+
+  useEffect(() => {
     if (initialTarget) {
       setTargetUrl(initialTarget);
     }
-  }, [initialTarget]);
+    const mode = searchParams.get('mode') || searchParams.get('depth');
+    if (mode === 'full' || mode === 'deep') {
+      setDepth('full');
+    } else if (mode === 'quick') {
+      setDepth('quick');
+    }
+  }, [initialTarget, searchParams]);
+
+  useEffect(() => {
+    if (searchParams.get('sample') === 'true' || searchParams.get('demo') === 'true') {
+      setCompletedReport(exampleReportData as unknown as FullAuditReport);
+    }
+  }, [searchParams]);
 
   // URL validation check
   const isValidUrl = (url: string): boolean => {
@@ -58,7 +80,6 @@ function AuditPageContent() {
   };
 
   const isFormValid = isValidUrl(targetUrl);
-  const currentPrice = depth === 'quick' ? '0.25' : '0.50';
 
   // Handle Search Console export upload (CSV, JSON, TSV, or ZIP)
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,45 +111,107 @@ function AuditPageContent() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleLaunchModal = (e: React.FormEvent) => {
+  const handleStartAudit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isFormValid) return;
+    if (!isFormValid || isRunningFreeAudit) return;
     setErrorMsg(null);
-    setIsModalOpen(true);
+
+    if (depth === 'full') {
+      setIsModalOpen(true);
+      return;
+    }
+
+    // Free Quick Audit execution
+    setIsRunningFreeAudit(true);
+    setCompletedReport(null);
+
+    try {
+      const res = await fetch('/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: targetUrl,
+          mode: 'quick',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 429) {
+          throw new Error(
+            data.error || 'Free quick audit limit reached (5 per hour). You can start a deep crawl or wait for the cooldown.'
+          );
+        }
+        throw new Error(data.error || 'Quick audit execution failed.');
+      }
+
+      const repId = `rep_${Date.now()}`;
+      setCompletedReport(data);
+
+      try {
+        const groups = data.prioritizedGroups || data.checkEngineReport?.prioritizedGroups || [];
+        const critical = groups.filter((g: any) => g.severity === 'critical').reduce((acc: number, g: any) => acc + (g.affectedCount || 1), 0);
+        const high = groups.filter((g: any) => g.severity === 'high').reduce((acc: number, g: any) => acc + (g.affectedCount || 1), 0);
+        const medium = groups.filter((g: any) => g.severity === 'medium').reduce((acc: number, g: any) => acc + (g.affectedCount || 1), 0);
+        const low = groups.filter((g: any) => g.severity === 'low' || g.severity === 'info').reduce((acc: number, g: any) => acc + (g.affectedCount || 1), 0);
+
+        const stored = localStorage.getItem('crawlpay_reports');
+        const list = stored ? JSON.parse(stored) : [];
+        list.unshift({
+          id: repId,
+          targetUrl,
+          date: new Date().toISOString(),
+          timestamp: new Date().toISOString(),
+          overallScore: data.scores?.overall || 85,
+          mode: 'quick',
+          pagesChecked: data.pagesChecked || 1,
+          issuesCount: {
+            critical,
+            high,
+            medium,
+            low,
+            total: critical + high + medium + low,
+          },
+          reportData: data,
+        });
+        localStorage.setItem('crawlpay_reports', JSON.stringify(list.slice(0, 50)));
+      } catch { }
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Quick audit execution failed.');
+    } finally {
+      setIsRunningFreeAudit(false);
+    }
   };
 
-  const handleAuditReady = (report: FullAuditReport, reportId: string) => {
+  const handleAuditReady = (report: FullAuditReport, _reportId: string) => {
     setCompletedReport(report);
   };
 
   return (
     <div className="w-full space-y-6 sm:space-y-8 animate-fade-in">
       <div>
-        <p className="font-sans text-[14px] sm:text-[16px] leading-[1.6] font-[400] text-violet mb-1">
-          Autonomous Execution
-        </p>
-        <h1 className="font-sans text-[24px] sm:text-[34px] font-[600] tracking-tight text-ink dark:text-white leading-snug">
-          Deterministic SEO &amp; Competitor Intelligence Audit
+        <h1 className="font-sans text-[26px] sm:text-[34px] font-[600] tracking-tight text-ink dark:text-white leading-tight">
+          Audit your website for search and AI
         </h1>
-        <p className="mt-1 text-[14px] sm:text-[15px] text-graphite-800 dark:text-graphite-300 leading-relaxed font-normal">
-          Autonomous crawl with 10 deterministic engine checks, root cause grouping, and ready-to-deploy code fixes settled per crawl on Celo Mainnet.
+        <p className="mt-2 text-[15px] sm:text-[16px] text-graphite-800 dark:text-graphite-200 leading-relaxed font-normal max-w-[760px]">
+          CrawlPay checks your pages the way search engines and AI assistants see them, identifies technical blockers, and provides paste-ready code fixes.
         </p>
       </div>
 
       {/* Main Audit Form Card */}
-      <div className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#16171d] p-5 sm:p-8 shadow-sm">
-        <form onSubmit={handleLaunchModal} className="space-y-5 sm:space-y-6">
+      <div className="rounded-[20px] border border-graphite-200 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#16171d] p-5 sm:p-8 shadow-sm">
+        <form onSubmit={handleStartAudit} className="space-y-6">
           {/* URL Input Field */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label htmlFor="target-url" className="block text-[12px] font-mono uppercase tracking-wider text-graphite-600 dark:text-graphite-400 font-medium">
-                Target Website URL
+              <label htmlFor="target-url" className="block text-[14px] font-medium text-ink dark:text-white">
+                Website address
               </label>
-              <span className="text-[11px] text-graphite-500 font-mono">Single page or domain</span>
+              <span className="text-[12px] text-graphite-600 dark:text-graphite-400">Single page or domain</span>
             </div>
             <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                <Globe className="size-4 text-graphite-600 dark:text-graphite-400" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                <Globe className="size-4 text-graphite-500" />
               </div>
               <input
                 id="target-url"
@@ -136,125 +219,136 @@ function AuditPageContent() {
                 placeholder="example.com or yoursite.com"
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
-                className="block w-full rounded-[32px] border border-ink dark:border-graphite-800 bg-white dark:bg-[#111216] py-3 pl-10 pr-4 text-[14px] sm:text-[15px] text-ink dark:text-white placeholder:text-graphite-600 dark:placeholder:text-graphite-500 focus:outline-none focus:ring-2 focus:ring-violet/30 focus:shadow-hero-field font-mono transition-all"
+                className={`block w-full rounded-[32px] border border-ink dark:border-graphite-700 bg-white dark:bg-[#111216] py-3 pl-11 pr-4 text-[15px] sm:text-[16px] text-ink dark:text-white placeholder:text-graphite-500 transition-all ${focusRing}`}
               />
             </div>
             {targetUrl && !isFormValid && (
-              <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400 font-medium animate-slide-down">
+              <p className="mt-2 text-xs text-rose-600 dark:text-rose-400 font-medium">
                 Please enter a valid website domain or URL (e.g. example.com).
               </p>
             )}
 
             {/* Quick Suggestions when empty */}
             {!targetUrl && (
-              <div className="mt-2.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-                <span className="text-graphite-500 font-mono">Try sample:</span>
-                {['celopulse.org', 'linear.app', 'allbirds.com'].map((domain) => (
-                  <button
-                    key={domain}
-                    type="button"
-                    onClick={() => setTargetUrl(domain)}
-                    className="rounded-full border border-graphite-200 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] px-2.5 py-0.5 font-mono text-graphite-700 dark:text-graphite-300 hover:text-violet hover:border-violet/40 hover-lift transition-all cursor-pointer"
-                  >
-                    {domain}
-                  </button>
-                ))}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[12px]">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-graphite-600 dark:text-graphite-400">Try a sample:</span>
+                  {['celopulse.org', 'linear.app', 'allbirds.com'].map((domain) => (
+                    <button
+                      key={domain}
+                      type="button"
+                      onClick={() => setTargetUrl(domain)}
+                      className={`rounded-full border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3 py-0.5 text-graphite-800 dark:text-graphite-200 hover:border-violet hover:text-violet transition-colors cursor-pointer ${focusRing}`}
+                    >
+                      {domain}
+                    </button>
+                  ))}
+                </div>
+                <Link
+                  href="/example"
+                  className={`inline-flex items-center gap-1 text-violet hover:underline font-medium ${focusRing}`}
+                >
+                  <span>Or view a sample report</span>
+                  <ArrowRight className="size-3" />
+                </Link>
               </div>
             )}
           </div>
 
-          {/* Depth Selector Cards */}
-          <div>
-            <label className="block text-[12px] font-mono uppercase tracking-wider text-graphite-600 dark:text-graphite-400 mb-2.5 font-medium">
-              Select Audit Depth
-            </label>
+          {/* Depth Selector Cards (Semantic Radio Inputs per DESIGN.md) */}
+          <fieldset>
+            <legend className="text-[14px] font-medium text-ink dark:text-white mb-3">
+              Select audit depth
+            </legend>
             <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
-              {/* Quick Depth Card */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setDepth('quick')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setDepth('quick');
-                  }
-                }}
-                className={`cursor-pointer rounded-[16px] p-4 sm:p-5 transition-all hover-lift ${
+              {/* Quick Audit Option */}
+              <label
+                className={`relative flex flex-col justify-between rounded-[20px] p-5 sm:p-6 cursor-pointer border-2 transition-all ${
                   depth === 'quick'
-                    ? 'border-2 border-violet dark:border-violet bg-white dark:bg-[#1a1b22] shadow-sm ring-2 ring-violet/20'
-                    : 'border-2 border-graphite-200/80 dark:border-graphite-800 bg-white/70 dark:bg-[#16171d]/70 hover:border-graphite-300 dark:hover:border-graphite-700 hover:bg-white dark:hover:bg-[#1a1b22]'
-                }`}
+                    ? 'border-ink dark:border-white bg-white dark:bg-[#1a1b22] shadow-sm'
+                    : 'border-graphite-200 dark:border-graphite-800 bg-white/70 dark:bg-[#16171d]/70 hover:border-graphite-300 dark:hover:border-graphite-700'
+                } ${focusRing}`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className={`flex size-8 items-center justify-center rounded-full transition-colors ${
-                      depth === 'quick' ? 'bg-violet text-white shadow-sm' : 'bg-violet/10 text-violet'
-                    }`}>
-                      <Zap className="size-4" />
+                <input
+                  type="radio"
+                  name="audit-depth"
+                  value="quick"
+                  checked={depth === 'quick'}
+                  onChange={() => setDepth('quick')}
+                  className="sr-only"
+                />
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className={`flex size-8 items-center justify-center rounded-full ${
+                        depth === 'quick' ? 'bg-ink dark:bg-white text-white dark:text-ink' : 'bg-graphite-100 dark:bg-graphite-800 text-ink dark:text-white'
+                      }`}>
+                        <Zap className="size-4" />
+                      </span>
+                      <span className="font-sans font-[600] text-[16px] sm:text-[17px] text-ink dark:text-white">
+                        Quick audit
+                      </span>
+                    </div>
+                    <span className="rounded-full px-2.5 py-0.5 text-[12px] font-sans font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                      Free
                     </span>
-                    <span className="font-sans font-[600] text-[15px] sm:text-[16px] text-ink dark:text-white">Quick Audit</span>
                   </div>
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] sm:text-[12px] font-mono font-bold tracking-tight shrink-0 ${
-                    depth === 'quick' ? 'bg-ink dark:bg-white text-white dark:text-ink' : 'bg-graphite-200/70 dark:bg-[#22232c] text-graphite-700 dark:text-graphite-300'
-                  }`}>
-                    $0.25 USDT
-                  </span>
+                  <p className="mt-3 text-[14px] text-graphite-700 dark:text-graphite-300 leading-relaxed font-normal">
+                    One page, up to 5 per hour. Full checks for search engines, AI crawlers, on-page keyword opportunities, and ready-to-paste code fixes.
+                  </p>
                 </div>
-                <p className="mt-3 text-[13px] text-graphite-700 dark:text-graphite-300 leading-relaxed font-normal">
-                  Fast single-page and core route crawl. Runs 10 engine checks, root cause grouping, stack detection, and code patches.
-                </p>
-              </div>
+              </label>
 
-              {/* Full Depth Card */}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => setDepth('full')}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setDepth('full');
-                  }
-                }}
-                className={`cursor-pointer rounded-[16px] p-4 sm:p-5 transition-all hover-lift ${
+              {/* Deep Crawl Option */}
+              <label
+                className={`relative flex flex-col justify-between rounded-[20px] p-5 sm:p-6 cursor-pointer border-2 transition-all ${
                   depth === 'full'
-                    ? 'border-2 border-violet dark:border-violet bg-white dark:bg-[#1a1b22] shadow-sm ring-2 ring-violet/20'
-                    : 'border-2 border-graphite-200/80 dark:border-graphite-800 bg-white/70 dark:bg-[#16171d]/70 hover:border-graphite-300 dark:hover:border-graphite-700 hover:bg-white dark:hover:bg-[#1a1b22]'
-                }`}
+                    ? 'border-ink dark:border-white bg-white dark:bg-[#1a1b22] shadow-sm'
+                    : 'border-graphite-200 dark:border-graphite-800 bg-white/70 dark:bg-[#16171d]/70 hover:border-graphite-300 dark:hover:border-graphite-700'
+                } ${focusRing}`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className={`flex size-8 items-center justify-center rounded-full transition-colors ${
-                      depth === 'full' ? 'bg-violet text-white shadow-sm' : 'bg-violet/10 text-violet'
-                    }`}>
-                      <Layers className="size-4" />
+                <input
+                  type="radio"
+                  name="audit-depth"
+                  value="full"
+                  checked={depth === 'full'}
+                  onChange={() => setDepth('full')}
+                  className="sr-only"
+                />
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className={`flex size-8 items-center justify-center rounded-full ${
+                        depth === 'full' ? 'bg-ink dark:bg-white text-white dark:text-ink' : 'bg-graphite-100 dark:border-graphite-800 text-ink dark:text-white'
+                      }`}>
+                        <Layers className="size-4" />
+                      </span>
+                      <span className="font-sans font-[600] text-[16px] sm:text-[17px] text-ink dark:text-white">
+                        Deep crawl
+                      </span>
+                    </div>
+                    <span className="rounded-full px-2.5 py-0.5 text-[12px] font-sans font-semibold bg-violet/10 dark:bg-violet/20 text-violet">
+                      $0.50 in USDT
                     </span>
-                    <span className="font-sans font-[600] text-[15px] sm:text-[16px] text-ink dark:text-white">Full Deep Crawl</span>
                   </div>
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] sm:text-[12px] font-mono font-bold tracking-tight shrink-0 ${
-                    depth === 'full' ? 'bg-ink dark:bg-white text-white dark:text-ink' : 'bg-graphite-200/70 dark:bg-[#22232c] text-graphite-700 dark:text-graphite-300'
-                  }`}>
-                    $0.50 USDT
-                  </span>
+                  <p className="mt-3 text-[14px] text-graphite-700 dark:text-graphite-300 leading-relaxed font-normal">
+                    Up to 50 pages. Detects orphan pages, redirect loops, and canonical clashes across your site, with client-ready PDF export and an onchain receipt.
+                  </p>
                 </div>
-                <p className="mt-3 text-[13px] text-graphite-700 dark:text-graphite-300 leading-relaxed font-normal">
-                  Deep multi-page BFS crawl (up to 50 pages). Detects sitewide orphan links, canonical loops, rendering defects, and full indexability.
-                </p>
-              </div>
+              </label>
             </div>
-          </div>
+          </fieldset>
 
           {/* Optional Google Search Console Upload */}
-          <div className="rounded-[16px] border border-dashed border-graphite-200 dark:border-graphite-800 p-4 bg-white dark:bg-[#16171d]">
+          <div className="rounded-[16px] border border-dashed border-graphite-300 dark:border-graphite-700 p-4 bg-white dark:bg-[#16171d]">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <span className="text-[13px] font-[500] text-ink dark:text-white flex items-center gap-1.5">
+                <span className="text-[14px] font-medium text-ink dark:text-white flex items-center gap-2">
                   <FileSpreadsheet className="size-4 text-violet" />
-                  <span>Optional: Google Search Console Export</span>
+                  <span>Optional: Google Search Console export</span>
                 </span>
-                <p className="text-[12px] text-graphite-600 dark:text-graphite-400 mt-0.5">
-                  Upload CSV/ZIP to cross-reference crawl results with real Google impressions and query rankings.
+                <p className="text-[13px] text-graphite-600 dark:text-graphite-400 mt-1">
+                  Upload CSV or ZIP to cross-reference crawl results with real Google query data.
                 </p>
               </div>
 
@@ -262,7 +356,7 @@ function AuditPageContent() {
                 <button
                   type="button"
                   onClick={clearGscFile}
-                  className="inline-flex items-center justify-center gap-1 rounded-[48px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 px-3 py-1.5 text-[12px] font-medium text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 self-start sm:self-auto cursor-pointer"
+                  className={`inline-flex items-center justify-center gap-1 rounded-[48px] bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 px-3 py-1.5 text-[12px] font-medium text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60 self-start sm:self-auto cursor-pointer ${focusRing}`}
                 >
                   <X className="size-3" />
                   <span>Remove</span>
@@ -271,16 +365,16 @@ function AuditPageContent() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#22232c] px-3.5 py-1.5 text-[12px] font-medium text-ink dark:text-white hover:bg-graphite-200/50 dark:hover:bg-[#2a2b36] transition-colors self-start sm:self-auto shrink-0 cursor-pointer"
+                  className={`inline-flex items-center justify-center gap-1.5 rounded-[48px] border border-graphite-300 dark:border-graphite-700 bg-[#f4f4f6] dark:bg-[#22232c] px-4 py-1.5 text-[13px] font-medium text-ink dark:text-white hover:bg-graphite-200 dark:hover:bg-[#2a2b36] transition-colors self-start sm:self-auto shrink-0 cursor-pointer ${focusRing}`}
                 >
-                  <UploadCloud className="size-3.5 text-graphite-600 dark:text-graphite-400" />
-                  <span>Upload File</span>
+                  <UploadCloud className="size-4 text-graphite-600 dark:text-graphite-400" />
+                  <span>Upload file</span>
                 </button>
               )}
             </div>
 
             <label htmlFor="gsc-file-upload" className="sr-only">
-              Upload Google Search Console Export File
+              Upload Google Search Console export file
             </label>
             <input
               id="gsc-file-upload"
@@ -293,21 +387,21 @@ function AuditPageContent() {
             />
 
             {gscAnalysis && (
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[12px] bg-[#f4f4f6] dark:bg-[#1a1b22] p-3 text-xs border border-graphite-100 dark:border-graphite-800">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 rounded-[12px] bg-[#f4f4f6] dark:bg-[#1a1b22] p-3 text-xs border border-graphite-200 dark:border-graphite-800">
                 <div>
-                  <span className="text-graphite-600 dark:text-graphite-400 block text-[10px]">Export File</span>
+                  <span className="text-graphite-600 dark:text-graphite-400 block text-[11px]">Export file</span>
                   <strong className="text-ink dark:text-white truncate block">{gscAnalysis.fileName}</strong>
                 </div>
                 <div>
-                  <span className="text-graphite-600 dark:text-graphite-400 block text-[10px]">Total URLs in Export</span>
+                  <span className="text-graphite-600 dark:text-graphite-400 block text-[11px]">Total URLs in export</span>
                   <strong className="text-ink dark:text-white">{gscAnalysis.totalUrls.toLocaleString()}</strong>
                 </div>
                 <div>
-                  <span className="text-graphite-600 dark:text-graphite-400 block text-[10px]">Unindexed URLs Found</span>
+                  <span className="text-graphite-600 dark:text-graphite-400 block text-[11px]">Unindexed URLs found</span>
                   <strong className="text-violet">{gscAnalysis.unindexedUrls.length} URLs</strong>
                 </div>
                 <div>
-                  <span className="text-graphite-600 dark:text-graphite-400 block text-[10px]">Detected Reasons</span>
+                  <span className="text-graphite-600 dark:text-graphite-400 block text-[11px]">Detected reasons</span>
                   <strong className="text-ink dark:text-white">{gscAnalysis.reasonsDetected.length || 1} status type(s)</strong>
                 </div>
               </div>
@@ -322,18 +416,39 @@ function AuditPageContent() {
           )}
 
           {/* Primary Submit Button */}
-          <button
-            type="submit"
-            disabled={!isFormValid}
-            className={`w-full inline-flex items-center justify-center gap-2 rounded-[48px] py-3.5 px-6 text-[14px] font-medium transition-all shadow-sm ${
-              isFormValid
-                ? 'bg-ink dark:bg-white text-white dark:text-ink hover:opacity-90 hover-lift active:scale-[0.99] cursor-pointer'
-                : 'bg-graphite-200 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400 cursor-not-allowed opacity-60'
-            }`}
-          >
-            <ShieldCheck className="size-4" />
-            <span>Pay ${currentPrice} USDT</span>
-          </button>
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={!isFormValid || isRunningFreeAudit}
+              className={`w-full inline-flex items-center justify-center gap-2 rounded-[48px] py-3.5 px-6 text-[15px] font-medium transition-all ${
+                isFormValid && !isRunningFreeAudit
+                  ? 'bg-ink dark:bg-white text-white dark:text-ink hover:opacity-90 active:scale-[0.99] cursor-pointer'
+                  : 'bg-graphite-200 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400 cursor-not-allowed opacity-60'
+              } ${focusRing}`}
+            >
+              {isRunningFreeAudit ? (
+                <>
+                  <Loader2 className="size-4 animate-spin text-white dark:text-ink" />
+                  <span>Auditing page and analyzing content...</span>
+                </>
+              ) : depth === 'quick' ? (
+                <>
+                  <Zap className="size-4 text-emerald-400 dark:text-emerald-600" />
+                  <span>Run free audit</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="size-4" />
+                  <span>Start a deep crawl ($0.50 in USDT)</span>
+                </>
+              )}
+            </button>
+            <p className="mt-2.5 text-center text-[13px] text-graphite-600 dark:text-graphite-400">
+              {depth === 'quick'
+                ? 'No account, wallet or email needed.'
+                : 'Paid in USDT on Celo. No subscription.'}
+            </p>
+          </div>
         </form>
       </div>
 
@@ -348,18 +463,18 @@ function AuditPageContent() {
 
       {/* Rendered Live Report View when ready on this page */}
       {completedReport && (
-        <div className="mt-12 space-y-6 animate-in fade-in duration-300">
-          <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="mt-12 space-y-6 animate-fade-in">
+          <div className="flex items-center justify-between border-b border-graphite-200 dark:border-graphite-800 pb-4">
             <div>
-              <h2 className="font-display text-xl font-bold text-foreground">Audit Results</h2>
-              <p className="text-xs text-muted-foreground">Generated via deterministic check engine on Celo</p>
+              <h2 className="font-sans text-[22px] font-[600] text-ink dark:text-white">Audit results</h2>
+              <p className="text-[13px] text-graphite-600 dark:text-graphite-400">Generated by CrawlPay on Celo</p>
             </div>
             <button
               type="button"
               onClick={() => router.push('/app/reports')}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-accent"
+              className={`inline-flex items-center gap-1.5 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#16171d] px-3.5 py-1.5 text-[13px] font-medium text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors ${focusRing}`}
             >
-              <span>View All Reports</span>
+              <span>Saved reports</span>
               <ArrowRight className="size-3.5" />
             </button>
           </div>
@@ -376,8 +491,8 @@ export default function AppAuditPage() {
     <Suspense
       fallback={
         <div className="w-full space-y-8 animate-pulse">
-          <div className="h-8 w-64 rounded-lg bg-card/60" />
-          <div className="h-96 rounded-2xl border border-border bg-card/30" />
+          <div className="h-8 w-64 rounded-lg bg-graphite-100 dark:bg-graphite-800" />
+          <div className="h-96 rounded-2xl border border-graphite-200 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#16171d]" />
         </div>
       }
     >

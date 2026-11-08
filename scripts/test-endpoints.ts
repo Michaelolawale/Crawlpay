@@ -42,6 +42,9 @@ async function runTests() {
   // 1. GET /api/status
   await test('Agent General Status', '/api/status');
 
+  // 1b. GET /.well-known/agent-card.json
+  await test('Agent Card Discovery Manifest', '/.well-known/agent-card.json');
+
   // 2. GET /api/x402-bazaar
   await test('x402 Discovery Bazaar Schema', '/api/x402-bazaar');
 

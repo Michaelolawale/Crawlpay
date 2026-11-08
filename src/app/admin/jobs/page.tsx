@@ -120,7 +120,7 @@ export default function AdminJobsPage() {
     return () => clearInterval(interval);
   }, [fetchJobs]);
 
-  const handleRerun = async (jobId: string) => {
+  const handleRerun = async (jobId: string, customUrl?: string) => {
     setRerunningId(jobId);
     try {
       const authKey = getAdminToken();
@@ -130,7 +130,7 @@ export default function AdminJobsPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authKey}`,
         },
-        body: JSON.stringify({ jobId }),
+        body: JSON.stringify({ jobId, url: customUrl }),
       });
       if (res.ok) {
         await fetchJobs(true);
@@ -143,6 +143,14 @@ export default function AdminJobsPage() {
     } finally {
       setRerunningId(null);
     }
+  };
+
+  const handlePromptRerun = async (job: JobRecord) => {
+    const input = window.prompt(`Enter website domain to crawl for job ${job.id.slice(0, 16)}:`, job.url);
+    if (input === null) return;
+    const clean = input.trim();
+    if (!clean) return;
+    await handleRerun(job.id, clean);
   };
 
   const handleLaunchQuickAudit = async (e: React.FormEvent) => {
@@ -524,10 +532,9 @@ export default function AdminJobsPage() {
                         <div className="inline-flex items-center gap-1.5">
                           {j.report_id && (
                             <Link
-                              href={`/app/reports/${j.report_id}`}
-                              target="_blank"
+                              href={`/admin/reports/${j.report_id}?from=jobs`}
                               className="inline-flex items-center gap-1 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] px-2.5 py-1 text-[11px] font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#20212b] transition-colors shadow-sm"
-                              title="Inspect Generated Report"
+                              title="Inspect Generated Report (Operator Privacy Mode)"
                             >
                               <FileText className="size-3 text-emerald-600 dark:text-emerald-400" />
                               <span>Report</span>
@@ -536,13 +543,13 @@ export default function AdminJobsPage() {
 
                           <button
                             type="button"
-                            onClick={() => handleRerun(j.id)}
+                            onClick={() => handlePromptRerun(j)}
                             disabled={rerunningId === j.id}
                             className="inline-flex items-center gap-1 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] px-2.5 py-1 text-[11px] font-semibold text-ink dark:text-white hover:bg-graphite-100/50 dark:hover:bg-[#20212b] shadow-sm disabled:opacity-50 transition-colors cursor-pointer"
-                            title="Rerun this crawl"
+                            title="Rerun or edit domain to crawl"
                           >
                             <RotateCcw className={`size-3 ${rerunningId === j.id ? 'animate-spin text-violet' : ''}`} />
-                            <span>Rerun</span>
+                            <span>Rerun / Edit</span>
                           </button>
                         </div>
                       </td>

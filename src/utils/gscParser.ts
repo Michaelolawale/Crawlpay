@@ -118,12 +118,37 @@ export function parseGscExport(content: string, fileName: string): GscAnalysisRe
   let urlColIndex = -1;
   let reasonColIndex = -1;
 
+  // Check if filename contains a known GSC reason
+  const fileNameLower = fileName.toLowerCase();
+  if (fileNameLower.includes('crawled') && fileNameLower.includes('not indexed')) {
+    reasonsDetected.add('Crawled - currently not indexed');
+  } else if (fileNameLower.includes('discovered') && fileNameLower.includes('not indexed')) {
+    reasonsDetected.add('Discovered - currently not indexed');
+  } else if (fileNameLower.includes('duplicate')) {
+    reasonsDetected.add('Duplicate without user-selected canonical');
+  } else if (fileNameLower.includes('noindex')) {
+    reasonsDetected.add('Excluded by ‘noindex’ tag');
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const cols = splitDelimitedLine(rawLine, delimiter);
 
     // Look for header row if not yet identified
     if (urlColIndex === -1) {
+      // Check if this row before headers is a GSC category/title banner (e.g. "Crawled - currently not indexed")
+      if (cols.length === 1 || (cols.length > 1 && !cols.slice(1).some(Boolean))) {
+        const titleCandidate = cols[0].trim();
+        if (
+          titleCandidate.length > 3 &&
+          !titleCandidate.startsWith('http') &&
+          /indexed|crawled|discovered|canonical|noindex|redirect|404|blocked|status|coverage/i.test(titleCandidate)
+        ) {
+          reasonsDetected.add(titleCandidate);
+          continue;
+        }
+      }
+
       for (let c = 0; c < cols.length; c++) {
         const header = cols[c].toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
         if (
@@ -142,7 +167,8 @@ export function parseGscExport(content: string, fileName: string): GscAnalysisRe
           header === 'type' ||
           header === 'issue' ||
           header === 'indexing state' ||
-          header === 'last crawled'
+          header === 'coverage state' ||
+          header === 'verdict'
         ) {
           reasonColIndex = c;
         }
@@ -166,10 +192,19 @@ export function parseGscExport(content: string, fileName: string): GscAnalysisRe
       if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
         unindexedUrlsSet.add(rawUrl);
         if (reasonColIndex >= 0 && cols[reasonColIndex]) {
-          reasonsDetected.add(cols[reasonColIndex].trim());
+          const val = cols[reasonColIndex].trim();
+          // Exclude raw dates from being classified as issue reasons
+          if (val && !/^\d{4}-\d{2}-\d{2}/.test(val) && !/^[A-Za-z]{3,}\s+\d{1,2}/.test(val)) {
+            reasonsDetected.add(val);
+          }
         }
       }
     }
+  }
+
+  // Fallback default reason if URLs were found but no specific reason was captured
+  if (unindexedUrlsSet.size > 0 && reasonsDetected.size === 0) {
+    reasonsDetected.add('Crawled - currently not indexed');
   }
 
   // 4. Universal Fallback Regex: If header matching didn't yield URLs, extract any valid URLs

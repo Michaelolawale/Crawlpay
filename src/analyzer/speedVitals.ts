@@ -72,7 +72,7 @@ export function auditSpeedVitals($: cheerio.CheerioAPI, htmlLength: number): Per
   if (htmlLength > 250000) {
     penalty += 15;
     opportunities.push({
-      title: 'Reduce bloated HTML DOM size (>250KB transfer)',
+      title: 'Reduce bloated HTML page size (>250KB transfer)',
       impact: 'Medium',
       savingEstimate: '~150ms parsing time',
     });

@@ -8,12 +8,16 @@ import { Finding, FindingGroup, PriorityItem, SeoAuditReport } from '../engine/t
 import { MobileAuditMetrics } from '../engine/checks/mobilePerformance';
 import { AeoAnalysisSignals } from '../engine/checks/aeo';
 import { GeoAnalysisSignals } from '../engine/checks/geo';
+import { AnalyticsSignals } from '../engine/checks/analyticsTracking';
+import { LocalSeoSignals } from '../engine/checks/localSeo';
+import { SiteSummary, SuggestedKeyword, QuestionMatrix, KeywordAlignmentCheck } from '../analyzer/keywordEngine';
 
 export interface FullAuditReport {
   schemaVersion?: string;
   auditVersion?: string;
   targetUrl: string;
   auditTimestamp: string;
+  isFreeTier?: boolean;
   coverage?: {
     totalChecks: number;
     evaluatedChecks: number;
@@ -21,6 +25,13 @@ export interface FullAuditReport {
     coveragePercentage: number;
   };
   summary: string;
+  siteSummary?: SiteSummary;
+  keywords?: {
+    suggestedKeywords: SuggestedKeyword[];
+    questionMatrix: QuestionMatrix;
+    plainLanguageAdvice: string;
+    keywordAlignment?: KeywordAlignmentCheck;
+  };
   scores: {
     overall: number;
     technical: number;
@@ -33,6 +44,8 @@ export interface FullAuditReport {
   };
   aeoSignals?: AeoAnalysisSignals;
   geoSignals?: GeoAnalysisSignals;
+  analyticsSignals?: AnalyticsSignals;
+  localSeoSignals?: LocalSeoSignals;
   archetype: ArchetypeProfile;
   topNeedleMovers: Array<{
     priority: 'Critical' | 'High' | 'Quick Win';

@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   CreditCard,
   ListOrdered,
+  FileText,
   Sliders,
   ShieldBan,
   FlaskConical,
@@ -17,12 +18,13 @@ import {
 } from 'lucide-react';
 import { CrawlLogo } from '../../components/CrawlLogo';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { setAdminToken, clearAdminToken } from '../../utils/adminClient';
+import { getAdminToken, setAdminToken, clearAdminToken } from '../../utils/adminClient';
 
 const ADMIN_NAV = [
   { href: '/admin', label: 'Overview', shortLabel: 'Overview', icon: LayoutDashboard },
   { href: '/admin/payments', label: 'Payments', shortLabel: 'Payments', icon: CreditCard },
   { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: ListOrdered },
+  { href: '/admin/reports', label: 'Reports', shortLabel: 'Reports', icon: FileText },
   { href: '/admin/config', label: 'Config', shortLabel: 'Config', icon: Sliders },
   { href: '/admin/abuse', label: 'Abuse & Blocklist', shortLabel: 'Abuse', icon: ShieldBan },
   { href: '/admin/sandbox', label: 'Sandbox (Testing)', shortLabel: 'Sandbox', icon: FlaskConical },
@@ -35,10 +37,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [authError, setAuthError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
-  // Avoid automatic login: operator must enter passkey on each visit
+  // Restore active admin session from sessionStorage if present
   useEffect(() => {
-    clearAdminToken();
-    setIsAuthenticated(false);
+    const existing = getAdminToken();
+    if (existing) {
+      setIsAuthenticated(true);
+    }
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {

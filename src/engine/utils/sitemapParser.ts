@@ -26,7 +26,8 @@ export async function fetchAndParseSitemap(
 
   for (const sitemapUrl of candidateUrls) {
     try {
-      const xml = await safeFetchHtml(sitemapUrl, 2 * 1024 * 1024, 6000);
+      const fetchRes = await safeFetchHtml(sitemapUrl, 2 * 1024 * 1024, 6000);
+      const xml = fetchRes?.html || '';
       if (!xml || (!xml.includes('<urlset') && !xml.includes('<sitemapindex') && !xml.includes('<loc>'))) {
         continue;
       }
@@ -50,7 +51,9 @@ export async function fetchAndParseSitemap(
 
         for (const childUrl of childSitemaps) {
           try {
-            const childXml = await safeFetchHtml(childUrl, 2 * 1024 * 1024, 4000);
+            const childRes = await safeFetchHtml(childUrl, 2 * 1024 * 1024, 4000);
+            const childXml = childRes?.html || '';
+            if (!childXml) continue;
             const $child = cheerio.load(childXml, { xmlMode: true });
             $child('url > loc, url loc, loc').each((_, el) => {
               const url = $child(el).text().trim();

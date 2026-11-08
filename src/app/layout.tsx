@@ -9,13 +9,33 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'CrawlPay — On-demand site audits (SEO, AEO & GEO)',
+  metadataBase: new URL('https://crawlpay.vercel.app'),
+  title: {
+    default: 'CrawlPay — Autonomous Site Audits (SEO, AEO & GEO)',
+    template: '%s | CrawlPay (SEO, AEO & GEO)',
+  },
   description: 'On-demand technical SEO, AEO query mapping, and GEO generative citability audits—settled per crawl via x402 on Celo.',
   keywords: ['celo', 'x402', 'seo', 'aeo', 'geo', 'ai search', 'agent', 'micropayments', 'crawler', 'audit'],
   openGraph: {
-    title: 'CrawlPay — On-demand site audits (SEO, AEO & GEO)',
+    title: 'CrawlPay — Autonomous Site Audits (SEO, AEO & GEO)',
     description: 'On-demand technical SEO, AEO query mapping, and GEO generative citability audits—settled per crawl via x402 on Celo.',
+    url: 'https://crawlpay.vercel.app',
+    siteName: 'CrawlPay',
     type: 'website',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'CrawlPay — Autonomous Technical SEO, AEO & GEO Audits on Celo',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CrawlPay — Autonomous Site Audits (SEO, AEO & GEO)',
+    description: 'On-demand technical SEO, AEO query mapping, and GEO generative citability audits—settled per crawl via x402 on Celo.',
+    images: ['/opengraph-image'],
   },
   icons: {
     icon: [

@@ -2,9 +2,120 @@
   "targetUrl": "https://evangelcarriersnetwork.org/",
   "auditTimestamp": "2026-10-22T13:03:55.001Z",
   "summary": "Audit analyzed 1 page(s) for evangelcarriersnetwork.org (WordPress stack). Found 3 actionable optimization group(s) across metadata, structure, and media assets.",
+  "siteSummary": {
+    "summary": "Evangel Carriers Network operates as an online media and resource network. Its primary offering focuses on publishing spiritual messages, broadcast programs, and community network resources.",
+    "targetAudience": "Faith community members, church leaders, and global broadcast viewers",
+    "primaryOffering": "Online publications, audio broadcasts, and network resources",
+    "businessModel": "Online Media & Resource Network",
+    "detectedBrandName": "ECN Global",
+    "confidence": "High"
+  },
+  "keywords": {
+    "suggestedKeywords": [
+      {
+        "id": "kw_core",
+        "keyword": "evangel carriers network",
+        "angle": "core_product",
+        "angleLabel": "Core Subject",
+        "intent": "Commercial",
+        "onPagePlacement": "in_title",
+        "relevanceScore": 80,
+        "whyItMatters": "This phrase is the focal brand entity detected across your main headlines and page titles.",
+        "recommendedPlacement": "Keep near the start of your <title> and in your primary <h1> heading.",
+        "aeoQuestionMatch": "What is Evangel Carriers Network?"
+      },
+      {
+        "id": "kw_buyer",
+        "keyword": "evangel carriers broadcasts",
+        "angle": "buyer_intent",
+        "angleLabel": "Action Intent",
+        "intent": "Transactional",
+        "onPagePlacement": "in_subheading",
+        "relevanceScore": 65,
+        "whyItMatters": "Captures visitors actively looking to stream broadcasts or access publications.",
+        "recommendedPlacement": "Feature in header navigation and call-to-action buttons.",
+        "aeoQuestionMatch": "Where can I watch or listen to ECN broadcasts?"
+      },
+      {
+        "id": "kw_question",
+        "keyword": "how to join evangel carriers network",
+        "angle": "question_answer",
+        "angleLabel": "Question / How-To",
+        "intent": "Informational",
+        "onPagePlacement": "in_body_only",
+        "relevanceScore": 45,
+        "whyItMatters": "Informational searchers and conversational AI engines look for clear direct answers on getting started.",
+        "recommendedPlacement": "Add as an <h2> FAQ heading paired with 2-3 concise explanatory sentences.",
+        "aeoQuestionMatch": "How do I get involved with Evangel Carriers Network?"
+      },
+      {
+        "id": "kw_niche",
+        "keyword": "faith based global broadcast media",
+        "angle": "niche_longtail",
+        "angleLabel": "Niche Long-Tail Topic",
+        "intent": "Informational",
+        "onPagePlacement": "missing_from_page",
+        "relevanceScore": 25,
+        "whyItMatters": "Targeting specific categorical descriptors helps establish topical authority in search engines.",
+        "recommendedPlacement": "Include in your meta description and 'About' paragraph copy.",
+        "aeoQuestionMatch": "What are top faith-based global broadcast media networks?"
+      }
+    ],
+    "questionMatrix": {
+      "questions": [
+        {
+          "type": "what",
+          "query": "What is Evangel Carriers Network?",
+          "targetContentFormat": "Definition Snippet",
+          "recommendation": "Provide a 1-2 sentence concise definition directly under your first <h2> to capture AI summary snippets."
+        },
+        {
+          "type": "how",
+          "query": "How to tune into ECN broadcasts online?",
+          "targetContentFormat": "Step-by-Step Guide",
+          "recommendation": "Add a clear 3-step guide detailing live stream schedules and access links."
+        },
+        {
+          "type": "why",
+          "query": "Why partner with Evangel Carriers Network?",
+          "targetContentFormat": "FAQ Section",
+          "recommendation": "Highlight mission objectives and global reach in an expandable FAQ accordion."
+        },
+        {
+          "type": "can",
+          "query": "Can I access ECN publications internationally?",
+          "targetContentFormat": "FAQ Section",
+          "recommendation": "State global availability and mobile app options clearly for international visitors."
+        }
+      ],
+      "comparisons": [
+        {
+          "type": "vs",
+          "query": "ECN Global broadcasts vs local religious programming",
+          "targetContentFormat": "Comparison Table",
+          "recommendation": "Explain the difference in global satellite and web distribution."
+        }
+      ],
+      "prepositions": [
+        {
+          "type": "for",
+          "query": "ECN broadcasts for mobile and television",
+          "targetContentFormat": "Explainer Section",
+          "recommendation": "Highlight cross-platform compatibility and device support."
+        },
+        {
+          "type": "with",
+          "query": "ECN Global with live stream access",
+          "targetContentFormat": "Explainer Section",
+          "recommendation": "Place direct live stream buttons prominently above the fold."
+        }
+      ]
+    },
+    "plainLanguageAdvice": "Focus on aligning your main headline around 'Evangel Carriers Network'. Adding structured answers to customer questions like 'How to tune into ECN broadcasts' will improve your search visibility and AI direct answers."
+  },
   "scores": {
-    "overall": 100,
-    "technical": 100,
+    "overall": 85,
+    "technical": 88,
     "content": 88,
     "performance": 75,
     "mobile": 86,
@@ -263,13 +374,9 @@
   ],
   "whatPassed": "All checked pages cleanly passed: Robots.txt & meta robots indexation, Canonical tag resolution, Meta descriptions, Heading hierarchy & H1 uniqueness, XML sitemap parsing, Near-duplicate body content, JSON-LD schema markup.",
   "notChecked": [
-    "Backlinks profile & external domain authority",
-    "Keyword search rankings & search impressions",
-    "Google Search Console API crawl stats",
-    "Google Analytics 4 & conversion tracking setup",
-    "Google Business Profile / Map pack verification",
-    "Protected pages behind authentication / paywalls",
-    "PageSpeed Insights API returned HTTP 429"
+    "Off-page backlinks & external domain authority (requires third-party web index)",
+    "Historic keyword ranking impressions (requires Google Search Console account connection)",
+    "Private internal pages behind password authentication or paywalls"
   ],
   "allFindings": [
     {
@@ -522,7 +629,7 @@
   "onchainReceipt": {
     "executionId": "exec_a33744581a0872c6",
     "targetUrl": "https://evangelcarriersnetwork.org/",
-    "clientPaidUsd": "$0.25 USD₮",
+    "clientPaidUsd": "$0.50 USD₮",
     "upstreamBrowserReceipt": {
       "serviceId": "buy-isolated-browser-v2",
       "provider": "gateway.usebuy.ai / browser-pool",
@@ -563,6 +670,117 @@
   },
   "checkEngineReport": {
     "summary": "Audit analyzed 1 page(s) for evangelcarriersnetwork.org (WordPress stack). Found 3 actionable optimization group(s) across metadata, structure, and media assets.",
+  "siteSummary": {
+    "summary": "Evangel Carriers Network operates as an online media and resource network. Its primary offering focuses on publishing spiritual messages, broadcast programs, and community network resources.",
+    "targetAudience": "Faith community members, church leaders, and global broadcast viewers",
+    "primaryOffering": "Online publications, audio broadcasts, and network resources",
+    "businessModel": "Online Media & Resource Network",
+    "detectedBrandName": "ECN Global",
+    "confidence": "High"
+  },
+  "keywords": {
+    "suggestedKeywords": [
+      {
+        "id": "kw_core",
+        "keyword": "evangel carriers network",
+        "angle": "core_product",
+        "angleLabel": "Core Subject",
+        "intent": "Commercial",
+        "onPagePlacement": "in_title",
+        "relevanceScore": 80,
+        "whyItMatters": "This phrase is the focal brand entity detected across your main headlines and page titles.",
+        "recommendedPlacement": "Keep near the start of your <title> and in your primary <h1> heading.",
+        "aeoQuestionMatch": "What is Evangel Carriers Network?"
+      },
+      {
+        "id": "kw_buyer",
+        "keyword": "evangel carriers broadcasts",
+        "angle": "buyer_intent",
+        "angleLabel": "Action Intent",
+        "intent": "Transactional",
+        "onPagePlacement": "in_subheading",
+        "relevanceScore": 65,
+        "whyItMatters": "Captures visitors actively looking to stream broadcasts or access publications.",
+        "recommendedPlacement": "Feature in header navigation and call-to-action buttons.",
+        "aeoQuestionMatch": "Where can I watch or listen to ECN broadcasts?"
+      },
+      {
+        "id": "kw_question",
+        "keyword": "how to join evangel carriers network",
+        "angle": "question_answer",
+        "angleLabel": "Question / How-To",
+        "intent": "Informational",
+        "onPagePlacement": "in_body_only",
+        "relevanceScore": 45,
+        "whyItMatters": "Informational searchers and conversational AI engines look for clear direct answers on getting started.",
+        "recommendedPlacement": "Add as an <h2> FAQ heading paired with 2-3 concise explanatory sentences.",
+        "aeoQuestionMatch": "How do I get involved with Evangel Carriers Network?"
+      },
+      {
+        "id": "kw_niche",
+        "keyword": "faith based global broadcast media",
+        "angle": "niche_longtail",
+        "angleLabel": "Niche Long-Tail Topic",
+        "intent": "Informational",
+        "onPagePlacement": "missing_from_page",
+        "relevanceScore": 25,
+        "whyItMatters": "Targeting specific categorical descriptors helps establish topical authority in search engines.",
+        "recommendedPlacement": "Include in your meta description and 'About' paragraph copy.",
+        "aeoQuestionMatch": "What are top faith-based global broadcast media networks?"
+      }
+    ],
+    "questionMatrix": {
+      "questions": [
+        {
+          "type": "what",
+          "query": "What is Evangel Carriers Network?",
+          "targetContentFormat": "Definition Snippet",
+          "recommendation": "Provide a 1-2 sentence concise definition directly under your first <h2> to capture AI summary snippets."
+        },
+        {
+          "type": "how",
+          "query": "How to tune into ECN broadcasts online?",
+          "targetContentFormat": "Step-by-Step Guide",
+          "recommendation": "Add a clear 3-step guide detailing live stream schedules and access links."
+        },
+        {
+          "type": "why",
+          "query": "Why partner with Evangel Carriers Network?",
+          "targetContentFormat": "FAQ Section",
+          "recommendation": "Highlight mission objectives and global reach in an expandable FAQ accordion."
+        },
+        {
+          "type": "can",
+          "query": "Can I access ECN publications internationally?",
+          "targetContentFormat": "FAQ Section",
+          "recommendation": "State global availability and mobile app options clearly for international visitors."
+        }
+      ],
+      "comparisons": [
+        {
+          "type": "vs",
+          "query": "ECN Global broadcasts vs local religious programming",
+          "targetContentFormat": "Comparison Table",
+          "recommendation": "Explain the difference in global satellite and web distribution."
+        }
+      ],
+      "prepositions": [
+        {
+          "type": "for",
+          "query": "ECN broadcasts for mobile and television",
+          "targetContentFormat": "Explainer Section",
+          "recommendation": "Highlight cross-platform compatibility and device support."
+        },
+        {
+          "type": "with",
+          "query": "ECN Global with live stream access",
+          "targetContentFormat": "Explainer Section",
+          "recommendation": "Place direct live stream buttons prominently above the fold."
+        }
+      ]
+    },
+    "plainLanguageAdvice": "Focus on aligning your main headline around 'Evangel Carriers Network'. Adding structured answers to customer questions like 'How to tune into ECN broadcasts' will improve your search visibility and AI direct answers."
+  },
     "meta": {
       "targetUrl": "https://evangelcarriersnetwork.org/",
       "auditTimestamp": "2026-10-22T13:03:55.002Z",
@@ -796,13 +1014,9 @@
     ],
     "whatPassed": "All checked pages cleanly passed: Robots.txt & meta robots indexation, Canonical tag resolution, Meta descriptions, Heading hierarchy & H1 uniqueness, XML sitemap parsing, Near-duplicate body content, JSON-LD schema markup.",
     "notChecked": [
-      "Backlinks profile & external domain authority",
-      "Keyword search rankings & search impressions",
-      "Google Search Console API crawl stats",
-      "Google Analytics 4 & conversion tracking setup",
-      "Google Business Profile / Map pack verification",
-      "Protected pages behind authentication / paywalls",
-      "PageSpeed Insights API returned HTTP 429"
+      "Off-page backlinks & external domain authority (requires third-party web index)",
+      "Historic keyword ranking impressions (requires Google Search Console account connection)",
+      "Private internal pages behind password authentication or paywalls"
     ],
     "allFindings": [
       {
