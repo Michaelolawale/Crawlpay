@@ -233,7 +233,7 @@ function AuditPageContent() {
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[12px]">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="text-graphite-600 dark:text-graphite-400">Try a sample:</span>
-                  {['celopulse.org', 'linear.app', 'allbirds.com'].map((domain) => (
+                  {['crawlpay.vercel.app', 'linear.app', 'stripe.com'].map((domain) => (
                     <button
                       key={domain}
                       type="button"
