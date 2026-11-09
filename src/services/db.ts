@@ -8,6 +8,8 @@ export interface PaymentRecord {
   chain_id: number;
   tx_hash: string;
   status: 'pending' | 'confirmed' | 'failed';
+  is_test?: boolean;
+  type?: 'customer_payment' | 'gas_refuel' | 'ping' | 'deployment';
   created_at: string;
 }
 
@@ -72,6 +74,7 @@ class CrawlpayDatabase {
   private inMemoryData: DbSchema;
   private hasInitializedFromSupabase = false;
   private lastSyncTime = 0;
+  private freeAuditTracker: Map<string, number[]> = new Map();
 
   constructor() {
     this.inMemoryData = {
@@ -84,6 +87,8 @@ class CrawlpayDatabase {
           chain_id: 42220,
           tx_hash: '0x3fc8402348c27474548c645bb2290dbeee4f47aeb38107342b108cbb34a062f5',
           status: 'confirmed',
+          is_test: true,
+          type: 'customer_payment',
           created_at: '2026-10-25T12:00:00.000Z',
         },
       ],
@@ -97,7 +102,7 @@ class CrawlpayDatabase {
           started_at: '2026-10-25T12:00:00.000Z',
           finished_at: '2026-10-25T12:00:03.500Z',
           duration_ms: 3500,
-          is_test: false,
+          is_test: true,
           report_id: 'rep_evangel_example',
         },
       ],
@@ -140,7 +145,12 @@ class CrawlpayDatabase {
       }
 
       if (jobsRes.status === 'fulfilled' && jobsRes.value.data) {
-        this.inMemoryData.jobs = jobsRes.value.data as JobRecord[];
+        this.inMemoryData.jobs = (jobsRes.value.data as any[]).map((j) => {
+          if (!j.ip && j.wallet && j.wallet.startsWith('ip_')) {
+            j.ip = j.wallet.slice(3).replace(/_/g, '.');
+          }
+          return j as JobRecord;
+        });
       }
 
       if (configRes.status === 'fulfilled' && configRes.value.data) {
@@ -169,9 +179,9 @@ class CrawlpayDatabase {
   /**
    * Syncs real incoming Celo Mainnet transactions to AGENT_WALLET_ADDRESS
    */
-  public async syncOnchainTransactions(): Promise<void> {
+  public async syncOnchainTransactions(force = false): Promise<void> {
     const now = Date.now();
-    if (now - this.lastSyncTime < 10000) return; // 10s debounce
+    if (!force && now - this.lastSyncTime < 30000) return; // 30s debounce to prevent rate-limiting
     this.lastSyncTime = now;
 
     try {
@@ -210,36 +220,21 @@ class CrawlpayDatabase {
                 chain_id: 42220,
                 tx_hash: tx.hash,
                 status: 'confirmed',
+                type: 'customer_payment',
+                is_test: false,
                 created_at: new Date(Number(tx.timeStamp) * 1000).toISOString(),
               };
               await this.addPayment(paymentRecord);
               existingTxHashes.add(cleanHash);
-
-              // Auto-generate synchronized crawl job if none exists for this payment
-              const jobId = `job_chain_${cleanHash.slice(2, 10)}`;
-              if (!existingJobIds.has(jobId)) {
-                await this.addJob({
-                  id: jobId,
-                  payment_id: payId,
-                  url: 'https://crawlpay.vercel.app',
-                  depth: 'full',
-                  status: 'done',
-                  started_at: new Date(Number(tx.timeStamp) * 1000).toISOString(),
-                  finished_at: new Date((Number(tx.timeStamp) + 2) * 1000).toISOString(),
-                  duration_ms: 2240,
-                  wallet: tx.from,
-                  is_test: false,
-                });
-                existingJobIds.add(jobId);
-              }
             }
           }
         }
-      } catch (errToken) {
-        console.warn('[DB] Blockscout tokentx sync notice:', errToken);
+      } catch (errToken: any) {
+        console.warn('[DB] Blockscout tokentx notice:', errToken?.message || 'Sync paused');
       }
 
       // 2. Fetch Native Celo and Attributed Calls (action=txlist)
+      // Categorized as operational gas refuels or agent pings (NOT customer revenue)
       try {
         const txListRes = await fetch(
           `https://celo.blockscout.com/api?module=account&action=txlist&address=${agent}&page=1&offset=50&sort=desc`,
@@ -251,39 +246,24 @@ class CrawlpayDatabase {
             if (!tx.hash || tx.isError !== '0') continue;
             const cleanHash = tx.hash.toLowerCase();
 
-            // Incoming native CELO transfer
+            // Incoming native CELO transfer (gas refuel / wallet funding)
             if (tx.to && tx.to.toLowerCase() === agent && Number(tx.value) > 0 && !existingTxHashes.has(cleanHash)) {
               const valueCelo = Number(tx.value) / 1e18;
-              const payId = `pay_chain_${cleanHash.slice(2, 10)}`;
+              const payId = `pay_gas_${cleanHash.slice(2, 10)}`;
               const paymentRecord: PaymentRecord = {
                 id: payId,
                 wallet: tx.from,
-                amount: valueCelo.toFixed(2),
+                amount: valueCelo.toFixed(4),
                 token: 'CELO',
                 chain_id: 42220,
                 tx_hash: tx.hash,
                 status: 'confirmed',
+                type: 'gas_refuel',
+                is_test: false,
                 created_at: new Date(Number(tx.timeStamp) * 1000).toISOString(),
               };
               await this.addPayment(paymentRecord);
               existingTxHashes.add(cleanHash);
-
-              const jobId = `job_chain_${cleanHash.slice(2, 10)}`;
-              if (!existingJobIds.has(jobId)) {
-                await this.addJob({
-                  id: jobId,
-                  payment_id: payId,
-                  url: 'https://crawlpay.vercel.app',
-                  depth: 'full',
-                  status: 'done',
-                  started_at: new Date(Number(tx.timeStamp) * 1000).toISOString(),
-                  finished_at: new Date((Number(tx.timeStamp) + 1) * 1000).toISOString(),
-                  duration_ms: 1850,
-                  wallet: tx.from,
-                  is_test: false,
-                });
-                existingJobIds.add(jobId);
-              }
             }
 
             // Attributed heartbeat ping / agent registration broadcast
@@ -306,11 +286,11 @@ class CrawlpayDatabase {
             }
           }
         }
-      } catch (errTxList) {
-        console.warn('[DB] Blockscout txlist sync notice:', errTxList);
+      } catch (errTxList: any) {
+        console.warn('[DB] Blockscout txlist notice:', errTxList?.message || 'Sync paused');
       }
-    } catch (e) {
-      console.warn('[DB] On-chain sync skipped:', e);
+    } catch (e: any) {
+      console.warn('[DB] On-chain sync notice:', e?.message || 'Sync paused');
     }
   }
 
@@ -425,6 +405,8 @@ class CrawlpayDatabase {
       this.inMemoryData.jobs.unshift(job);
     }
 
+    const effectiveWallet = job.wallet || (job.ip ? `ip_${job.ip.replace(/[^a-zA-Z0-9]/g, '_')}` : null);
+
     const supabase = getSupabaseAdminClient();
     if (supabase) {
       try {
@@ -440,7 +422,7 @@ class CrawlpayDatabase {
           error: job.error || null,
           is_test: Boolean(job.is_test),
           report_id: job.report_id || null,
-          wallet: job.wallet ? job.wallet.toLowerCase() : null,
+          wallet: effectiveWallet ? effectiveWallet.toLowerCase() : null,
           ip: job.ip || null,
         });
       } catch (err) {
@@ -497,7 +479,12 @@ class CrawlpayDatabase {
         }
         const { data, error } = await query;
         if (!error && Array.isArray(data)) {
-          const records = data as JobRecord[];
+          const records = (data as any[]).map((j) => {
+            if (!j.ip && j.wallet && j.wallet.startsWith('ip_')) {
+              j.ip = j.wallet.slice(3).replace(/_/g, '.');
+            }
+            return j as JobRecord;
+          });
           const map = new Map<string, JobRecord>();
           for (const j of this.inMemoryData.jobs) {
             map.set(j.id, j);
@@ -780,6 +767,7 @@ class CrawlpayDatabase {
   /**
    * Supabase-backed & in-memory sliding window rate limiter for Free Quick Audits:
    * - Max 5 audits per hour per IP
+   * - Daily cap of 20 audits per 24 hours per IP
    * - 10-minute domain cooldown (if domain was crawled within 10 minutes and done, returns cached report id)
    * - DOES NOT count failed audits (status: 'failed') against user quota
    */
@@ -787,16 +775,24 @@ class CrawlpayDatabase {
     ip: string,
     targetUrl: string,
     maxPerHour: number = 5,
-    cooldownMinutes: number = 10
+    cooldownMinutes: number = 10,
+    maxPerDay: number = 20
   ): Promise<{
     allowed: boolean;
     code?: 'RATE_LIMIT_EXCEEDED' | 'DOMAIN_COOLDOWN';
+    limitType?: 'hourly' | 'daily';
     message?: string;
     retryAfterSec?: number;
     cachedReportId?: string;
+    remaining?: number;
+    remainingHourly?: number;
+    remainingDaily?: number;
+    limitHourly?: number;
+    limitDaily?: number;
   }> {
     const now = Date.now();
     const oneHourAgo = new Date(now - 3600_000).toISOString();
+    const oneDayAgo = new Date(now - 86400_000).toISOString();
     const cooldownAgo = new Date(now - cooldownMinutes * 60_000).toISOString();
 
     let targetDomain = '';
@@ -806,7 +802,86 @@ class CrawlpayDatabase {
 
     const allJobs = await this.listJobs();
 
-    // 1. Check domain cooldown for free audits
+    const matchesIp = (j: JobRecord) => {
+      if (j.ip && j.ip === ip) return true;
+      if (j.wallet && j.wallet.startsWith('ip_')) {
+        const clean = j.wallet.slice(3).replace(/_/g, '.');
+        return clean === ip;
+      }
+      return false;
+    };
+
+    // 1. Count completed non-failed free audits in the last 24h and last 1h
+    const successfulFreeJobsDay = allJobs.filter((j) => {
+      return (
+        matchesIp(j) &&
+        !j.payment_id &&
+        j.status === 'done' &&
+        (j.finished_at || j.started_at) > oneDayAgo
+      );
+    });
+
+    const successfulFreeJobsHour = successfulFreeJobsDay.filter((j) => {
+      return (j.finished_at || j.started_at) > oneHourAgo;
+    });
+
+    // Also get active in-memory rate tracker entries for this IP within 24h
+    const trackerTimesDay = (this.freeAuditTracker.get(ip) || []).filter((t) => t > now - 86400_000);
+    const trackerTimesHour = trackerTimesDay.filter((t) => t > now - 3600_000);
+    this.freeAuditTracker.set(ip, trackerTimesDay);
+
+    const effectiveUsedHour = Math.max(successfulFreeJobsHour.length, trackerTimesHour.length);
+    const effectiveUsedDay = Math.max(successfulFreeJobsDay.length, trackerTimesDay.length);
+
+    // 2. DAILY CAP CHECK: Block if daily cap (20) reached
+    if (effectiveUsedDay >= maxPerDay) {
+      const timestampsDay = [
+        ...successfulFreeJobsDay.map((j) => new Date(j.finished_at || j.started_at).getTime()),
+        ...trackerTimesDay,
+      ].filter((t) => !isNaN(t) && t > now - 86400_000);
+
+      const oldestDayTimestamp = timestampsDay.length > 0 ? Math.min(...timestampsDay) : now - 43200_000;
+      const retryAfterSec = Math.max(1, Math.ceil((oldestDayTimestamp + 86400_000 - now) / 1000));
+
+      return {
+        allowed: false,
+        code: 'RATE_LIMIT_EXCEEDED',
+        limitType: 'daily',
+        message: `Daily free quick audit cap reached (maximum ${maxPerDay} per day). Upgrade to Deep Crawl on Celo ($0.50 in USDT) or check back tomorrow.`,
+        retryAfterSec,
+        remaining: 0,
+        remainingHourly: Math.max(0, maxPerHour - effectiveUsedHour),
+        remainingDaily: 0,
+        limitHourly: maxPerHour,
+        limitDaily: maxPerDay,
+      };
+    }
+
+    // 3. HOURLY RATE LIMIT CHECK: Block if hourly limit (5) reached
+    if (effectiveUsedHour >= maxPerHour) {
+      const timestampsHour = [
+        ...successfulFreeJobsHour.map((j) => new Date(j.finished_at || j.started_at).getTime()),
+        ...trackerTimesHour,
+      ].filter((t) => !isNaN(t) && t > now - 3600_000);
+
+      const oldestHourTimestamp = timestampsHour.length > 0 ? Math.min(...timestampsHour) : now - 1800_000;
+      const retryAfterSec = Math.max(1, Math.ceil((oldestHourTimestamp + 3600_000 - now) / 1000));
+
+      return {
+        allowed: false,
+        code: 'RATE_LIMIT_EXCEEDED',
+        limitType: 'hourly',
+        message: `Hourly free quick audit limit reached (maximum ${maxPerHour} per hour). Upgrade to Full Deep Crawl on Celo ($0.50 in USDT) or wait for the hourly reset.`,
+        retryAfterSec,
+        remaining: 0,
+        remainingHourly: 0,
+        remainingDaily: Math.max(0, maxPerDay - effectiveUsedDay),
+        limitHourly: maxPerHour,
+        limitDaily: maxPerDay,
+      };
+    }
+
+    // 4. Check domain cooldown for free audits (if domain was crawled within 10m, return cached report)
     if (targetDomain) {
       const recentSameDomain = allJobs.find((j) => {
         if (j.status !== 'done' || !j.report_id || j.payment_id) return false;
@@ -819,40 +894,83 @@ class CrawlpayDatabase {
       });
 
       if (recentSameDomain && recentSameDomain.report_id) {
-        // Return existing cached report to save crawler resources
+        trackerTimesDay.push(now);
+        this.freeAuditTracker.set(ip, trackerTimesDay);
+        const remHour = Math.max(0, maxPerHour - effectiveUsedHour - 1);
+        const remDay = Math.max(0, maxPerDay - effectiveUsedDay - 1);
         return {
           allowed: true,
           cachedReportId: recentSameDomain.report_id,
+          remaining: Math.min(remHour, remDay),
+          remainingHourly: remHour,
+          remainingDaily: remDay,
+          limitHourly: maxPerHour,
+          limitDaily: maxPerDay,
         };
       }
     }
 
-    // 2. Count ONLY successful completed free audits for this IP in the last hour
-    const successfulFreeJobs = allJobs.filter((j) => {
-      return (
-        j.ip === ip &&
-        !j.payment_id &&
-        j.status === 'done' &&
-        (j.finished_at || j.started_at) > oneHourAgo
-      );
-    });
+    const remHour = Math.max(0, maxPerHour - effectiveUsedHour);
+    const remDay = Math.max(0, maxPerDay - effectiveUsedDay);
+    return {
+      allowed: true,
+      remaining: Math.min(remHour, remDay),
+      remainingHourly: remHour,
+      remainingDaily: remDay,
+      limitHourly: maxPerHour,
+      limitDaily: maxPerDay,
+    };
+  }
 
-    if (successfulFreeJobs.length >= maxPerHour) {
-      // Find the oldest job in this window to calculate precise retryAfterSec
-      const oldestTimestamp = Math.min(
-        ...successfulFreeJobs.map((j) => new Date(j.finished_at || j.started_at).getTime())
-      );
-      const retryAfterSec = Math.max(1, Math.ceil((oldestTimestamp + 3600_000 - now) / 1000));
+  /**
+   * Records a free audit attempt for an IP
+   */
+  public recordFreeAudit(ip: string): void {
+    const now = Date.now();
+    const current = (this.freeAuditTracker.get(ip) || []).filter((t) => t > now - 86400_000);
+    current.push(now);
+    this.freeAuditTracker.set(ip, current);
+  }
 
-      return {
-        allowed: false,
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: `Free quick audit limit reached (maximum ${maxPerHour} per hour). Upgrade to Full Deep Crawl on Celo or wait before trying again.`,
-        retryAfterSec,
-      };
+  /**
+   * Refunds a free audit slot if the audit failed
+   */
+  public refundFreeAuditQuota(ip: string): void {
+    const current = this.freeAuditTracker.get(ip) || [];
+    if (current.length > 0) {
+      current.pop();
+      this.freeAuditTracker.set(ip, current);
     }
+  }
 
-    return { allowed: true };
+  /**
+   * Retrieves remaining free audit quota for an IP
+   */
+  public async getFreeAuditQuota(
+    ip: string,
+    maxPerHour: number = 5,
+    maxPerDay: number = 20
+  ): Promise<{
+    remaining: number;
+    limit: number;
+    remainingHourly: number;
+    limitHourly: number;
+    remainingDaily: number;
+    limitDaily: number;
+    limitType?: 'hourly' | 'daily';
+    retryAfterSec?: number;
+  }> {
+    const check = await this.checkFreeAuditLimit(ip, 'https://dummy-check.io', maxPerHour, 10, maxPerDay);
+    return {
+      remaining: check.allowed ? (check.remaining ?? maxPerHour) : 0,
+      limit: maxPerHour,
+      remainingHourly: check.remainingHourly ?? (check.allowed ? maxPerHour : 0),
+      limitHourly: maxPerHour,
+      remainingDaily: check.remainingDaily ?? (check.allowed ? maxPerDay : 0),
+      limitDaily: maxPerDay,
+      limitType: check.limitType,
+      retryAfterSec: check.retryAfterSec,
+    };
   }
 }
 

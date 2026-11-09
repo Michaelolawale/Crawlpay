@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/services/db';
 import { verifyAdminAuth } from '@/utils/adminAuth';
+import { maskAddress } from '@/utils/currency';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,17 +10,33 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized: Admin authentication required' }, { status: 401 });
   }
 
-  const reports = await db.listReportsForWallet();
-  const jobs = await db.listJobs();
+  const { searchParams } = new URL(req.url);
+  const includeTest = searchParams.get('includeTest') === 'true';
+
+  const [reports, jobs] = await Promise.all([
+    db.listReportsForWallet(),
+    db.listJobs(true),
+  ]);
+
   const reportJobMap = new Map(jobs.filter((j) => j.report_id).map((j) => [j.report_id, j]));
 
-  const enriched = reports.map((r) => {
+  const filtered = reports.filter((r) => {
+    if (includeTest) return true;
+    const isTestReport = r.id.includes('test') || r.id.includes('sandbox');
+    const linkedJob = reportJobMap.get(r.id);
+    if (linkedJob?.is_test) return false;
+    return !isTestReport;
+  });
+
+  const enriched = filtered.map((r) => {
     const linkedJob = reportJobMap.get(r.id);
     const repData = (r as any).report_data || {};
+    const rawWallet = r.wallet || linkedJob?.wallet || null;
     return {
       id: r.id,
       targetUrl: r.target_url || repData.targetUrl || 'Unknown Target',
-      wallet: r.wallet || linkedJob?.wallet || null,
+      wallet: rawWallet,
+      maskedWallet: maskAddress(rawWallet),
       mode: r.mode || (repData.pagesChecked > 1 ? 'full' : 'quick'),
       pagesChecked: repData.pagesChecked || (linkedJob?.depth === 'full' ? 50 : 1),
       createdAt: r.created_at || (r as any).timestamp || new Date().toISOString(),
@@ -32,11 +49,21 @@ export async function GET(req: NextRequest) {
         high: repData.topNeedleMovers?.filter((m: any) => m.priority === 'High').length || 0,
       },
       hasReportData: Boolean(repData.summary || repData.scores),
+      isTest: Boolean(linkedJob?.is_test || r.id.includes('test') || r.id.includes('sandbox')),
     };
   });
 
-  return NextResponse.json({
-    reports: enriched,
-    totalCount: enriched.length,
-  });
+  return NextResponse.json(
+    {
+      reports: enriched,
+      totalCount: enriched.length,
+    },
+    {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    }
+  );
 }

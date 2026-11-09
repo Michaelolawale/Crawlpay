@@ -10,11 +10,15 @@ export const maxDuration = 60; // 60s max execution for deep crawler on serverle
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
   let createdJobId: string | undefined;
+  let isVerifiedPaid = false;
+  let crawlMode: 'quick' | 'full' = 'quick';
 
   try {
     // 1. Rate Limiting and Blocklist checks
     const forwarded = req.headers.get('x-forwarded-for');
-    const ip = forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1';
+    const realIp = req.headers.get('x-real-ip');
+    const cfIp = req.headers.get('cf-connecting-ip');
+    const ip = forwarded ? forwarded.split(',')[0].trim() : realIp || cfIp || '127.0.0.1';
 
     if (await db.isBlocklisted('ip', ip)) {
       return NextResponse.json(
@@ -86,11 +90,11 @@ export async function POST(req: NextRequest) {
     }
     const incomingTxHash = rawTx && /^0x[a-fA-F0-9]{64}$/.test(rawTx) ? rawTx : undefined;
 
-    let isVerifiedPaid = false;
+    isVerifiedPaid = false;
     let verifiedPaymentInfo: any = null;
     let paymentId: string | undefined;
 
-    const crawlMode = mode === 'full' ? 'full' : 'quick';
+    crawlMode = mode === 'full' ? 'full' : 'quick';
     const targetPriceUsd = crawlMode === 'full' ? dynamicConfig.full_price_usd : dynamicConfig.quick_price_usd;
 
     if (incomingTxHash) {
@@ -180,15 +184,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 4. Rate Limiting for Free Quick Audits (Max 5/hr per IP + 10m domain cooldown)
+    // 4. Rate Limiting for Free Quick Audits (Max 5/hr per IP, daily cap 20 + 10m domain cooldown)
     if (!isVerifiedPaid && crawlMode === 'quick') {
-      const freeRateCheck = await db.checkFreeAuditLimit(ip, url, 5, 10);
+      const freeRateCheck = await db.checkFreeAuditLimit(ip, url, 5, 10, 20);
       if (!freeRateCheck.allowed) {
         return NextResponse.json(
           {
-            error: freeRateCheck.message || 'Free quick audit limit reached (5 per hour).',
+            error: freeRateCheck.message || 'Free quick audit limit reached.',
             code: freeRateCheck.code || 'RATE_LIMIT_EXCEEDED',
+            limitType: freeRateCheck.limitType || 'hourly',
             retryAfterSec: freeRateCheck.retryAfterSec,
+            remaining: 0,
+            remainingHourly: freeRateCheck.remainingHourly ?? 0,
+            remainingDaily: freeRateCheck.remainingDaily ?? 0,
+            limit: 5,
+            limitHourly: 5,
+            limitDaily: 20,
           },
           {
             status: 429,
@@ -196,6 +207,8 @@ export async function POST(req: NextRequest) {
               'Retry-After': String(freeRateCheck.retryAfterSec || 3600),
               'X-RateLimit-Limit': '5',
               'X-RateLimit-Remaining': '0',
+              'X-RateLimit-Limit-Daily': '20',
+              'X-RateLimit-Remaining-Daily': String(freeRateCheck.remainingDaily ?? 0),
             },
           }
         );
@@ -205,9 +218,18 @@ export async function POST(req: NextRequest) {
       if (freeRateCheck.cachedReportId) {
         const cachedReport = await db.getReport(freeRateCheck.cachedReportId);
         if (cachedReport) {
-          return NextResponse.json(cachedReport);
+          return NextResponse.json(cachedReport, {
+            headers: {
+              'X-RateLimit-Limit': '5',
+              'X-RateLimit-Remaining': String(freeRateCheck.remainingHourly ?? 4),
+              'X-RateLimit-Limit-Daily': '20',
+              'X-RateLimit-Remaining-Daily': String(freeRateCheck.remainingDaily ?? 19),
+            },
+          });
         }
       }
+
+      db.recordFreeAudit(ip);
     }
 
     // 5. Log job in database as running
@@ -256,6 +278,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(report);
   } catch (err: any) {
+    if (!isVerifiedPaid && crawlMode === 'quick') {
+      const forwarded = req.headers.get('x-forwarded-for');
+      const realIp = req.headers.get('x-real-ip');
+      const cfIp = req.headers.get('cf-connecting-ip');
+      const ip = forwarded ? forwarded.split(',')[0].trim() : realIp || cfIp || '127.0.0.1';
+      db.refundFreeAuditQuota(ip);
+    }
+
     const isSecurityError = err?.message?.includes('SSRF') || err?.message?.includes('prohibited');
     const duration = Date.now() - startTime;
 
@@ -273,4 +303,22 @@ export async function POST(req: NextRequest) {
       { status: isSecurityError ? 400 : 500 }
     );
   }
+}
+
+export async function GET(req: NextRequest) {
+  const forwarded = req.headers.get('x-forwarded-for');
+  const realIp = req.headers.get('x-real-ip');
+  const cfIp = req.headers.get('cf-connecting-ip');
+  const ip = forwarded ? forwarded.split(',')[0].trim() : realIp || cfIp || '127.0.0.1';
+
+  const quota = await db.getFreeAuditQuota(ip, 5, 20);
+  return NextResponse.json(quota, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      'X-RateLimit-Limit': String(quota.limitHourly),
+      'X-RateLimit-Remaining': String(quota.remainingHourly),
+      'X-RateLimit-Limit-Daily': String(quota.limitDaily),
+      'X-RateLimit-Remaining-Daily': String(quota.remainingDaily),
+    },
+  });
 }

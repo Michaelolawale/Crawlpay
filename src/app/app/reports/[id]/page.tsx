@@ -136,16 +136,15 @@ export default function SingleReportPage() {
       <div className="space-y-4 border-b border-graphite-100 dark:border-graphite-800 pb-5">
         {/* Navigation Breadcrumb */}
         <div className="no-print">
-          <button
-            type="button"
-            onClick={() => router.push('/app/reports')}
+          <Link
+            href="/app/reports"
             className={`inline-flex items-center gap-1.5 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3.5 py-1.5 text-xs sm:text-[13px] font-medium text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors shadow-xs cursor-pointer ${focusRing}`}
             title="Back to all reports"
             aria-label="Back to all reports"
           >
             <ArrowLeft className="size-3.5" />
             <span>All reports</span>
-          </button>
+          </Link>
         </div>
 
         {/* Title and Actions Row */}

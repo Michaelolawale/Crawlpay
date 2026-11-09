@@ -51,6 +51,8 @@ export interface OnchainIdentityStatus {
 
 export class IdentityService {
   private publicClient;
+  private cachedStatus: OnchainIdentityStatus | null = null;
+  private lastStatusFetchTime = 0;
 
   constructor() {
     this.publicClient = createPublicClient({
@@ -64,7 +66,12 @@ export class IdentityService {
   /**
    * Fetches real-time status of the agent's identity, balances, and network state on Celo Mainnet
    */
-  public async getStatus(): Promise<OnchainIdentityStatus> {
+  public async getStatus(force = false): Promise<OnchainIdentityStatus> {
+    const now = Date.now();
+    if (!force && this.cachedStatus && now - this.lastStatusFetchTime < 15000) {
+      return this.cachedStatus;
+    }
+
     const agentAddr = getAddress(CONFIG.AGENT_WALLET_ADDRESS);
     const registryAddr = getAddress(CONFIG.ERC8004_REGISTRY);
 
@@ -76,7 +83,7 @@ export class IdentityService {
     let isRegistered = false;
     let agentId: number | undefined = undefined;
     let agentURI: string | undefined = undefined;
-    let transactionCount = 187;
+    let transactionCount = 0;
 
     try {
       const [bal, gasPrice, currentBlock, txCount] = await Promise.all([
@@ -89,10 +96,10 @@ export class IdentityService {
       gasPriceWei = gasPrice;
       blockNumber = Number(currentBlock);
       if (txCount !== undefined) {
-        transactionCount = Math.max(187, Number(txCount));
+        transactionCount = Number(txCount);
       }
-    } catch (e) {
-      console.warn('[IdentityService] Celo RPC read error:', e);
+    } catch (e: any) {
+      console.warn('[IdentityService] Celo RPC notice:', e?.shortMessage || e?.message || 'RPC lookup paused');
     }
 
     // Check USDT & cUSD balances
@@ -151,14 +158,14 @@ export class IdentityService {
           // Fallback if enumerable not implemented
         }
       }
-    } catch (err) {
-      console.warn('[IdentityService] Could not check ERC8004 balance:', err);
+    } catch (err: any) {
+      console.warn('[IdentityService] ERC8004 read notice:', err?.shortMessage || err?.message || 'Contract read paused');
     }
 
     const celoEth = parseFloat(formatEther(celoBalanceWei));
     const gasPriceGwei = (Number(gasPriceWei) / 1e9).toFixed(3);
 
-    return {
+    const result: OnchainIdentityStatus = {
       isRegistered,
       agentId,
       agentURI,
@@ -177,6 +184,10 @@ export class IdentityService {
       totalSettlementsCount: transactionCount,
       celoscanUrl: `https://celoscan.io/address/${CONFIG.AGENT_WALLET_ADDRESS}`,
     };
+
+    this.cachedStatus = result;
+    this.lastStatusFetchTime = now;
+    return result;
   }
 
   /**

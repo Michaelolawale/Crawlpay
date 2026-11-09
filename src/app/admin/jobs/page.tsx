@@ -58,6 +58,7 @@ export default function AdminJobsPage() {
   const [rerunningId, setRerunningId] = useState<string | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [includeTest, setIncludeTest] = useState(false);
 
   // Quick live trigger
   const [quickUrl, setQuickUrl] = useState('');
@@ -79,7 +80,7 @@ export default function AdminJobsPage() {
         return;
       }
 
-      const res = await fetch('/api/admin/jobs', {
+      const res = await fetch(`/api/admin/jobs?includeTest=${includeTest ? 'true' : 'false'}`, {
         cache: 'no-store',
         headers: {
           Authorization: `Bearer ${authKey}`,
@@ -232,7 +233,34 @@ export default function AdminJobsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Production vs Sandbox Toggle */}
+          <div className="flex items-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setIncludeTest(false)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors cursor-pointer ${
+                !includeTest
+                  ? 'bg-ink text-white dark:bg-white dark:text-ink shadow-xs'
+                  : 'text-graphite-800 dark:text-graphite-400 hover:text-ink dark:hover:text-white'
+              }`}
+            >
+              Production Only
+            </button>
+            <button
+              type="button"
+              onClick={() => setIncludeTest(true)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1 ${
+                includeTest
+                  ? 'bg-violet text-white shadow-xs'
+                  : 'text-graphite-800 dark:text-graphite-400 hover:text-ink dark:hover:text-white'
+              }`}
+            >
+              <FlaskConical className="size-3" />
+              <span>Include Sandbox</span>
+            </button>
+          </div>
+
           {lastSyncTime && (
             <span className="hidden sm:inline-block text-[11px] font-mono text-graphite-800 dark:text-graphite-400">
               Updated {lastSyncTime.toLocaleTimeString()}
@@ -318,10 +346,10 @@ export default function AdminJobsPage() {
       {/* Filters and Search Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             onClick={() => setTypeFilter('all')}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
               typeFilter === 'all'
                 ? 'bg-ink text-white dark:bg-white dark:text-ink'
                 : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-800 dark:text-graphite-300 hover:bg-graphite-200 dark:hover:bg-graphite-700'
@@ -332,7 +360,7 @@ export default function AdminJobsPage() {
 
           <button
             onClick={() => setTypeFilter('recent')}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 ${
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer inline-flex items-center gap-1 whitespace-nowrap ${
               typeFilter === 'recent'
                 ? 'bg-ink text-white dark:bg-white dark:text-ink'
                 : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-800 dark:text-graphite-300 hover:bg-graphite-200 dark:hover:bg-graphite-700'
@@ -344,7 +372,7 @@ export default function AdminJobsPage() {
 
           <button
             onClick={() => setTypeFilter('production')}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
               typeFilter === 'production'
                 ? 'bg-ink text-white dark:bg-white dark:text-ink'
                 : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-800 dark:text-graphite-300 hover:bg-graphite-200 dark:hover:bg-graphite-700'
@@ -355,7 +383,7 @@ export default function AdminJobsPage() {
 
           <button
             onClick={() => setTypeFilter('test')}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
               typeFilter === 'test'
                 ? 'bg-ink text-white dark:bg-white dark:text-ink'
                 : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-800 dark:text-graphite-300 hover:bg-graphite-200 dark:hover:bg-graphite-700'
@@ -367,7 +395,7 @@ export default function AdminJobsPage() {
           {jobs.some((j) => j.status === 'failed') && (
             <button
               onClick={() => setTypeFilter('failed')}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer text-rose-600 dark:text-rose-400 ${
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer text-rose-600 dark:text-rose-400 whitespace-nowrap ${
                 typeFilter === 'failed'
                   ? 'bg-rose-600 text-white dark:bg-rose-600 dark:text-white'
                   : 'bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60'
@@ -396,7 +424,7 @@ export default function AdminJobsPage() {
       {/* Jobs Table */}
       <div className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[760px] text-left text-xs">
             <thead className="border-b border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#20212b] font-bold text-graphite-800 dark:text-graphite-300">
               <tr>
                 <th className="px-4 py-3 whitespace-nowrap">Started</th>

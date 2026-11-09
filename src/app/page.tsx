@@ -251,16 +251,9 @@ export default function LandingPage() {
                 </button>
               </div>
               <p className="mt-3 text-[14px] text-graphite-700 dark:text-graphite-300">
-                Free quick audit (up to 5 per hour). No account, wallet or email needed.
+                Free quick audit (up to 5 per hour, 20 per day cap). No account, wallet or email needed.
               </p>
             </form>
-          </div>
-        </section>
-
-        {/* LIVE PROOF ON-CHAIN SHOWCASE */}
-        <section aria-label="On-chain live proof" className="bg-white dark:bg-[#121317] border-b border-graphite-100 dark:border-graphite-800 py-10 sm:py-14">
-          <div className="max-w-[1000px] mx-auto px-4 sm:px-6">
-            <LiveProofCounter variant="card" />
           </div>
         </section>
 

@@ -42,12 +42,13 @@ export default function AdminReportsArchivePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [searchFilter, setSearchFilter] = useState('');
   const [privacyMode, setPrivacyMode] = useState(false);
+  const [includeTest, setIncludeTest] = useState(false);
 
   const fetchReports = async () => {
     setRefreshing(true);
     try {
       const authKey = getAdminToken();
-      const res = await fetch('/api/admin/reports', {
+      const res = await fetch(`/api/admin/reports?includeTest=${includeTest ? 'true' : 'false'}`, {
         cache: 'no-store',
         headers: { Authorization: `Bearer ${authKey}` },
       });
@@ -67,7 +68,7 @@ export default function AdminReportsArchivePage() {
     fetchReports();
     const interval = setInterval(fetchReports, 12000);
     return () => clearInterval(interval);
-  }, []);
+  }, [includeTest]);
 
   const filteredReports = reports.filter((r) =>
     r.targetUrl.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -88,6 +89,32 @@ export default function AdminReportsArchivePage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Production vs Sandbox Toggle */}
+          <div className="flex items-center gap-1.5 rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setIncludeTest(false)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors cursor-pointer ${
+                !includeTest
+                  ? 'bg-ink text-white dark:bg-white dark:text-ink shadow-xs'
+                  : 'text-graphite-800 dark:text-graphite-400 hover:text-ink dark:hover:text-white'
+              }`}
+            >
+              Production
+            </button>
+            <button
+              type="button"
+              onClick={() => setIncludeTest(true)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors cursor-pointer ${
+                includeTest
+                  ? 'bg-violet text-white shadow-xs'
+                  : 'text-graphite-800 dark:text-graphite-400 hover:text-ink dark:hover:text-white'
+              }`}
+            >
+              Sandbox
+            </button>
+          </div>
+
           <button
             type="button"
             onClick={() => setPrivacyMode(!privacyMode)}

@@ -1,34 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/services/db';
+import { adminService } from '@/services/adminService';
 import { verifyAdminAuth } from '@/utils/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   if (!verifyAdminAuth(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: 'Unauthorized: Admin authentication required' }, { status: 401 });
   }
 
-  await db.syncOnchainTransactions();
-  const [payments, jobs] = await Promise.all([db.listPayments(), db.listJobs(true)]);
+  const { searchParams } = new URL(req.url);
+  const includeTest = searchParams.get('includeTest') === 'true';
 
-  const paymentsWithJob = payments.map((p) => {
-    const job = jobs.find(
-      (j) => j.payment_id === p.id || (p.tx_hash && j.id.includes(p.tx_hash.slice(2, 10)))
-    );
-    return {
-      ...p,
-      job: job
-        ? {
-            id: job.id,
-            url: job.url,
-            depth: job.depth,
-            status: job.status,
-            report_id: job.report_id,
-          }
-        : null,
-    };
+  const data = await adminService.getPayments(includeTest);
+
+  return NextResponse.json(data, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    },
   });
-
-  return NextResponse.json({ payments: paymentsWithJob });
 }

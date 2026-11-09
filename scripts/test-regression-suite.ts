@@ -249,6 +249,29 @@ async function runTests() {
     `Calculates accurate retryAfterSec countdown (${checkOverLimit.retryAfterSec}s)`
   );
 
+  // Test daily cap: 20 per day cap
+  const dailyTestIp = `198.51.100.${Math.floor(Math.random() * 200 + 10)}`;
+  const twoHoursAgo = new Date(Date.now() - 7200_000).toISOString();
+  for (let i = 0; i < 20; i++) {
+    await db.addJob({
+      id: `job_daily_${Date.now()}_${i}`,
+      url: `https://test-daily-${i}.com`,
+      depth: 'quick',
+      status: 'done',
+      started_at: twoHoursAgo,
+      finished_at: twoHoursAgo,
+      is_test: true,
+      report_id: `rep_daily_${i}`,
+      ip: dailyTestIp,
+    });
+  }
+
+  const checkDailyLimit = await db.checkFreeAuditLimit(dailyTestIp, 'https://test-daily-21.com', 5, 10, 20);
+  assert(
+    checkDailyLimit.allowed === false && checkDailyLimit.limitType === 'daily',
+    `21st daily free audit is blocked by daily cap (got allowed=${checkDailyLimit.allowed}, limitType=${checkDailyLimit.limitType})`
+  );
+
   // ----------------------------------------------------
   // TEST GROUP 6: Single-Page Hard Cap for Quick Mode
   // ----------------------------------------------------

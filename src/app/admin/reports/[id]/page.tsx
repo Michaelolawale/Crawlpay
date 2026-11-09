@@ -247,11 +247,11 @@ export default function AdminReportInspectorPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setPrivacyMode(!privacyMode)}
-            className={`inline-flex items-center gap-1.5 rounded-[48px] px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-colors cursor-pointer ${
+            className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-[48px] px-3.5 py-1.5 text-xs font-semibold shadow-sm transition-colors cursor-pointer ${
               privacyMode
                 ? 'bg-emerald-700 text-white hover:bg-emerald-800'
                 : 'bg-amber-700 text-white hover:bg-amber-800'
@@ -264,7 +264,7 @@ export default function AdminReportInspectorPage() {
           <button
             type="button"
             onClick={() => setMaskDomain(!maskDomain)}
-            className={`inline-flex items-center gap-1.5 rounded-[48px] border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+            className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 rounded-[48px] border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
               maskDomain
                 ? 'bg-ink dark:bg-white text-white dark:text-ink border-transparent'
                 : 'bg-white dark:bg-[#16171d] text-ink dark:text-white border-graphite-200 dark:border-graphite-700 hover:bg-graphite-50'

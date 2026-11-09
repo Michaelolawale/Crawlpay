@@ -137,7 +137,7 @@ export default function AdminConfigPage() {
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-graphite-100 dark:border-graphite-800 pt-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-graphite-100 dark:border-graphite-800 pt-5">
           {savedFeedback ? (
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               <Check className="size-4" />
@@ -150,7 +150,7 @@ export default function AdminConfigPage() {
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex h-[44px] items-center gap-2 rounded-[48px] bg-ink dark:bg-white px-6 text-xs font-semibold text-white dark:text-ink hover:opacity-90 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-auto inline-flex h-[44px] items-center justify-center gap-2 rounded-[48px] bg-ink dark:bg-white px-6 text-xs font-semibold text-white dark:text-ink hover:opacity-90 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
           >
             {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
             <span>Save Configuration</span>

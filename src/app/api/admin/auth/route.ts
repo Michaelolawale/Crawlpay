@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import {
   verifyAdminAuth,
   isAllowedAdminIp,
+  extractClientIp,
   checkAdminRateLimit,
   recordFailedAdminLogin,
   recordSuccessfulAdminLogin,
@@ -25,8 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const forwarded = req.headers.get('x-forwarded-for');
-  const clientIp = (forwarded ? forwarded.split(',')[0].trim() : req.headers.get('x-real-ip') || '127.0.0.1').toLowerCase();
+  const clientIp = extractClientIp(req);
 
   const rateCheck = checkAdminRateLimit(clientIp);
   if (!rateCheck.allowed) {

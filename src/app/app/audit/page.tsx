@@ -16,6 +16,7 @@ import {
   Layers,
   ArrowRight,
   Loader2,
+  RotateCcw,
 } from 'lucide-react';
 import { PaymentModal } from '@/components/PaymentModal';
 import { CheckEngineView } from '@/components/CheckEngineView';
@@ -39,8 +40,50 @@ function AuditPageContent() {
   const [isRunningFreeAudit, setIsRunningFreeAudit] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [completedReport, setCompletedReport] = useState<FullAuditReport | null>(null);
+  const [freeQuota, setFreeQuota] = useState<{
+    remaining: number;
+    limit: number;
+    remainingHourly: number;
+    limitHourly: number;
+    remainingDaily: number;
+    limitDaily: number;
+    limitType?: 'hourly' | 'daily';
+    retryAfterSec?: number;
+  }>({
+    remaining: 5,
+    limit: 5,
+    remainingHourly: 5,
+    limitHourly: 5,
+    remainingDaily: 20,
+    limitDaily: 20,
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchQuota = async () => {
+    try {
+      const res = await fetch('/api/audit');
+      if (res.ok) {
+        const data = await res.json();
+        if (typeof data.remaining === 'number') {
+          setFreeQuota({
+            remaining: data.remaining,
+            limit: data.limit || 5,
+            remainingHourly: typeof data.remainingHourly === 'number' ? data.remainingHourly : data.remaining,
+            limitHourly: data.limitHourly || 5,
+            remainingDaily: typeof data.remainingDaily === 'number' ? data.remainingDaily : 20,
+            limitDaily: data.limitDaily || 20,
+            limitType: data.limitType,
+            retryAfterSec: data.retryAfterSec,
+          });
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    fetchQuota();
+  }, []);
 
   useEffect(() => {
     document.title = 'Audit your website | CrawlPay';
@@ -138,12 +181,23 @@ function AuditPageContent() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 429) {
+          setFreeQuota((prev) => ({
+            ...prev,
+            remaining: 0,
+            remainingHourly: typeof data.remainingHourly === 'number' ? data.remainingHourly : (data.limitType === 'hourly' ? 0 : prev.remainingHourly),
+            remainingDaily: typeof data.remainingDaily === 'number' ? data.remainingDaily : (data.limitType === 'daily' ? 0 : prev.remainingDaily),
+            limitType: data.limitType || 'hourly',
+            retryAfterSec: data.retryAfterSec || 3600,
+          }));
           throw new Error(
-            data.error || 'Free quick audit limit reached (5 per hour). You can start a deep crawl or wait for the cooldown.'
+            data.error || 'Free quick audit limit reached (5 per hour, 20 per day cap). You can start a deep crawl or wait for the cooldown.'
           );
         }
         throw new Error(data.error || 'Quick audit execution failed.');
       }
+
+      // Read remaining quota or refetch
+      fetchQuota();
 
       const repId = `rep_${Date.now()}`;
       setCompletedReport(data);
@@ -278,7 +332,7 @@ function AuditPageContent() {
                   className="sr-only"
                 />
                 <div>
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
                     <div className="flex items-center gap-2.5">
                       <span className={`flex size-8 items-center justify-center rounded-full ${
                         depth === 'quick' ? 'bg-ink dark:bg-white text-white dark:text-ink' : 'bg-graphite-100 dark:bg-graphite-800 text-ink dark:text-white'
@@ -289,12 +343,21 @@ function AuditPageContent() {
                         Quick audit
                       </span>
                     </div>
-                    <span className="rounded-full px-2.5 py-0.5 text-[12px] font-sans font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                      Free
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      <span className="rounded-full px-2.5 py-0.5 text-[12px] font-sans font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
+                        Free
+                      </span>
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-mono font-medium ${
+                        freeQuota.remaining <= 0
+                          ? 'bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                          : 'bg-graphite-100 dark:bg-graphite-800 text-graphite-700 dark:text-graphite-300'
+                      }`}>
+                        {freeQuota.remainingHourly} of 5 free left this hr
+                      </span>
+                    </div>
                   </div>
                   <p className="mt-3 text-[14px] text-graphite-700 dark:text-graphite-300 leading-relaxed font-normal">
-                    One page, up to 5 per hour. Full checks for search engines, AI crawlers, on-page keyword opportunities, and ready-to-paste code fixes.
+                    One page, up to 5 per hour (daily cap of 20). Full checks for search engines, AI crawlers, on-page keyword opportunities, and ready-to-paste code fixes.
                   </p>
                 </div>
               </label>
@@ -415,13 +478,52 @@ function AuditPageContent() {
             </div>
           )}
 
+          {/* Rate Limit Reached Paywall / Upgrade Banner */}
+          {depth === 'quick' && freeQuota.remaining <= 0 && (
+            <div className="rounded-[16px] border border-amber-300 dark:border-amber-800/80 bg-amber-50/80 dark:bg-amber-950/30 p-4 space-y-3">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                    {freeQuota.limitType === 'daily' || (freeQuota.remainingDaily !== undefined && freeQuota.remainingDaily <= 0)
+                      ? 'Daily Free Audit Cap Reached (20/20 Used)'
+                      : 'Hourly Free Audit Limit Reached (5/5 Used)'}
+                  </h4>
+                  <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                    {freeQuota.limitType === 'daily' || (freeQuota.remainingDaily !== undefined && freeQuota.remainingDaily <= 0)
+                      ? `You have reached the daily cap of 20 free quick audits for this IP${freeQuota.retryAfterSec ? ` (quota resets in ~${Math.ceil(freeQuota.retryAfterSec / 3600)}h)` : ''}. Upgrade to a Deep Crawl for instant multi-page crawling, orphan detection, and competitor gap analysis.`
+                      : `You have reached the maximum 5 free quick audits for this hour${freeQuota.retryAfterSec ? ` (resets in ~${Math.ceil(freeQuota.retryAfterSec / 60)} min)` : ''}. Upgrade to a Deep Crawl for instant multi-page crawling, orphan detection, and competitor gap analysis.`}
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setDepth('full')}
+                  className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-4 py-2 text-xs font-semibold text-white dark:text-ink hover:opacity-90 shadow-sm cursor-pointer"
+                >
+                  <Layers className="size-3.5" />
+                  <span>Start Deep Crawl ($0.50 in USDT)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={fetchQuota}
+                  className="inline-flex items-center gap-1.5 rounded-[48px] border border-graphite-300 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3.5 py-2 text-xs font-medium text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] cursor-pointer"
+                >
+                  <RotateCcw className="size-3.5 text-graphite-500" />
+                  <span>Check Quota</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Primary Submit Button */}
           <div className="pt-2">
             <button
               type="submit"
-              disabled={!isFormValid || isRunningFreeAudit}
+              disabled={!isFormValid || isRunningFreeAudit || (depth === 'quick' && freeQuota.remaining <= 0)}
               className={`w-full inline-flex items-center justify-center gap-2 rounded-[48px] py-3.5 px-6 text-[15px] font-medium transition-all ${
-                isFormValid && !isRunningFreeAudit
+                isFormValid && !isRunningFreeAudit && !(depth === 'quick' && freeQuota.remaining <= 0)
                   ? 'bg-ink dark:bg-white text-white dark:text-ink hover:opacity-90 active:scale-[0.99] cursor-pointer'
                   : 'bg-graphite-200 dark:bg-graphite-800 text-graphite-600 dark:text-graphite-400 cursor-not-allowed opacity-60'
               } ${focusRing}`}
@@ -432,10 +534,21 @@ function AuditPageContent() {
                   <span>Auditing page and analyzing content...</span>
                 </>
               ) : depth === 'quick' ? (
-                <>
-                  <Zap className="size-4 text-emerald-400 dark:text-emerald-600" />
-                  <span>Run free audit</span>
-                </>
+                freeQuota.remaining <= 0 ? (
+                  <>
+                    <AlertCircle className="size-4 text-amber-500" />
+                    <span>
+                      {freeQuota.limitType === 'daily' || (freeQuota.remainingDaily !== undefined && freeQuota.remainingDaily <= 0)
+                        ? 'Daily limit reached (20/20 used)'
+                        : 'Hourly limit reached (5/5 used)'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="size-4 text-emerald-400 dark:text-emerald-600" />
+                    <span>Run free audit</span>
+                  </>
+                )
               ) : (
                 <>
                   <ShieldCheck className="size-4" />

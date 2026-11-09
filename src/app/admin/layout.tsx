@@ -37,11 +37,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [authError, setAuthError] = useState('');
   const [loggingIn, setLoggingIn] = useState(false);
 
-  // Restore active admin session from sessionStorage if present
+  // Restore and verify active admin session from sessionStorage
   useEffect(() => {
     const existing = getAdminToken();
     if (existing) {
-      setIsAuthenticated(true);
+      fetch('/api/admin/auth', {
+        headers: { Authorization: `Bearer ${existing}` },
+      })
+        .then((res) => {
+          if (res.ok) {
+            setIsAuthenticated(true);
+          } else {
+            clearAdminToken();
+            setIsAuthenticated(false);
+          }
+        })
+        .catch(() => {
+          // If offline, keep local state
+          setIsAuthenticated(true);
+        });
     }
   }, []);
 
@@ -204,7 +218,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Mobile Navigation bar */}
-        <div className="flex md:hidden overflow-x-auto no-scrollbar border-t border-graphite-100 dark:border-graphite-800 px-3 py-2 gap-1.5 bg-[#f4f4f6] dark:bg-[#16171d] flex-nowrap">
+        <div className="flex md:hidden overflow-x-auto border-t border-graphite-100 dark:border-graphite-800 px-3 py-2 gap-1.5 bg-[#f4f4f6] dark:bg-[#16171d] flex-nowrap [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {ADMIN_NAV.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -212,7 +226,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex shrink-0 items-center gap-1.5 rounded-[48px] px-3 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`flex shrink-0 items-center gap-1.5 rounded-[48px] px-3.5 py-1.5 text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-ink dark:bg-white text-white dark:text-ink shadow-sm'
                     : 'text-graphite-800 dark:text-graphite-300 hover:bg-graphite-200/50 dark:hover:bg-[#22232c]'
@@ -227,7 +241,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </header>
 
       {/* Main Admin Page */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-5 sm:py-8 relative">
         {children}
       </main>
     </div>

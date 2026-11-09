@@ -133,7 +133,7 @@ export default function AdminAbusePage() {
           <button
             type="submit"
             disabled={!value.trim()}
-            className="inline-flex h-[42px] items-center gap-2 rounded-[48px] bg-rose-600 px-5 text-xs font-semibold text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-auto inline-flex h-[42px] items-center justify-center gap-2 rounded-[48px] bg-rose-600 px-5 text-xs font-semibold text-white hover:bg-rose-700 transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
           >
             <Plus className="size-3.5" />
             <span>Add to Blocklist</span>
@@ -156,27 +156,29 @@ export default function AdminAbusePage() {
             </div>
           ) : (
             blocklist.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between p-5 hover:bg-[#fafafb] dark:hover:bg-[#20212b]/50 transition-colors">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
+              <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 sm:p-5 hover:bg-[#fafafb] dark:hover:bg-[#20212b]/50 transition-colors">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-[6px] bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 text-[10px] font-mono font-bold text-rose-700 dark:text-rose-400 uppercase border border-rose-200 dark:border-rose-800/80">
                       {item.type}
                     </span>
-                    <span className="font-mono font-bold text-ink dark:text-white text-sm">{item.value}</span>
+                    <span className="font-mono font-bold text-ink dark:text-white text-sm break-all">{item.value}</span>
                   </div>
-                  <p className="text-[12px] text-graphite-800 dark:text-graphite-400">
+                  <p className="text-[12px] text-graphite-800 dark:text-graphite-400 break-words">
                     Reason: {item.reason} · Blocked at {new Date(item.created_at).toLocaleDateString()}
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleRemove(item.type, item.value)}
-                  className="rounded-[8px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-2 text-graphite-800 dark:text-graphite-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 transition-colors cursor-pointer"
-                  title="Remove restriction"
-                >
-                  <Trash2 className="size-3.5" />
-                </button>
+                <div className="self-end sm:self-center shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(item.type, item.value)}
+                    className="rounded-[8px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-2 text-graphite-800 dark:text-graphite-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-200 transition-colors cursor-pointer"
+                    title="Remove restriction"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </div>
               </div>
             ))
           )}

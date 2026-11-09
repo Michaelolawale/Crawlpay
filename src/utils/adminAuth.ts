@@ -2,14 +2,45 @@ import { NextRequest } from 'next/server';
 import crypto from 'crypto';
 
 /**
+ * Extracts and normalizes the client IP address from various request headers and properties,
+ * stripping port numbers and IPv4-mapped IPv6 prefixes (::ffff:) for consistent matching.
+ */
+export function extractClientIp(req: NextRequest): string {
+  const cfConnectingIp = req.headers.get('cf-connecting-ip');
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  const realIp = req.headers.get('x-real-ip');
+  const nextReqIp = (req as any).ip;
+
+  let raw = (
+    cfConnectingIp ||
+    (forwardedFor ? forwardedFor.split(',')[0].trim() : null) ||
+    realIp ||
+    nextReqIp ||
+    '127.0.0.1'
+  ).trim();
+
+  // Strip IPv4-mapped IPv6 prefix ::ffff:
+  if (raw.startsWith('::ffff:')) {
+    raw = raw.slice(7);
+  }
+
+  // Strip port if formatted as ip:port (IPv4)
+  if (raw.includes('.') && raw.includes(':')) {
+    raw = raw.split(':')[0];
+  }
+
+  return raw.toLowerCase();
+}
+
+/**
  * IP allowlist verification.
  * Only enforced if ADMIN_ENFORCE_IP === 'true' in the environment.
  * In production/cloud deployments, IP filtering can be optional to avoid
  * locking out administrators on mobile networks or dynamic broadband.
  */
 export function isAllowedAdminIp(req: NextRequest): boolean {
-  // If IP enforcement is not strictly enabled, allow access protected by the secret key
-  if (process.env.ADMIN_ENFORCE_IP !== 'true') {
+  const envFlag = (process.env.ADMIN_ENFORCE_IP || '').trim().replace(/['"]/g, '').toLowerCase();
+  if (envFlag !== 'true') {
     return true;
   }
 
@@ -18,17 +49,20 @@ export function isAllowedAdminIp(req: NextRequest): boolean {
     return true;
   }
 
-  const forwardedFor = req.headers.get('x-forwarded-for');
-  const realIp = req.headers.get('x-real-ip');
-  const clientIp = (forwardedFor ? forwardedFor.split(',')[0].trim() : realIp || '127.0.0.1').toLowerCase();
+  const clientIp = extractClientIp(req);
 
   const allowedIps = allowedIpsRaw
     .split(',')
-    .map((s) => s.trim().toLowerCase())
+    .map((s) => {
+      let clean = s.trim().replace(/['"]/g, '').toLowerCase();
+      if (clean.startsWith('::ffff:')) clean = clean.slice(7);
+      if (clean.includes('.') && clean.includes(':')) clean = clean.split(':')[0];
+      return clean;
+    })
     .filter(Boolean);
 
   // Always permit local loopbacks
-  allowedIps.push('127.0.0.1', '::1', 'localhost', '::ffff:127.0.0.1');
+  allowedIps.push('127.0.0.1', '::1', 'localhost');
 
   return allowedIps.includes(clientIp);
 }
@@ -56,7 +90,7 @@ export function verifyAdminAuth(req: NextRequest): boolean {
   const authHeader = req.headers.get('authorization') || req.headers.get('x-admin-key');
   const expectedKey = process.env.ADMIN_KEY;
 
-  if (!expectedKey || !authHeader) return false;
+  if (!expectedKey || !expectedKey.trim() || !authHeader) return false;
 
   const token = authHeader.replace(/^Bearer\s+/i, '').trim();
   return timingSafeStringEqual(token, expectedKey.trim());
