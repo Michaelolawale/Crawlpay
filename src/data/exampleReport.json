@@ -1,5 +1,6 @@
 {
   "targetUrl": "https://evangelcarriersnetwork.org/",
+  "isFreeTier": false,
   "auditTimestamp": "2026-10-22T13:03:55.001Z",
   "summary": "Audit analyzed 1 page(s) for evangelcarriersnetwork.org (WordPress stack). Found 3 actionable optimization group(s) across metadata, structure, and media assets.",
   "siteSummary": {

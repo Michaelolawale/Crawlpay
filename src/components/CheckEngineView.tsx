@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   ShieldAlert,
   AlertTriangle,
   Info,
   CheckCircle2,
   XCircle,
+  Lock,
   FileCode,
   Copy,
   Check,
@@ -216,7 +218,8 @@ export function CheckEngineView(props: CheckEngineViewProps) {
   const keywordAlignment = keywordData?.keywordAlignment;
   const analyticsSignals = report?.analyticsSignals;
   const localSeoSignals = report?.localSeoSignals;
-  const isMultiPage = pagesChecked > 1 || report?.isFreeTier === false;
+  const isMultiPage = pagesChecked > 1 || report?.isFreeTier === false || Boolean((report as any)?.mode === 'full');
+  const isDeepCrawl = isMultiPage;
 
   // Code Patches
   const cleanDomain = targetUrl ? targetUrl.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/.*$/, '') : 'yourdomain.com';
@@ -865,8 +868,15 @@ export function CheckEngineView(props: CheckEngineViewProps) {
           >
             <Swords className="size-3.5 shrink-0 text-blue-500" />
             <span className="shrink-0 whitespace-nowrap">Competitor Analysis</span>
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none ${activeMainTab === 'competitor' ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink' : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'}`}>
-              {comparison ? 'Active' : 'Benchmark'}
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-mono leading-none flex items-center gap-1 ${
+              !isDeepCrawl
+                ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold border border-amber-300/40 dark:border-amber-800/40'
+                : activeMainTab === 'competitor'
+                ? 'bg-white/20 text-white dark:bg-black/20 dark:text-ink'
+                : 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold'
+            }`}>
+              {!isDeepCrawl && <Lock className="size-2.5" />}
+              <span>{!isDeepCrawl ? 'Deep crawl' : comparison ? 'Active' : 'Benchmark'}</span>
             </span>
           </button>
         </nav>
@@ -3014,95 +3024,186 @@ Allow: /`;
           ========================================================================= */}
       {activeMainTab === 'competitor' && (
         <div className="space-y-6 tab-panel-enter">
-          {/* Head-to-Head Competitor Intelligence */}
-          <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-5">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className="size-9 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
-                    <Swords className="size-5" />
+          {!isDeepCrawl ? (
+            /* 1. DEEP CRAWL GATE FOR FREE AUDITS */
+            <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-6 sm:p-10 shadow-sm text-center relative overflow-hidden">
+              <div className="relative z-10 max-w-[640px] mx-auto space-y-5">
+                <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-8 ring-amber-500/5 mx-auto">
+                  <Lock className="size-7" />
+                </div>
+
+                <div className="space-y-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-mono font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/80">
+                    <Lock className="size-3" />
+                    Deep Crawl Feature
+                  </span>
+                  <h3 className="font-sans text-xl sm:text-2xl font-bold text-ink dark:text-white tracking-tight">
+                    Head-to-Head Competitor Intelligence
+                  </h3>
+                  <p className="text-sm text-graphite-700 dark:text-graphite-300 leading-relaxed">
+                    Benchmark <strong className="text-ink dark:text-white font-mono">{cleanDomain}</strong> directly against any competitor to diagnose load speed curves, schema gap opportunities, and receive an actionable 3-step outrank playbook.
+                  </p>
+                </div>
+
+                {/* Features Unlocked Grid */}
+                <div className="grid gap-3 sm:grid-cols-2 text-left pt-2 pb-2 text-xs">
+                  <div className="flex items-start gap-2.5 rounded-[14px] bg-[#f4f4f6]/70 dark:bg-[#1a1b22] p-3.5 border border-graphite-100 dark:border-graphite-800">
+                    <Activity className="size-4 text-violet shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <strong className="text-ink dark:text-white block font-semibold">Speed &amp; Vitals Curves</strong>
+                      <span className="text-graphite-600 dark:text-graphite-400 text-[11px] leading-relaxed">
+                        Side-by-side LCP, TTFB, and DOM completion timelines mapped against your rival
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-display text-base font-bold text-ink dark:text-white">
-                      Head-to-Head Competitor Intelligence
-                    </h3>
-                    <p className="text-xs text-graphite-600 dark:text-graphite-400">
-                      Benchmark your technical SEO, load speed curves, and structured data directly against any rival domain.
-                    </p>
+
+                  <div className="flex items-start gap-2.5 rounded-[14px] bg-[#f4f4f6]/70 dark:bg-[#1a1b22] p-3.5 border border-graphite-100 dark:border-graphite-800">
+                    <Bot className="size-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <strong className="text-ink dark:text-white block font-semibold">AI &amp; Schema Gap Analysis</strong>
+                      <span className="text-graphite-600 dark:text-graphite-400 text-[11px] leading-relaxed">
+                        Compare structured JSON-LD schemas and verify AI crawler access (GPTBot, ClaudeBot)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 rounded-[14px] bg-[#f4f4f6]/70 dark:bg-[#1a1b22] p-3.5 border border-graphite-100 dark:border-graphite-800">
+                    <CheckCircle2 className="size-4 text-blue-600 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <strong className="text-ink dark:text-white block font-semibold">3 Steps to Outrank Them</strong>
+                      <span className="text-graphite-600 dark:text-graphite-400 text-[11px] leading-relaxed">
+                        Automated strategic diagnostic identifying why they lead and exact steps to beat them
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 rounded-[14px] bg-[#f4f4f6]/70 dark:bg-[#1a1b22] p-3.5 border border-graphite-100 dark:border-graphite-800">
+                    <Layers className="size-4 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <strong className="text-ink dark:text-white block font-semibold">Site-Wide Architecture (Up to 50 Pages)</strong>
+                      <span className="text-graphite-600 dark:text-graphite-400 text-[11px] leading-relaxed">
+                        Orphan pages, redirect loops, and broken internal links crawled across your domain
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              {comparison ? (
-                <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300">
-                  Comparison Active ({comparison.competitor.url})
-                </span>
-              ) : (
-                <span className="rounded-full bg-graphite-100 dark:bg-graphite-800 border border-graphite-200 dark:border-graphite-700 px-3 py-1 text-xs font-semibold text-graphite-600 dark:text-graphite-300">
-                  Industry Standard Baseline
-                </span>
-              )}
-            </div>
 
-            <form onSubmit={handleRunCompetitor} className="space-y-2.5">
-              <div className="flex flex-col sm:flex-row gap-2.5">
-                <div className="relative flex-1">
-                  <Globe className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 text-graphite-400" />
-                  <input
-                    id="competitor-domain-input"
-                    type="text"
-                    aria-label="Enter rival website domain to compare"
-                    value={competitorUrl}
-                    onChange={(e) => setCompetitorUrl(e.target.value)}
-                    placeholder="Enter rival domain (e.g. semrush.com or ahrefs.com)"
-                    className="w-full rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-graphite-400 focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-white"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={compLoading}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 hover-lift active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer shrink-0 shadow-xs"
-                >
-                  {compLoading ? (
-                    <>
-                      <Activity className="size-3.5 animate-spin" />
-                      <span>Crawling Rival...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Swords className="size-3.5" />
-                      <span>Run Comparison</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Quick Rival Suggestions */}
-              <div className="flex flex-wrap items-center gap-1.5 text-[11px] pt-1">
-                <span className="text-graphite-500 font-mono">Quick test rivals:</span>
-                {['ahrefs.com', 'semrush.com', 'moz.com'].map((rival) => (
-                  <button
-                    key={rival}
-                    type="button"
-                    onClick={() => setCompetitorUrl(rival)}
-                    className="rounded-full border border-graphite-200 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] px-2.5 py-0.5 text-graphite-700 dark:text-graphite-300 hover:text-blue-500 hover:border-blue-400 font-mono hover-lift transition-all cursor-pointer"
+                {/* Call to Actions */}
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Link
+                    href={`/app/audit?target=${encodeURIComponent(targetUrl || cleanDomain)}&mode=full`}
+                    className="inline-flex items-center justify-center gap-2 rounded-[48px] bg-ink dark:bg-white px-6 py-3 text-xs sm:text-[13px] font-semibold text-white dark:text-ink hover:opacity-90 transition-all shadow-sm w-full sm:w-auto cursor-pointer"
                   >
-                    {rival}
-                  </button>
-                ))}
-              </div>
-            </form>
+                    <Zap className="size-3.5 fill-current" />
+                    <span>Unlock in Deep Crawl ($0.50 in USDT)</span>
+                  </Link>
 
-            {compError && (
-              <div className="rounded-[12px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 p-3 text-xs text-rose-700 dark:text-rose-400">
-                {compError}
-              </div>
-            )}
+                  <Link
+                    href="/example"
+                    className="inline-flex items-center justify-center gap-2 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-5 py-3 text-xs sm:text-[13px] font-medium text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors w-full sm:w-auto cursor-pointer"
+                  >
+                    <Swords className="size-3.5 text-blue-500" />
+                    <span>View Sample Competitor Report</span>
+                  </Link>
+                </div>
 
-            {comparison ? (
-              <div className="space-y-5">
-                {/* Head-to-Head Metric Cards */}
+                <p className="text-[11px] text-graphite-500 font-mono pt-1">
+                  Settled onchain via x402 on Celo &bull; Zero subscriptions &bull; One-time micropayment
+                </p>
+              </div>
+            </section>
+          ) : (
+            /* 2. UNLOCKED COMPETITOR INTELLIGENCE (UN-NESTED SIBLING CARDS) */
+            <>
+              {/* Card 1: Search & Benchmark Control Center */}
+              <section className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-5 sm:p-6 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-graphite-100 dark:border-graphite-800 pb-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="size-9 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
+                        <Swords className="size-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-display text-base font-bold text-ink dark:text-white">
+                          Head-to-Head Competitor Intelligence
+                        </h3>
+                        <p className="text-xs text-graphite-600 dark:text-graphite-400">
+                          Benchmark your technical SEO, load speed curves, and structured data directly against any rival domain.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  {comparison ? (
+                    <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 px-3 py-1 text-xs font-bold text-blue-700 dark:text-blue-300">
+                      Comparison Active ({comparison.competitor.url})
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-graphite-100 dark:bg-graphite-800 border border-graphite-200 dark:border-graphite-700 px-3 py-1 text-xs font-semibold text-graphite-600 dark:text-graphite-300">
+                      Industry Standard Baseline
+                    </span>
+                  )}
+                </div>
+
+                <form onSubmit={handleRunCompetitor} className="space-y-2.5">
+                  <div className="flex flex-col sm:flex-row gap-2.5">
+                    <div className="relative flex-1">
+                      <Globe className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 size-4 text-graphite-400" />
+                      <input
+                        id="competitor-domain-input"
+                        type="text"
+                        aria-label="Enter rival website domain to compare"
+                        value={competitorUrl}
+                        onChange={(e) => setCompetitorUrl(e.target.value)}
+                        placeholder="Enter rival domain (e.g. semrush.com or ahrefs.com)"
+                        className="w-full rounded-[48px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#1a1b22] pl-10 pr-4 py-2.5 text-xs text-ink dark:text-white placeholder:text-graphite-400 focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-white"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={compLoading}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 hover-lift active:scale-[0.98] disabled:opacity-50 transition-all cursor-pointer shrink-0 shadow-xs"
+                    >
+                      {compLoading ? (
+                        <>
+                          <Activity className="size-3.5 animate-spin" />
+                          <span>Crawling Rival...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Swords className="size-3.5" />
+                          <span>Run Comparison</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Quick Rival Suggestions */}
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] pt-1">
+                    <span className="text-graphite-500 font-mono">Quick test rivals:</span>
+                    {['ahrefs.com', 'semrush.com', 'moz.com'].map((rival) => (
+                      <button
+                        key={rival}
+                        type="button"
+                        onClick={() => setCompetitorUrl(rival)}
+                        className="rounded-full border border-graphite-200 dark:border-graphite-800 bg-white dark:bg-[#1a1b22] px-2.5 py-0.5 text-graphite-700 dark:text-graphite-300 hover:text-blue-500 hover:border-blue-400 font-mono hover-lift transition-all cursor-pointer"
+                      >
+                        {rival}
+                      </button>
+                    ))}
+                  </div>
+                </form>
+
+                {compError && (
+                  <div className="rounded-[12px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/50 dark:bg-rose-950/20 p-3 text-xs text-rose-700 dark:text-rose-400">
+                    {compError}
+                  </div>
+                )}
+              </section>
+
+              {/* Card 2: Head-to-Head Metric Summary Cards (when comparison active) */}
+              {comparison && (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-3">
+                  <div className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 sm:p-5 space-y-3 shadow-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-ink dark:text-white font-mono">{cleanDomain}</span>
                       <span className="rounded-full bg-violet/10 text-violet px-2.5 py-0.5 text-[10px] font-bold">Your Site</span>
@@ -3123,7 +3224,7 @@ Allow: /`;
                     </div>
                   </div>
 
-                  <div className="rounded-[16px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6]/60 dark:bg-[#1a1b22] p-4 space-y-3">
+                  <div className="rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-4 sm:p-5 space-y-3 shadow-xs">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-ink dark:text-white font-mono">{comparison.competitor.url}</span>
                       <span className="rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-2.5 py-0.5 text-[10px] font-bold">Competitor</span>
@@ -3144,18 +3245,20 @@ Allow: /`;
                     </div>
                   </div>
                 </div>
+              )}
 
-                {/* Head-to-Head Comparison Graph */}
-                <OverviewAuditGraph
-                  report={report || null}
-                  comparison={comparison}
-                  auditedDomain={cleanDomain}
-                  competitorDomain={comparison.competitor.url}
-                />
+              {/* Card 3: Standalone Un-nested Performance & Benchmark Graph */}
+              <OverviewAuditGraph
+                report={report || null}
+                comparison={comparison || null}
+                auditedDomain={cleanDomain}
+                competitorDomain={comparison?.competitor?.url}
+              />
 
-                {/* Strategic Playbook */}
-                <div className="grid gap-3 sm:grid-cols-2 pt-1 text-xs">
-                  <div className="rounded-[16px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20 p-4 space-y-2">
+              {/* Card 4: Strategic Playbook (when comparison active) */}
+              {comparison && (
+                <div className="grid gap-3 sm:grid-cols-2 text-xs">
+                  <div className="rounded-[20px] border border-rose-200 dark:border-rose-900/60 bg-rose-50/40 dark:bg-rose-950/20 p-5 space-y-2.5 shadow-xs">
                     <span className="font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
                       <TrendingDown className="size-3.5" />
                       <span>Why They Lead in Search Visibility:</span>
@@ -3170,7 +3273,7 @@ Allow: /`;
                     </ul>
                   </div>
 
-                  <div className="rounded-[16px] border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-4 space-y-2">
+                  <div className="rounded-[20px] border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/20 p-5 space-y-2.5 shadow-xs">
                     <span className="font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
                       <CheckCircle2 className="size-3.5" />
                       <span>3 Steps to Outrank Them:</span>
@@ -3185,25 +3288,9 @@ Allow: /`;
                     </ul>
                   </div>
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="rounded-[16px] border border-dashed border-graphite-200 dark:border-graphite-800 p-4 text-center text-xs text-graphite-600 dark:text-graphite-400 bg-[#f4f4f6]/60 dark:bg-[#1a1b22]">
-                  <p>
-                    Showing baseline benchmark for <strong className="text-ink dark:text-white">{cleanDomain}</strong> against optimal standards.
-                    Enter a rival domain above or pick a quick test rival to benchmark head-to-head.
-                  </p>
-                </div>
-
-                {/* Baseline Telemetry Graph */}
-                <OverviewAuditGraph
-                  report={report || null}
-                  comparison={null}
-                  auditedDomain={cleanDomain}
-                />
-              </div>
-            )}
-          </section>
+              )}
+            </>
+          )}
         </div>
       )}
 
