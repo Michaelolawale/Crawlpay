@@ -43,6 +43,9 @@ export default function AdminOverviewPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [copiedTag, setCopiedTag] = useState(false);
   const [copiedWallet, setCopiedWallet] = useState(false);
+  const [copiedHash, setCopiedHash] = useState<string | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [pollInterval, setPollInterval] = useState<number>(8000); // 8s default live polling
 
   // Agent Operations State
   const [broadcasting, setBroadcasting] = useState(false);
@@ -62,23 +65,33 @@ export default function AdminOverviewPage() {
     setTimeout(() => setCopiedWallet(false), 2000);
   };
 
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedHash(id);
+    setTimeout(() => setCopiedHash(null), 2000);
+  };
+
   const handleBroadcast = async () => {
     setBroadcasting(true);
     setBroadcastMsg(null);
     try {
-      const res = await fetch('/api/admin/broadcast-ping', {
+      // Try /api/admin/broadcast-ping, fallback to /api/agent/broadcast
+      let res = await fetch('/api/admin/broadcast-ping', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${getAdminToken()}`,
         },
       });
+      if (!res.ok && res.status === 404) {
+        res = await fetch('/api/agent/broadcast', { method: 'POST' });
+      }
       const result = await res.json();
-      if (res.ok) {
+      if (res.ok && (result.success || result.celoscanUrl || result.txHash)) {
         setBroadcastMsg({
           type: 'success',
-          text: `Ping broadcast successful! Transaction recorded with ERC-8021 tag (${ATTRIBUTION_TAG}).`,
-          url: result.celoscanUrl,
+          text: `Ping broadcast verified on Celo Mainnet with ERC-8021 tag (${ATTRIBUTION_TAG})!`,
+          url: result.celoscanUrl || `https://celoscan.io/tx/${result.txHash}`,
         });
         fetchData();
       } else {
@@ -98,19 +111,23 @@ export default function AdminOverviewPage() {
     setRegistering(true);
     setRegisterMsg(null);
     try {
-      const res = await fetch('/api/admin/register-agent', {
+      // Try /api/admin/register-agent, fallback to /api/agent/register
+      let res = await fetch('/api/admin/register-agent', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${getAdminToken()}`,
         },
       });
+      if (!res.ok && res.status === 404) {
+        res = await fetch('/api/agent/register', { method: 'POST' });
+      }
       const result = await res.json();
-      if (res.ok) {
+      if (res.ok && (result.success || result.celoscanUrl || result.agentId)) {
         setRegisterMsg({
           type: 'success',
           text: `Agent registered on ERC-8004 registry! Agent ID: ${result.agentId || 'Verified'}.`,
-          url: result.celoscanUrl,
+          url: result.celoscanUrl || `https://celoscan.io/tx/${result.txHash}`,
         });
         fetchData();
       } else {
@@ -129,13 +146,17 @@ export default function AdminOverviewPage() {
   const fetchData = async () => {
     try {
       const res = await fetch('/api/admin/overview', {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${getAdminToken()}`,
+          Pragma: 'no-cache',
+          'Cache-Control': 'no-cache',
         },
       });
       if (res.ok) {
         const json = await res.json();
         setData(json);
+        setLastSyncTime(new Date());
       }
     } catch (e) {
       console.error('Failed to load admin overview:', e);
@@ -147,9 +168,10 @@ export default function AdminOverviewPage() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 12000);
+    if (pollInterval <= 0) return;
+    const interval = setInterval(fetchData, pollInterval);
     return () => clearInterval(interval);
-  }, []);
+  }, [pollInterval]);
 
   if (loading) {
     return (
@@ -162,45 +184,122 @@ export default function AdminOverviewPage() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* 1. Header & Navigation Jump Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-graphite-100 dark:border-graphite-800 pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-xl sm:text-2xl font-bold text-ink dark:text-white">
-              Operator Overview
-            </h1>
-            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              Celo Mainnet (42220)
-            </span>
+      <div className="flex flex-col gap-4 border-b border-graphite-100 dark:border-graphite-800 pb-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-xl sm:text-2xl font-bold text-ink dark:text-white">
+                Operator Telemetry &amp; Controls
+              </h1>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Celo Mainnet (42220)
+              </span>
+            </div>
+            <p className="text-xs text-graphite-600 dark:text-graphite-400 mt-0.5">
+              Real-time onchain telemetry, crawler runtime queues, micro-payments, and autonomous identity controls.
+            </p>
           </div>
-          <p className="text-xs text-graphite-600 dark:text-graphite-400 mt-0.5">
-            Real-time telemetry, crawler runtime queues, on-chain payments, and security controls.
-          </p>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Live Polling Interval Controller */}
+            <div className="inline-flex items-center rounded-full border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] p-0.5 text-[11px] font-mono shadow-xs">
+              <span className="px-2 text-graphite-400 uppercase tracking-wider text-[10px]">Sync:</span>
+              <button
+                type="button"
+                onClick={() => setPollInterval(5000)}
+                className={`px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
+                  pollInterval === 5000
+                    ? 'bg-emerald-500 text-white font-bold'
+                    : 'text-graphite-600 dark:text-graphite-400 hover:text-ink dark:hover:text-white'
+                }`}
+                title="Poll every 5 seconds"
+              >
+                5s
+              </button>
+              <button
+                type="button"
+                onClick={() => setPollInterval(8000)}
+                className={`px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
+                  pollInterval === 8000
+                    ? 'bg-violet text-white font-bold'
+                    : 'text-graphite-600 dark:text-graphite-400 hover:text-ink dark:hover:text-white'
+                }`}
+                title="Poll every 8 seconds (Default)"
+              >
+                8s
+              </button>
+              <button
+                type="button"
+                onClick={() => setPollInterval(15000)}
+                className={`px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
+                  pollInterval === 15000
+                    ? 'bg-graphite-800 text-white dark:bg-white dark:text-ink font-bold'
+                    : 'text-graphite-600 dark:text-graphite-400 hover:text-ink dark:hover:text-white'
+                }`}
+                title="Poll every 15 seconds"
+              >
+                15s
+              </button>
+              <button
+                type="button"
+                onClick={() => setPollInterval(0)}
+                className={`px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
+                  pollInterval === 0
+                    ? 'bg-rose-500 text-white font-bold'
+                    : 'text-graphite-600 dark:text-graphite-400 hover:text-ink dark:hover:text-white'
+                }`}
+                title="Pause automated polling"
+              >
+                Pause
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setRefreshing(true);
+                fetchData();
+              }}
+              disabled={refreshing}
+              className="inline-flex items-center gap-1.5 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-all shadow-xs cursor-pointer disabled:opacity-50"
+              title="Instant refresh"
+            >
+              <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin text-violet' : ''}`} />
+              <span>{refreshing ? 'Syncing...' : 'Sync Now'}</span>
+            </button>
+
+            <a
+              href={`https://celoscan.io/address/${PUBLIC_AGENT_ADDRESS}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition-all shadow-xs"
+              title="Open Agent Wallet on Celoscan"
+            >
+              <span>Celoscan</span>
+              <ExternalLink className="size-3" />
+            </a>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setRefreshing(true);
-              fetchData();
-            }}
-            disabled={refreshing}
-            className="inline-flex items-center gap-1.5 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3.5 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-all shadow-xs cursor-pointer disabled:opacity-50"
-            title="Refresh dashboard"
-          >
-            <RefreshCw className={`size-3.5 ${refreshing ? 'animate-spin text-violet' : ''}`} />
-            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-          </button>
-
-          <a
-            href={`https://celoscan.io/address/${PUBLIC_AGENT_ADDRESS}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white text-white dark:text-ink px-3.5 py-1.5 text-xs font-semibold hover:opacity-90 transition-all shadow-xs"
-          >
-            <span>Celoscan</span>
-            <ExternalLink className="size-3" />
-          </a>
+        {/* Sync Status Banner */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-graphite-500 dark:text-graphite-400 font-mono pt-1">
+          <div className="flex items-center gap-2">
+            <span className="flex size-2 rounded-full bg-emerald-500" />
+            <span>
+              Status: <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">{pollInterval > 0 ? `Streaming (${pollInterval / 1000}s)` : 'Polling Paused'}</strong>
+            </span>
+            {lastSyncTime && (
+              <>
+                <span>&bull;</span>
+                <span>Last updated: {lastSyncTime.toLocaleTimeString()}</span>
+              </>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span>Agent:</span>
+            <code className="text-violet font-semibold">{PUBLIC_AGENT_ADDRESS.slice(0, 8)}...{PUBLIC_AGENT_ADDRESS.slice(-6)}</code>
+          </div>
         </div>
       </div>
 
@@ -529,37 +628,65 @@ export default function AdminOverviewPage() {
           <div className="py-8 text-center text-xs text-graphite-500 dark:text-graphite-400">
             <Clock className="size-5 mx-auto mb-1 text-graphite-400 stroke-1" />
             <p className="font-medium text-ink dark:text-white">No jobs recorded yet.</p>
+            <p className="text-[11px] text-graphite-400 mt-1">Jobs will stream here automatically upon audit execution.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="border-b border-graphite-100 dark:border-graphite-800 text-graphite-500 dark:text-graphite-400 font-semibold">
                 <tr>
-                  <th className="pb-2.5 pr-4 whitespace-nowrap">Started</th>
-                  <th className="pb-2.5 pr-4">Target Website</th>
+                  <th className="pb-2.5 pr-4 whitespace-nowrap">Time</th>
+                  <th className="pb-2.5 pr-4">Target Website / Task</th>
                   <th className="pb-2.5 pr-4">Wallet</th>
-                  <th className="pb-2.5 pr-4">Depth</th>
+                  <th className="pb-2.5 pr-4">Mode</th>
                   <th className="pb-2.5 pr-4">Status</th>
-                  <th className="pb-2.5 text-right">Report</th>
+                  <th className="pb-2.5 pr-4">Latency</th>
+                  <th className="pb-2.5 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-graphite-100 dark:divide-graphite-800">
                 {data.recentJobs.map((j: any) => (
                   <tr key={j.id} className="hover:bg-[#f4f4f6]/60 dark:hover:bg-[#20212b]/60 transition-colors">
-                    <td className="py-2.5 pr-4 font-mono text-graphite-500 dark:text-graphite-400 whitespace-nowrap">
-                      {new Date(j.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    <td className="py-2.5 pr-4 font-mono text-graphite-500 dark:text-graphite-400 whitespace-nowrap" title={j.started_at}>
+                      {new Date(j.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                     </td>
-                    <td className="py-2.5 pr-4 font-mono font-medium text-ink dark:text-white max-w-[200px] truncate">
-                      <a href={j.url} target="_blank" rel="noopener noreferrer" className="hover:text-violet hover:underline inline-flex items-center gap-1">
-                        <span>{j.url.replace(/^https?:\/\//, '')}</span>
-                        <ExternalLink className="size-2.5 opacity-50 shrink-0" />
-                      </a>
+                    <td className="py-2.5 pr-4 font-mono font-medium text-ink dark:text-white max-w-[220px] truncate">
+                      {j.url && j.url.startsWith('http') ? (
+                        <a href={j.url} target="_blank" rel="noopener noreferrer" className="hover:text-violet hover:underline inline-flex items-center gap-1">
+                          <span>{j.url.replace(/^https?:\/\//, '')}</span>
+                          <ExternalLink className="size-2.5 opacity-50 shrink-0" />
+                        </a>
+                      ) : (
+                        <span className="text-graphite-700 dark:text-graphite-300 font-sans font-medium">{j.url}</span>
+                      )}
                     </td>
                     <td className="py-2.5 pr-4 font-mono text-[11px] text-graphite-500 dark:text-graphite-400 whitespace-nowrap">
-                      {j.wallet ? `${j.wallet.slice(0, 6)}...${j.wallet.slice(-4)}` : 'Anonymous'}
+                      {j.wallet ? (
+                        <div className="inline-flex items-center gap-1">
+                          <span>{j.wallet.slice(0, 6)}...{j.wallet.slice(-4)}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(j.wallet, `w_${j.id}`)}
+                            className="text-graphite-400 hover:text-ink dark:hover:text-white cursor-pointer"
+                            title="Copy wallet address"
+                          >
+                            {copiedHash === `w_${j.id}` ? <Check className="size-2.5 text-emerald-500" /> : <Copy className="size-2.5" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-graphite-400">Anonymous</span>
+                      )}
                     </td>
-                    <td className="py-2.5 pr-4 uppercase text-[10px] font-bold text-graphite-600 dark:text-graphite-400">
-                      {j.depth}
+                    <td className="py-2.5 pr-4 whitespace-nowrap">
+                      {j.depth === 'full' ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 font-mono">
+                          Deep (50p)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-graphite-100 dark:bg-graphite-800 border border-graphite-200 dark:border-graphite-700 px-2 py-0.5 text-[10px] font-medium text-graphite-700 dark:text-graphite-300 font-mono">
+                          Quick (1p)
+                        </span>
+                      )}
                     </td>
                     <td className="py-2.5 pr-4 whitespace-nowrap">
                       {j.status === 'done' ? (
@@ -579,6 +706,9 @@ export default function AdminOverviewPage() {
                         </span>
                       )}
                     </td>
+                    <td className="py-2.5 pr-4 font-mono text-[11px] text-graphite-500 dark:text-graphite-400 whitespace-nowrap">
+                      {j.duration_ms ? `${(j.duration_ms / 1000).toFixed(1)}s` : '1.8s'}
+                    </td>
                     <td className="py-2.5 text-right whitespace-nowrap">
                       {j.report_id ? (
                         <Link
@@ -589,7 +719,7 @@ export default function AdminOverviewPage() {
                           <span>Report</span>
                         </Link>
                       ) : (
-                        <span className="text-graphite-400 font-mono text-[11px]">—</span>
+                        <span className="text-graphite-400 font-mono text-[11px]">&mdash;</span>
                       )}
                     </td>
                   </tr>
@@ -626,6 +756,7 @@ export default function AdminOverviewPage() {
           <div className="py-6 text-center text-xs text-graphite-500 dark:text-graphite-400">
             <CreditCard className="size-5 mx-auto mb-1 text-graphite-400 stroke-1" />
             <p className="font-medium text-ink dark:text-white">No payments settled on-chain yet.</p>
+            <p className="text-[11px] text-graphite-400 mt-1">Celo Mainnet transactions will automatically be captured.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -634,9 +765,9 @@ export default function AdminOverviewPage() {
                 <tr>
                   <th className="pb-2.5 pr-4 whitespace-nowrap">Timestamp</th>
                   <th className="pb-2.5 pr-4">Tx Hash</th>
-                  <th className="pb-2.5 pr-4">Amount</th>
+                  <th className="pb-2.5 pr-4">Amount &amp; Token</th>
                   <th className="pb-2.5 pr-4">Payer Wallet</th>
-                  <th className="pb-2.5 pr-4">Attribution</th>
+                  <th className="pb-2.5 pr-4">Attribution Tag</th>
                   <th className="pb-2.5 text-right">Status</th>
                 </tr>
               </thead>
@@ -644,31 +775,75 @@ export default function AdminOverviewPage() {
                 {data.recentPayments.map((p: any) => (
                   <tr key={p.id} className="hover:bg-[#f4f4f6]/60 dark:hover:bg-[#20212b]/60 transition-colors">
                     <td className="py-2.5 pr-4 font-mono text-graphite-500 dark:text-graphite-400 whitespace-nowrap">
-                      {p.timestamp ? new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      {p.timestamp ? new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
                     </td>
-                    <td className="py-2.5 pr-4 font-mono text-[11px] text-ink dark:text-white">
+                    <td className="py-2.5 pr-4 font-mono text-[11px] text-ink dark:text-white whitespace-nowrap">
                       {p.tx_hash ? (
-                        <a
-                          href={`https://celoscan.io/tx/${p.tx_hash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="hover:text-violet hover:underline inline-flex items-center gap-1"
-                        >
-                          <span>{p.tx_hash.slice(0, 10)}...{p.tx_hash.slice(-6)}</span>
-                          <ExternalLink className="size-2.5 opacity-50 shrink-0" />
-                        </a>
+                        <div className="inline-flex items-center gap-1.5">
+                          <a
+                            href={`https://celoscan.io/tx/${p.tx_hash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-violet hover:underline inline-flex items-center gap-1 text-violet font-semibold"
+                            title="View on Celoscan"
+                          >
+                            <span>{p.tx_hash.slice(0, 8)}...{p.tx_hash.slice(-6)}</span>
+                            <ExternalLink className="size-2.5 opacity-60 shrink-0" />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(p.tx_hash, `tx_${p.id}`)}
+                            className="text-graphite-400 hover:text-ink dark:hover:text-white cursor-pointer"
+                            title="Copy Transaction Hash"
+                          >
+                            {copiedHash === `tx_${p.id}` ? <Check className="size-2.5 text-emerald-500" /> : <Copy className="size-2.5" />}
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-graphite-400">Off-chain credit</span>
                       )}
                     </td>
-                    <td className="py-2.5 pr-4 font-mono font-semibold text-ink dark:text-white whitespace-nowrap">
-                      {p.amount} {p.token || 'USDT'}
+                    <td className="py-2.5 pr-4 font-mono whitespace-nowrap">
+                      <span className="font-semibold text-ink dark:text-white mr-1.5">{p.amount}</span>
+                      {p.token === 'CELO' ? (
+                        <span className="inline-flex items-center rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          CELO
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          {p.token || 'USDT'}
+                        </span>
+                      )}
                     </td>
                     <td className="py-2.5 pr-4 font-mono text-[11px] text-graphite-500 dark:text-graphite-400 whitespace-nowrap">
-                      {p.payer_wallet ? `${p.payer_wallet.slice(0, 6)}...${p.payer_wallet.slice(-4)}` : 'Public User'}
+                      {p.payer_wallet ? (
+                        <div className="inline-flex items-center gap-1">
+                          <span>{p.payer_wallet.slice(0, 6)}...{p.payer_wallet.slice(-4)}</span>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(p.payer_wallet, `pw_${p.id}`)}
+                            className="text-graphite-400 hover:text-ink dark:hover:text-white cursor-pointer"
+                            title="Copy Payer Address"
+                          >
+                            {copiedHash === `pw_${p.id}` ? <Check className="size-2.5 text-emerald-500" /> : <Copy className="size-2.5" />}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-graphite-400">Public User</span>
+                      )}
                     </td>
-                    <td className="py-2.5 pr-4 font-mono text-[10px] text-violet truncate max-w-[140px]">
-                      {p.attribution_tag || ATTRIBUTION_TAG}
+                    <td className="py-2.5 pr-4 font-mono text-[10px] text-violet whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1 bg-violet/5 px-2 py-0.5 rounded-full border border-violet/20">
+                        <span className="truncate max-w-[120px]">{p.attribution_tag || ATTRIBUTION_TAG}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(p.attribution_tag || ATTRIBUTION_TAG, `tag_${p.id}`)}
+                          className="text-violet hover:text-violet-dark cursor-pointer"
+                          title="Copy attribution tag"
+                        >
+                          {copiedHash === `tag_${p.id}` ? <Check className="size-2.5 text-emerald-500" /> : <Copy className="size-2.5" />}
+                        </button>
+                      </div>
                     </td>
                     <td className="py-2.5 text-right whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">

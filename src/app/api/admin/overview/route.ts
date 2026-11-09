@@ -29,7 +29,15 @@ export async function GET(req: NextRequest) {
   let totalCelo = 0;
 
   payments
-    .filter((p) => p.status === 'confirmed' && (!p.id || nonTestJobPaymentIds.has(p.id) || p.id === 'pay_init_1'))
+    .filter(
+      (p) =>
+        p.status === 'confirmed' &&
+        (!p.id ||
+          p.id.startsWith('pay_chain_') ||
+          p.id === 'pay_init_1' ||
+          nonTestJobPaymentIds.has(p.id) ||
+          !p.id.includes('test'))
+    )
     .forEach((p) => {
       const amt = parseFloat(p.amount) || 0;
       if (p.token === 'CELO') {

@@ -137,39 +137,39 @@ export default function DocsPage() {
               <p className="text-[14px] text-graphite-700 dark:text-graphite-300 pl-0 sm:pl-8">
                 Open or create your Claude Desktop config file in your preferred text editor:
               </p>
-              <div className="pl-0 sm:pl-8 space-y-2.5 text-[13px] font-mono">
+              <div className="pl-0 sm:pl-8 space-y-2.5 text-[13px] font-mono w-full max-w-full">
                 {/* macOS Config Path Card */}
-                <div className="p-3 rounded-[10px] bg-graphite-100 dark:bg-graphite-900 border border-graphite-200 dark:border-graphite-800 text-graphite-800 dark:text-graphite-200 space-y-2">
-                  <div className="flex items-center justify-between">
+                <div className="w-full max-w-full p-3 rounded-[10px] bg-graphite-100 dark:bg-graphite-900 border border-graphite-200 dark:border-graphite-800 text-graphite-800 dark:text-graphite-200 space-y-2 overflow-hidden">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-[12px] text-ink dark:text-white uppercase tracking-wider">macOS</span>
                     <button
                       type="button"
                       onClick={() => copy('~/Library/Application Support/Claude/claude_desktop_config.json', 'path-mac')}
-                      className={`inline-flex items-center gap-1.5 text-violet hover:underline text-[12px] font-medium cursor-pointer ${focusRing}`}
+                      className={`inline-flex items-center gap-1.5 text-violet hover:underline text-[12px] font-medium cursor-pointer shrink-0 ${focusRing}`}
                     >
                       {copiedKey === 'path-mac' ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
                       <span>{copiedKey === 'path-mac' ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
-                  <div className="p-2 rounded-[6px] bg-white dark:bg-[#121317] border border-graphite-200/70 dark:border-graphite-800 text-[12px] font-mono text-graphite-700 dark:text-graphite-300 break-all select-all leading-relaxed">
+                  <div className="p-2.5 rounded-[6px] bg-white dark:bg-[#121317] border border-graphite-200/70 dark:border-graphite-800 text-[12px] font-mono text-graphite-700 dark:text-graphite-300 break-all select-all leading-relaxed overflow-x-auto">
                     ~/Library/Application Support/Claude/claude_desktop_config.json
                   </div>
                 </div>
 
                 {/* Windows Config Path Card */}
-                <div className="p-3 rounded-[10px] bg-graphite-100 dark:bg-graphite-900 border border-graphite-200 dark:border-graphite-800 text-graphite-800 dark:text-graphite-200 space-y-2">
-                  <div className="flex items-center justify-between">
+                <div className="w-full max-w-full p-3 rounded-[10px] bg-graphite-100 dark:bg-graphite-900 border border-graphite-200 dark:border-graphite-800 text-graphite-800 dark:text-graphite-200 space-y-2 overflow-hidden">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-[12px] text-ink dark:text-white uppercase tracking-wider">Windows</span>
                     <button
                       type="button"
                       onClick={() => copy('%APPDATA%\\Claude\\claude_desktop_config.json', 'path-win')}
-                      className={`inline-flex items-center gap-1.5 text-violet hover:underline text-[12px] font-medium cursor-pointer ${focusRing}`}
+                      className={`inline-flex items-center gap-1.5 text-violet hover:underline text-[12px] font-medium cursor-pointer shrink-0 ${focusRing}`}
                     >
                       {copiedKey === 'path-win' ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3" />}
                       <span>{copiedKey === 'path-win' ? 'Copied' : 'Copy'}</span>
                     </button>
                   </div>
-                  <div className="p-2 rounded-[6px] bg-white dark:bg-[#121317] border border-graphite-200/70 dark:border-graphite-800 text-[12px] font-mono text-graphite-700 dark:text-graphite-300 break-all select-all leading-relaxed">
+                  <div className="p-2.5 rounded-[6px] bg-white dark:bg-[#121317] border border-graphite-200/70 dark:border-graphite-800 text-[12px] font-mono text-graphite-700 dark:text-graphite-300 break-all select-all leading-relaxed overflow-x-auto">
                     %APPDATA%\Claude\claude_desktop_config.json
                   </div>
                 </div>
