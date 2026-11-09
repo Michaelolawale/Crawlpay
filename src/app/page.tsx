@@ -257,6 +257,13 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* LIVE PROOF ON-CHAIN SHOWCASE */}
+        <section aria-label="On-chain live proof" className="bg-white dark:bg-[#121317] border-b border-graphite-100 dark:border-graphite-800 py-10 sm:py-14">
+          <div className="max-w-[1000px] mx-auto px-4 sm:px-6">
+            <LiveProofCounter variant="card" />
+          </div>
+        </section>
+
         {/* TERMS */}
         <section aria-labelledby="terms-heading" className="py-[48px] sm:py-[72px]">
           <div className="max-w-[1176px] mx-auto px-4 sm:px-6">
