@@ -97,7 +97,7 @@ export default function AdminAbusePage() {
             <label className="block text-[12px] font-mono uppercase tracking-wider text-graphite-600 dark:text-graphite-400 mb-1.5 font-medium">Target Type</label>
             <select
               value={type}
-              onChange={(e) => setType(e.target.value as any)}
+              onChange={(e) => setType(e.target.value as 'domain' | 'wallet' | 'ip')}
               className="w-full rounded-[32px] border border-graphite-100 dark:border-graphite-700 bg-[#f4f4f6] dark:bg-[#20212b] px-4 py-2.5 text-xs font-semibold text-ink dark:text-white focus:border-ink dark:focus:border-white focus:bg-white dark:focus:bg-[#1a1b22] focus:outline-none focus:ring-1 focus:ring-ink dark:focus:ring-white transition-all"
             >
               <option value="domain">Domain (e.g. spam-site.com)</option>

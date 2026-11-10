@@ -4,14 +4,11 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, Check, Loader2 } from 'lucide-react';
-import { CrawlLogo } from '@/components/CrawlLogo';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { LiveProofCounter } from '@/components/LiveProofCounter';
 import { HeroBackground } from '@/components/HeroBackground';
-import { SiteHeader, focusRing } from '@/components/SiteHeader';
+import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 
-const PUBLIC_AGENT_ADDRESS = '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
 const SUPPORT_TELEGRAM = 'https://t.me/Noble249';
 
 const focus =

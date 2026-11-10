@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import { CrawlConfig, PageCrawlData, SiteMetadata, CrawledLink, CrawledImage } from '../engine/types';
-import { validateAndNormalizeTargetUrl, isPrivateOrReservedIp } from '../utils/security';
+import { validateAndNormalizeTargetUrl } from '../utils/security';
 import { calculateSimhash } from '../engine/utils/simhash';
 import { RobotsParser } from '../engine/utils/robotsParser';
 import { fetchAndParseSitemap } from '../engine/utils/sitemapParser';
@@ -473,3 +473,124 @@ export class PageCrawler {
     }
   }
 }
+
+/**
+ * Extracts logo candidates from Cheerio-parsed HTML:
+ * 1. JSON-LD Organization logo
+ * 2. apple-touch-icon
+ * 3. largest link[rel~=icon]
+ * 4. /favicon.ico at origin
+ * Resolves to absolute URLs, dedupes, and returns best-first.
+ */
+export function extractLogoCandidates($: cheerio.CheerioAPI, pageUrl: string): string[] {
+  const candidates: string[] = [];
+
+  const resolve = (relUrl?: string | null): string | null => {
+    if (!relUrl || typeof relUrl !== 'string') return null;
+    const trimmed = relUrl.trim();
+    if (!trimmed || trimmed.startsWith('data:') || trimmed.startsWith('javascript:')) return null;
+    try {
+      const parsed = new URL(trimmed, pageUrl);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return parsed.toString();
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+    return null;
+  };
+
+  // 1. JSON-LD Organization / Corporation / LocalBusiness / Brand logo
+  $('script[type="application/ld+json"]').each((_, el) => {
+    try {
+      const raw = $(el).html();
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      const items = Array.isArray(data)
+        ? data
+        : data && typeof data === 'object' && Array.isArray(data['@graph'])
+        ? data['@graph']
+        : [data];
+
+      for (const item of items) {
+        if (!item || typeof item !== 'object') continue;
+        const type = String(item['@type'] || '');
+        const isOrg = /Organization|Corporation|LocalBusiness|WebSite|Store|Brand/i.test(type);
+        if (isOrg) {
+          const logo = item.logo;
+          if (typeof logo === 'string') {
+            const url = resolve(logo);
+            if (url) candidates.push(url);
+          } else if (logo && typeof logo === 'object' && typeof logo.url === 'string') {
+            const url = resolve(logo.url);
+            if (url) candidates.push(url);
+          } else if (item.image) {
+            if (typeof item.image === 'string') {
+              const url = resolve(item.image);
+              if (url) candidates.push(url);
+            } else if (typeof item.image === 'object' && typeof item.image.url === 'string') {
+              const url = resolve(item.image.url);
+              if (url) candidates.push(url);
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore JSON parse errors in script tags
+    }
+  });
+
+  // 2. apple-touch-icon (largest sizes first)
+  const appleIcons: Array<{ href: string; size: number }> = [];
+  $('link[rel*="apple-touch-icon"]').each((_, el) => {
+    const href = $(el).attr('href');
+    const resolved = resolve(href);
+    if (!resolved) return;
+    const sizes = $(el).attr('sizes') || '';
+    const match = sizes.match(/(\d+)x(\d+)/i);
+    const size = match ? parseInt(match[1], 10) * parseInt(match[2], 10) : 180 * 180;
+    appleIcons.push({ href: resolved, size });
+  });
+  appleIcons.sort((a, b) => b.size - a.size);
+  appleIcons.forEach((item) => candidates.push(item.href));
+
+  // 3. largest link[rel~=icon]
+  const linkIcons: Array<{ href: string; size: number }> = [];
+  $('link[rel~="icon"], link[rel="shortcut icon"]').each((_, el) => {
+    const href = $(el).attr('href');
+    const resolved = resolve(href);
+    if (!resolved) return;
+    const sizes = $(el).attr('sizes') || '';
+    let size = 16 * 16;
+    if (sizes.toLowerCase() === 'any' || resolved.toLowerCase().endsWith('.svg')) {
+      size = 999999;
+    } else {
+      const match = sizes.match(/(\d+)x(\d+)/i);
+      if (match) {
+        size = parseInt(match[1], 10) * parseInt(match[2], 10);
+      }
+    }
+    linkIcons.push({ href: resolved, size });
+  });
+  linkIcons.sort((a, b) => b.size - a.size);
+  linkIcons.forEach((item) => candidates.push(item.href));
+
+  // 4. /favicon.ico at origin
+  try {
+    const origin = new URL(pageUrl).origin;
+    candidates.push(`${origin}/favicon.ico`);
+  } catch {}
+
+  // Dedupe preserving order
+  const uniqueCandidates: string[] = [];
+  const seen = new Set<string>();
+  for (const url of candidates) {
+    if (!seen.has(url)) {
+      seen.add(url);
+      uniqueCandidates.push(url);
+    }
+  }
+
+  return uniqueCandidates;
+}
+

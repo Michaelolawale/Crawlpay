@@ -9,7 +9,11 @@
     "primaryOffering": "Online publications, audio broadcasts, and network resources",
     "businessModel": "Online Media & Resource Network",
     "detectedBrandName": "ECN Global",
-    "confidence": "High"
+    "confidence": "High",
+    "logoCandidates": [
+      "https://evangelcarriersnetwork.org/wp-content/uploads/2023/04/ecn-logo.png",
+      "https://evangelcarriersnetwork.org/favicon.ico"
+    ]
   },
   "keywords": {
     "suggestedKeywords": [
@@ -677,7 +681,11 @@
     "primaryOffering": "Online publications, audio broadcasts, and network resources",
     "businessModel": "Online Media & Resource Network",
     "detectedBrandName": "ECN Global",
-    "confidence": "High"
+    "confidence": "High",
+    "logoCandidates": [
+      "https://evangelcarriersnetwork.org/wp-content/uploads/2023/04/ecn-logo.png",
+      "https://evangelcarriersnetwork.org/favicon.ico"
+    ]
   },
   "keywords": {
     "suggestedKeywords": [

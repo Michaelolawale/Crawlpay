@@ -1,5 +1,5 @@
 import { Finding, PageCrawlData, SiteMetadata } from '../types';
-import { generateStableFindingId, sanitizeSnippet } from '../utils/simhash';
+import { generateStableFindingId } from '../utils/simhash';
 
 export function checkCanonicals(pages: PageCrawlData[], metadata: SiteMetadata): Finding[] {
   const findings: Finding[] = [];

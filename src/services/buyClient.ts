@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import { createPublicClient, http, formatGwei } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { celo } from 'viem/chains';
-import { verifyTx } from '@celo/attribution-tags';
 import { x402 } from '@celo/buy-core';
 import { CONFIG } from '../config';
 import { createAttributedAgentWallet } from '../agent/wallet';
@@ -274,11 +273,14 @@ export class BuyServiceCoordinator {
   public buildExecutionLog(
     targetUrl: string,
     browserReceipt: ServiceReceipt,
-    socialReceipt: ServiceReceipt
+    socialReceipt: ServiceReceipt,
+    isPaidExecution: boolean = false
   ): CrawlExecutionLog {
-    const clientPaid = parseFloat(CONFIG.DEFAULT_AUDIT_PRICE_USD);
+    const clientPaid = isPaidExecution ? parseFloat(CONFIG.DEFAULT_AUDIT_PRICE_USD) : 0.00;
     const upstreamCosts = parseFloat(browserReceipt.costUsd) + parseFloat(socialReceipt.costUsd);
-    const agentMargin = (clientPaid - upstreamCosts).toFixed(4);
+    const agentMargin = isPaidExecution
+      ? `$${(clientPaid - upstreamCosts).toFixed(4)} USD₮`
+      : `-$${upstreamCosts.toFixed(4)} USD₮ (Sponsored Free Tier)`;
 
     return {
       executionId: 'exec_' + crypto.randomBytes(8).toString('hex'),
@@ -286,7 +288,7 @@ export class BuyServiceCoordinator {
       clientPaidUsd: `$${clientPaid.toFixed(2)} USD₮`,
       upstreamBrowserReceipt: browserReceipt,
       upstreamSocialReceipt: socialReceipt,
-      agentMarginUsd: `$${agentMargin} USD₮`,
+      agentMarginUsd: agentMargin,
       timestamp: new Date().toISOString(),
       celoBlockNumber: browserReceipt.blockNumber,
       celoRpcUrl: CONFIG.CELO_RPC_URL,

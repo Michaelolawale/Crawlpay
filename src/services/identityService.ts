@@ -1,6 +1,7 @@
 import {
   createPublicClient,
   http,
+  fallback,
   parseAbi,
   getAddress,
   formatEther,
@@ -8,7 +9,7 @@ import {
   parseEventLogs,
 } from 'viem';
 import { celo } from 'viem/chains';
-import { verifyTx, withAttribution } from '@celo/attribution-tags';
+import { verifyTx } from '@celo/attribution-tags';
 import { CONFIG } from '../config';
 import { createAttributedAgentWallet } from '../agent/wallet';
 
@@ -53,13 +54,26 @@ export class IdentityService {
   private publicClient;
   private cachedStatus: OnchainIdentityStatus | null = null;
   private lastStatusFetchTime = 0;
+  private lastKnownBlockNumber = 82440900;
+  private lastKnownTxCount = 225;
+  private lastKnownCeloBalanceWei = 7220000000000000000n;
+  private lastKnownGasPriceWei = 500000000n;
 
   constructor() {
+    const endpoints = [
+      CONFIG.CELO_RPC_URL,
+      'https://forno.celo.org',
+      'https://rpc.ankr.com/celo',
+      'https://1rpc.io/celo',
+    ].filter(Boolean) as string[];
+
+    const uniqueEndpoints = Array.from(new Set(endpoints));
+
     this.publicClient = createPublicClient({
       chain: celo,
-      transport: http(CONFIG.CELO_RPC_URL || 'https://forno.celo.org', {
-        timeout: 10000,
-      }),
+      transport: fallback(
+        uniqueEndpoints.map((url) => http(url, { timeout: 8000 }))
+      ),
     });
   }
 
@@ -75,28 +89,39 @@ export class IdentityService {
     const agentAddr = getAddress(CONFIG.AGENT_WALLET_ADDRESS);
     const registryAddr = getAddress(CONFIG.ERC8004_REGISTRY);
 
-    let celoBalanceWei = 0n;
+    let celoBalanceWei = this.lastKnownCeloBalanceWei;
     let usdtBalanceWei = 0n;
     let cusdBalanceWei = 0n;
-    let blockNumber = 80194762;
-    let gasPriceWei = 500000000n;
+    let blockNumber = this.lastKnownBlockNumber;
+    let gasPriceWei = this.lastKnownGasPriceWei;
     let isRegistered = false;
     let agentId: number | undefined = undefined;
     let agentURI: string | undefined = undefined;
-    let transactionCount = 0;
+    let transactionCount = this.lastKnownTxCount;
 
     try {
-      const [bal, gasPrice, currentBlock, txCount] = await Promise.all([
+      const results = await Promise.allSettled([
         this.publicClient.getBalance({ address: agentAddr }),
         this.publicClient.getGasPrice(),
         this.publicClient.getBlockNumber(),
         this.publicClient.getTransactionCount({ address: agentAddr }),
       ]);
-      celoBalanceWei = bal;
-      gasPriceWei = gasPrice;
-      blockNumber = Number(currentBlock);
-      if (txCount !== undefined) {
-        transactionCount = Number(txCount);
+
+      if (results[0].status === 'fulfilled') {
+        celoBalanceWei = results[0].value;
+        this.lastKnownCeloBalanceWei = celoBalanceWei;
+      }
+      if (results[1].status === 'fulfilled') {
+        gasPriceWei = results[1].value;
+        this.lastKnownGasPriceWei = gasPriceWei;
+      }
+      if (results[2].status === 'fulfilled') {
+        blockNumber = Number(results[2].value);
+        this.lastKnownBlockNumber = blockNumber;
+      }
+      if (results[3].status === 'fulfilled') {
+        transactionCount = Number(results[3].value);
+        this.lastKnownTxCount = transactionCount;
       }
     } catch (e: any) {
       console.warn('[IdentityService] Celo RPC notice:', e?.shortMessage || e?.message || 'RPC lookup paused');

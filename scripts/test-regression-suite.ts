@@ -430,6 +430,52 @@ https://acme-analytics.io/blog/announcement,2026-10-20
   assert(parsedTsv.reasonsDetected.includes('Duplicate without user-selected canonical'), 'Captures reason from TSV column');
 
   // ----------------------------------------------------
+  // TEST GROUP 11: Data-Quality Consistency & Non-Zero Free Receipts
+  // ----------------------------------------------------
+  console.log('\n[11] Testing Data-Quality Consistency & On-Chain Receipt Truthfulness...');
+
+  const { buyCoordinator } = await import('../src/services/buyClient.js');
+  const dummyReceipt = {
+    service: 'browser-session' as const,
+    provider: 'buy.ai',
+    costUsd: '0.045',
+    txHash: '0x123',
+    celoscanUrl: 'https://celoscan.io',
+    timestamp: new Date().toISOString(),
+    attributionTag: 'celo_757c2ac3b70c',
+    blockNumber: 82440000,
+    gasPriceGwei: '0.5',
+    isRealBroadcast: false,
+  };
+
+  const freeReceipt = buyCoordinator.buildExecutionLog('https://free-test.com', dummyReceipt as any, dummyReceipt as any, false);
+  assert(freeReceipt.clientPaidUsd === '$0.00 USD₮', `Free quick audit states clientPaidUsd $0.00 USD₮ (got ${freeReceipt.clientPaidUsd})`);
+  assert(freeReceipt.agentMarginUsd.includes('Sponsored Free Tier'), 'Free quick audit labels agent margin as Sponsored Free Tier');
+
+  const paidReceipt = buyCoordinator.buildExecutionLog('https://paid-test.com', dummyReceipt as any, dummyReceipt as any, true);
+  assert(paidReceipt.clientPaidUsd === '$0.50 USD₮', `Paid crawl states clientPaidUsd $0.50 USD₮ (got ${paidReceipt.clientPaidUsd})`);
+
+  // Verify Single Source of Truth for Mobile LCP across speedVitals and mobilePerformance
+  const { checkMobilePerformance } = await import('../src/engine/checks/mobilePerformance.js');
+  const { auditSpeedVitals } = await import('../src/analyzer/speedVitals.js');
+
+  const { metrics: mobileMetrics } = checkMobilePerformance(
+    [{ url: 'https://test-perf.com', html: htmlWithAnalytics, status: 200, depth: 0 } as any],
+    dummyMetadata
+  );
+  const $perf = cheerio.load(htmlWithAnalytics);
+  const perfVitals = auditSpeedVitals($perf, htmlWithAnalytics.length, mobileMetrics);
+
+  assert(
+    perfVitals.lcpEstimateSeconds === mobileMetrics.mobileLcpSeconds,
+    `Mobile LCP is identical across performance and mobileMetrics (${perfVitals.lcpEstimateSeconds}s vs ${mobileMetrics.mobileLcpSeconds}s)`
+  );
+  assert(
+    perfVitals.mobile?.mobileLcpSeconds === mobileMetrics.mobileLcpSeconds,
+    `Nested performance.mobile.mobileLcpSeconds strictly matches (${perfVitals.mobile?.mobileLcpSeconds}s)`
+  );
+
+  // ----------------------------------------------------
   // SUMMARY
   // ----------------------------------------------------
   console.log('\n========================================');

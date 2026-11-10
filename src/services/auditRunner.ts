@@ -114,7 +114,7 @@ export async function runAuditPipeline(
   );
   semantics.primaryKeywordDetected = keywordIntel.primaryKeywordDetected;
 
-  const performance = auditSpeedVitals($, rootPage.html.length);
+  const performance = auditSpeedVitals($, rootPage.html.length, mobileMetrics);
   const codePatches = generateCodePatches(normalizedUrl, technical, archetype, metadata.detectedStack);
 
   // 6. Upstream x402 payment & receipt via buy coordinator on Celo Mainnet (concurrent for low latency)
@@ -122,7 +122,7 @@ export async function runAuditPipeline(
     buyCoordinator.rentBrowserSession(normalizedUrl, isPaidExecution),
     buyCoordinator.querySocialSignals(metadata.hostname, isPaidExecution),
   ]);
-  const onchainReceipt = buyCoordinator.buildExecutionLog(normalizedUrl, browserReceipt, socialReceipt);
+  const onchainReceipt = buyCoordinator.buildExecutionLog(normalizedUrl, browserReceipt, socialReceipt, isPaidExecution);
 
   // 7. Calculate scores from deterministic findings
   const criticalFindings = findings.filter((f) => f.severity === 'critical').length;

@@ -17,7 +17,16 @@ export interface FullAuditReport {
   auditVersion?: string;
   targetUrl: string;
   auditTimestamp: string;
+  mode?: 'quick' | 'full';
   isFreeTier?: boolean;
+  logoCandidates?: string[];
+  checksRun?: number;
+  checksPassed?: number;
+  receipt?: {
+    attributionTag?: string;
+    transactionHash?: string;
+    clientPaidUsd?: string;
+  };
   coverage?: {
     totalChecks: number;
     evaluatedChecks: number;
@@ -48,11 +57,12 @@ export interface FullAuditReport {
   localSeoSignals?: LocalSeoSignals;
   archetype: ArchetypeProfile;
   topNeedleMovers: Array<{
-    priority: 'Critical' | 'High' | 'Quick Win';
+    priority: 'Critical' | 'High' | 'Warning' | 'Notice' | 'Quick Win';
     title: string;
     description: string;
     action: string;
     snippet?: string;
+    rootCauseKey?: string;
   }>;
   prioritizedGroups: FindingGroup[];
   prioritiesFromLlm?: PriorityItem[];

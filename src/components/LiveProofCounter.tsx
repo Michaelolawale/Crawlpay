@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Activity,
   ExternalLink,
-  ShieldCheck,
-  Zap,
   CheckCircle2,
   Copy,
   Check,
@@ -14,7 +12,6 @@ import {
   Clock,
   ArrowUpRight,
   Radio,
-  FileText,
 } from 'lucide-react';
 import { CONFIG } from '@/config';
 
@@ -84,7 +81,7 @@ export function LiveProofCounter({
       .then((res) => res.json())
       .then((data) => {
         if (data?.transactionCount) {
-          setCount(Math.max(190, Number(data.transactionCount)));
+          setCount(Number(data.transactionCount));
         }
         if (data?.agentWallet) setWallet(data.agentWallet);
         if (data?.attributionTag) setTag(data.attributionTag);
@@ -106,7 +103,7 @@ export function LiveProofCounter({
   const renderTransactionsModal = () => {
     if (!showModal) return null;
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-200">
         <div
           className="relative w-full max-w-2xl max-h-[85vh] rounded-[20px] bg-white dark:bg-[#16171d] border border-graphite-200 dark:border-graphite-800 shadow-2xl flex flex-col overflow-hidden text-left"
           onClick={(e) => e.stopPropagation()}

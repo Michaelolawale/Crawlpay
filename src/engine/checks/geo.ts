@@ -1,5 +1,5 @@
 import { Finding, PageCrawlData, SiteMetadata } from '../types';
-import { RobotsParser, BotRuleEvaluation, BotAccessStatus } from '../utils/robotsParser';
+import { RobotsParser, BotRuleEvaluation } from '../utils/robotsParser';
 
 export interface GeoAnalysisSignals {
   aiBots: BotRuleEvaluation[];

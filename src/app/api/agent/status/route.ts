@@ -29,6 +29,10 @@ export async function GET(req: NextRequest) {
         audit: `${baseUrl}/api/audit`,
         compare: `${baseUrl}/api/compare`,
       },
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
     });
   } catch (err: any) {
     return NextResponse.json(

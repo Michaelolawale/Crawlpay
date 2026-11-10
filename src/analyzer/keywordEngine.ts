@@ -1,5 +1,6 @@
 import * as cheerio from 'cheerio';
 import { SiteArchetype } from './archetypeDetector';
+import { extractLogoCandidates } from '../crawler/pageCrawler';
 
 export interface SiteSummary {
   summary: string;
@@ -8,6 +9,7 @@ export interface SiteSummary {
   businessModel: string;
   detectedBrandName: string;
   confidence: 'High' | 'Moderate' | 'Low (Unclear from page content)';
+  logoCandidates?: string[];
 }
 
 export type OnPagePlacement =
@@ -352,6 +354,8 @@ export function generateSiteSummary(
     summary = `The purpose of ${brandName} could not be determined with high confidence from on-page tags alone. Adding a descriptive title, meta description, and <h1> heading will help both visitors and search engines understand your exact offer.`;
   }
 
+  const logoCandidates = extractLogoCandidates($, normalizedUrl);
+
   return {
     summary,
     targetAudience,
@@ -359,6 +363,7 @@ export function generateSiteSummary(
     businessModel,
     detectedBrandName: brandName,
     confidence,
+    logoCandidates,
   };
 }
 

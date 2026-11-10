@@ -1,7 +1,5 @@
 import { runAuditPipeline } from '../services/auditRunner';
 import { FullAuditReport } from '../types/audit';
-import { CrawlExecutionLog } from '../services/buyClient';
-import { SiteMetadata } from './types';
 
 export type IntegratedAuditReport = FullAuditReport & {
   meta?: {

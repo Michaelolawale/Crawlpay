@@ -62,6 +62,7 @@ module.exports = {
       boxShadow: {
         'hero-field': '1px 8px 30px 0 rgba(0,0,0,0.09)',
         'screenshot-inset': '0 0 24px 0 rgba(0,0,0,0.22)',
+        xs: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
       },
       borderRadius: {
         'card-panel': '24px',

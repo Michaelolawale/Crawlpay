@@ -157,7 +157,7 @@ export default function SingleReportPage() {
                   {report.targetUrl}
                 </h1>
                 {(() => {
-                  const isDeepCrawl = report.isFreeTier === false || (report.pagesChecked && report.pagesChecked > 1) || Boolean((report as any).mode === 'full');
+                  const isDeepCrawl = report.isFreeTier === false || (report.pagesChecked && report.pagesChecked > 1) || report.mode === 'full';
                   return (
                     <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-mono font-medium shrink-0 ${
                       isDeepCrawl
@@ -212,7 +212,7 @@ export default function SingleReportPage() {
             </button>
 
             {(() => {
-              const isDeepCrawl = report.isFreeTier === false || (report.pagesChecked && report.pagesChecked > 1) || Boolean((report as any).mode === 'full');
+              const isDeepCrawl = report.isFreeTier === false || (report.pagesChecked && report.pagesChecked > 1) || report.mode === 'full';
               const rerunMode = isDeepCrawl ? 'full' : 'quick';
               return (
                 <Link

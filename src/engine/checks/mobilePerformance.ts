@@ -221,7 +221,7 @@ export function checkMobilePerformance(
   const rootViewport = $root('meta[name="viewport"]').attr('content') || '';
 
   const mobileLcpSeconds = parseFloat(
-    (1.2 + (totalUnresponsiveImages > 5 ? 0.8 : 0.2) + (mobilePenalty > 20 ? 0.9 : 0)).toFixed(2)
+    (1.2 + (totalUnresponsiveImages > 5 ? 0.8 : totalUnresponsiveImages > 0 ? 0.2 : 0) + (mobilePenalty > 20 ? 0.6 : 0)).toFixed(2)
   );
   const mobileCls = parseFloat(
     (totalMissingDimensions > 5 ? 0.14 : totalMissingDimensions > 0 ? 0.05 : 0.01).toFixed(3)

@@ -9,18 +9,11 @@ import {
   Zap,
   Activity,
   Layers,
-  Info,
   CheckCircle2,
   AlertTriangle,
   XCircle,
-  Clock,
-  Terminal,
   Bot,
   BarChart3,
-  ShieldCheck,
-  LayoutGrid,
-  ChevronRight,
-  ArrowRight,
 } from 'lucide-react';
 import { FullAuditReport } from '@/types/audit';
 import { CompetitorComparison } from '@/analyzer/competitorComparator';
@@ -57,7 +50,7 @@ export function OverviewAuditGraph({
   // Computed Real Telemetry Data Points
   const targetLcp = comparison
     ? Number(comparison.target.lcpSeconds.toFixed(2))
-    : Number((report?.performance?.lcpEstimateSeconds ?? 1.7).toFixed(2));
+    : Number((report?.performance?.lcpEstimateSeconds ?? report?.mobileMetrics?.mobileLcpSeconds ?? 1.2).toFixed(2));
   const compLcp = comparison ? Number(comparison.competitor.lcpSeconds.toFixed(2)) : 1.2;
 
   const targetTtfb = 0.42;
@@ -70,13 +63,19 @@ export function OverviewAuditGraph({
   const compDom = Number((compLcp * 0.82).toFixed(2));
 
   // Category Pillar Scores (0 - 100)
-  const pillarCategories = [
-    { label: 'Indexing', fullName: 'Technical Crawlability', target: report?.scores?.technical ?? 85, comp: comparison ? 88 : 100, icon: Globe },
-    { label: 'Speed', fullName: 'Page Speed & Vitals', target: report?.scores?.performance ?? report?.performance?.score ?? 82, comp: comparison ? Math.min(100, Math.round((1 / (compLcp || 1.4)) * 130)) : 100, icon: Zap },
-    { label: 'Mobile', fullName: 'Mobile-First Usability', target: report?.scores?.mobile ?? 90, comp: comparison ? 85 : 100, icon: Gauge },
-    { label: 'Content', fullName: 'Content Architecture', target: report?.scores?.content ?? 78, comp: comparison ? 82 : 100, icon: Layers },
-    { label: 'AEO', fullName: 'Answer Engine (AEO)', target: report?.scores?.aeo ?? 88, comp: comparison ? 80 : 100, icon: Bot },
-    { label: 'GEO', fullName: 'AI Search Bots (GEO)', target: report?.scores?.geo ?? 75, comp: comparison ? 70 : 100, icon: Bot },
+  const pillarCategories: Array<{
+    label: string;
+    fullName: string;
+    target: number | null;
+    comp: number;
+    icon: any;
+  }> = [
+    { label: 'Indexing', fullName: 'Technical Crawlability', target: report?.scores?.technical ?? null, comp: comparison ? 88 : 100, icon: Globe },
+    { label: 'Speed', fullName: 'Page Speed & Vitals', target: report?.scores?.performance ?? report?.performance?.score ?? null, comp: comparison ? Math.min(100, Math.round((1 / (compLcp || 1.4)) * 130)) : 100, icon: Zap },
+    { label: 'Mobile', fullName: 'Mobile-First Usability', target: report?.scores?.mobile ?? null, comp: comparison ? 85 : 100, icon: Gauge },
+    { label: 'Content', fullName: 'Content Architecture', target: report?.scores?.content ?? null, comp: comparison ? 82 : 100, icon: Layers },
+    { label: 'AEO', fullName: 'Answer Engine (AEO)', target: report?.scores?.aeo ?? null, comp: comparison ? 80 : 100, icon: Bot },
+    { label: 'GEO', fullName: 'AI Search Bots (GEO)', target: report?.scores?.geo ?? null, comp: comparison ? 70 : 100, icon: Bot },
   ];
 
   // Core Web Vitals metrics
@@ -740,8 +739,9 @@ export function OverviewAuditGraph({
               MOBILE VIEW 1: RESPONSIVE COMPARATIVE METER CARDS (DEFAULT MOBILE)
               ----------------------------------------------------------------- */}
           <div className={`${mobilePillarView === 'cards' ? 'block sm:hidden' : 'hidden'} space-y-2.5`}>
-            {pillarCategories.map((pillar, idx) => {
-              const diff = pillar.target - pillar.comp;
+            {pillarCategories.map((pillar) => {
+              const isMeasured = typeof pillar.target === 'number';
+              const diff = isMeasured ? (pillar.target as number) - pillar.comp : null;
               const Icon = pillar.icon;
               return (
                 <div
@@ -763,15 +763,21 @@ export function OverviewAuditGraph({
                       </div>
                     </div>
 
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
-                        diff >= 0
-                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
-                          : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
-                      }`}
-                    >
-                      {diff >= 0 ? `+${diff} Target Lead` : `${diff} Gap`}
-                    </span>
+                    {isMeasured && diff !== null ? (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                          diff >= 0
+                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                        }`}
+                      >
+                        {diff >= 0 ? `+${diff} Target Lead` : `${diff} Gap`}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono text-graphite-500 bg-graphite-100 dark:bg-graphite-800">
+                        Not measured
+                      </span>
+                    )}
                   </div>
 
                   {/* Dual Horizontal Comparative Bars */}
@@ -782,12 +788,14 @@ export function OverviewAuditGraph({
                           <span className="size-2 rounded-full bg-violet" />
                           <span className="truncate max-w-[170px]">{auditedDomain}</span>
                         </span>
-                        <strong className="text-violet font-bold text-xs">{pillar.target}/100</strong>
+                        <strong className="text-violet font-bold text-xs">
+                          {isMeasured ? `${pillar.target}/100` : 'Not measured'}
+                        </strong>
                       </div>
                       <div className="h-2 w-full overflow-hidden rounded-full bg-[#e6e6e8] dark:bg-[#252631]">
                         <div
                           className="h-full rounded-full bg-violet transition-all duration-500 ease-out"
-                          style={{ width: `${pillar.target}%` }}
+                          style={{ width: `${isMeasured ? pillar.target : 0}%` }}
                         />
                       </div>
                     </div>
@@ -862,11 +870,12 @@ export function OverviewAuditGraph({
                   const categoryW = deskPlotW / pillarCategories.length;
                   const centerX = deskMargin.left + (idx + 0.5) * categoryW;
 
+                  const isMeasured = typeof pillar.target === 'number';
                   const barW = 20;
-                  const targetBarH = (pillar.target / 100) * deskPlotH;
+                  const targetBarH = isMeasured ? ((pillar.target as number) / 100) * deskPlotH : 0;
                   const compBarH = (pillar.comp / 100) * deskPlotH;
 
-                  const targetBarY = deskMargin.top + deskPlotH - targetBarH;
+                  const targetBarY = isMeasured ? deskMargin.top + deskPlotH - targetBarH : deskMargin.top + deskPlotH;
                   const compBarY = deskMargin.top + deskPlotH - compBarH;
 
                   const isHovered = hoverPillarIdx === idx;
@@ -893,26 +902,38 @@ export function OverviewAuditGraph({
                       )}
 
                       {/* Target Bar (Violet) */}
-                      <rect
-                        x={centerX - barW - 2}
-                        y={targetBarY}
-                        width={barW}
-                        height={targetBarH}
-                        fill="#6c5edc"
-                        rx="4"
-                        className="transition-all duration-300"
-                      />
+                      {isMeasured ? (
+                        <rect
+                          x={centerX - barW - 2}
+                          y={targetBarY}
+                          width={barW}
+                          height={targetBarH}
+                          fill="#6c5edc"
+                          rx="4"
+                          className="transition-all duration-300"
+                        />
+                      ) : (
+                        <line
+                          x1={centerX - barW - 2}
+                          y1={deskMargin.top + deskPlotH}
+                          x2={centerX - 2}
+                          y2={deskMargin.top + deskPlotH}
+                          stroke="#94a3b8"
+                          strokeWidth="2"
+                          strokeDasharray="3 3"
+                        />
+                      )}
                       {/* Score Label above target bar */}
                       <text
                         x={centerX - barW * 0.5 - 2}
-                        y={targetBarY - 6}
-                        fill="#6c5edc"
-                        fontSize="11"
-                        fontWeight="bold"
+                        y={isMeasured ? targetBarY - 6 : deskMargin.top + deskPlotH - 6}
+                        fill={isMeasured ? "#6c5edc" : "#94a3b8"}
+                        fontSize={isMeasured ? "11" : "9"}
+                        fontWeight={isMeasured ? "bold" : "normal"}
                         textAnchor="middle"
                         fontFamily="monospace"
                       >
-                        {pillar.target}
+                        {isMeasured ? pillar.target : 'N/A'}
                       </text>
 
                       {/* Competitor / Benchmark Bar (Emerald) */}
@@ -959,7 +980,8 @@ export function OverviewAuditGraph({
             {/* Interactive Pillar Details Drawer */}
             <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 pt-3 border-t border-graphite-100 dark:border-graphite-800 text-xs">
               {pillarCategories.map((p, i) => {
-                const diff = p.target - p.comp;
+                const isMeasured = typeof p.target === 'number';
+                const diff = isMeasured ? (p.target as number) - p.comp : null;
                 return (
                   <div
                     key={i}
@@ -974,16 +996,24 @@ export function OverviewAuditGraph({
                       {p.fullName}
                     </span>
                     <div className="flex items-center justify-between pt-1">
-                      <span className="font-mono font-bold text-violet text-sm">{p.target}</span>
-                      <span
-                        className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
-                          diff >= 0
-                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
-                            : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
-                        }`}
-                      >
-                        {diff >= 0 ? `+${diff}` : `${diff}`}
+                      <span className="font-mono font-bold text-violet text-sm">
+                        {isMeasured ? p.target : 'N/A'}
                       </span>
+                      {diff !== null ? (
+                        <span
+                          className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
+                            diff >= 0
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300'
+                              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300'
+                          }`}
+                        >
+                          {diff >= 0 ? `+${diff}` : `${diff}`}
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded-full text-graphite-500 bg-graphite-100 dark:bg-graphite-800">
+                          Not measured
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

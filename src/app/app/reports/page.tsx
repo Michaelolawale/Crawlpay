@@ -23,6 +23,7 @@ import { focusRing } from '@/components/SiteHeader';
 export interface SavedReportItem {
   id: string;
   date: string;
+  timestamp?: string | number;
   targetUrl: string;
   mode: 'quick' | 'full';
   wallet?: string;
@@ -214,7 +215,7 @@ export default function AppReportsPage() {
                 <div className="flex flex-wrap items-center gap-3 text-[13px] text-graphite-600 dark:text-graphite-400">
                   <span className="flex items-center gap-1">
                     <Calendar className="size-3.5" />
-                    <span>{new Date(item.date || (item as any).timestamp || Date.now()).toLocaleDateString()}</span>
+                    <span>{new Date(item.date || item.timestamp || Date.now()).toLocaleDateString()}</span>
                   </span>
                   <span>/</span>
                   <span>{item.pagesChecked || item.reportData?.pagesChecked || 1} page{(item.pagesChecked || item.reportData?.pagesChecked || 1) !== 1 ? 's' : ''}</span>

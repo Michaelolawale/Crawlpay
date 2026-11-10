@@ -16,7 +16,11 @@ export interface PerformanceVitals {
   mobile?: MobileAuditMetrics;
 }
 
-export function auditSpeedVitals($: cheerio.CheerioAPI, htmlLength: number): PerformanceVitals {
+export function auditSpeedVitals(
+  $: cheerio.CheerioAPI,
+  htmlLength: number,
+  existingMobile?: MobileAuditMetrics
+): PerformanceVitals {
   const scripts = $('script[src]');
   let renderBlockingScriptsCount = 0;
   scripts.each((_, el) => {
@@ -105,12 +109,12 @@ export function auditSpeedVitals($: cheerio.CheerioAPI, htmlLength: number): Per
   if (renderBlockingScriptsCount > 2) mobilePenalty += 10;
 
   const score = Math.max(45, 100 - penalty);
-  const mobileScore = Math.max(40, 100 - mobilePenalty);
+  const mobileScore = existingMobile?.mobileScore ?? Math.max(40, 100 - mobilePenalty);
 
-  const lcpEstimateSeconds = parseFloat((1.0 + (100 - score) * 0.028).toFixed(2));
-  const clsEstimate = parseFloat(((100 - score) * 0.0018).toFixed(3));
-  const mobileLcpSeconds = parseFloat((1.2 + (100 - mobileScore) * 0.03).toFixed(2));
-  const mobileCls = parseFloat(((100 - mobileScore) * 0.002).toFixed(3));
+  const lcpEstimateSeconds = existingMobile?.mobileLcpSeconds ?? parseFloat((1.0 + (100 - score) * 0.028).toFixed(2));
+  const clsEstimate = existingMobile?.mobileCls ?? parseFloat(((100 - score) * 0.0018).toFixed(3));
+  const mobileLcpSeconds = existingMobile?.mobileLcpSeconds ?? parseFloat((1.2 + (100 - mobileScore) * 0.03).toFixed(2));
+  const mobileCls = existingMobile?.mobileCls ?? parseFloat(((100 - mobileScore) * 0.002).toFixed(3));
 
   return {
     score,
@@ -120,7 +124,7 @@ export function auditSpeedVitals($: cheerio.CheerioAPI, htmlLength: number): Per
     renderBlockingScriptsCount,
     usesModernImageFormats,
     opportunities,
-    mobile: {
+    mobile: existingMobile || {
       mobileScore,
       hasViewportTag,
       viewportContent,
