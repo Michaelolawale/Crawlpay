@@ -260,6 +260,38 @@ export async function POST(req: NextRequest) {
       report.onchainReceipt.upstreamBrowserReceipt.isRealBroadcast = true;
     }
 
+    // Record live transaction into the audit stream (agent-sponsored or customer settlement)
+    const executionTxHash = report.onchainReceipt?.upstreamBrowserReceipt?.txHash || incomingTxHash;
+    if (executionTxHash) {
+      if (isVerifiedPaid && incomingTxHash) {
+        await db.addPayment({
+          id: `pay_crawl_${Date.now()}`,
+          wallet: effectiveWallet || CONFIG.AGENT_WALLET_ADDRESS,
+          amount: '0.50',
+          token: 'USDT',
+          chain_id: 42220,
+          tx_hash: incomingTxHash,
+          status: 'confirmed',
+          type: 'customer_payment',
+          is_test: false,
+          created_at: new Date().toISOString(),
+        }).catch(() => {});
+      } else {
+        await db.addPayment({
+          id: `pay_sponsored_${Date.now()}`,
+          wallet: effectiveWallet || CONFIG.AGENT_WALLET_ADDRESS,
+          amount: '0.00',
+          token: 'CELO',
+          chain_id: 42220,
+          tx_hash: executionTxHash,
+          status: 'confirmed',
+          type: 'agent_sponsored',
+          is_test: false,
+          created_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
+    }
+
     // Save report in persistent store
     await db.saveReport(reportId, report, {
       jobId: createdJobId,

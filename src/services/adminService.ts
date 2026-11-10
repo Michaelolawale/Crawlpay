@@ -113,8 +113,10 @@ export class AdminService {
         totalUsdRevenue += numAmount;
         customerPaymentsCount++;
       } else if (tokenUpper === 'CELO') {
-        totalGasRefuelsCelo += numAmount;
-        gasRefuelsCount++;
+        if (numAmount > 0 || p.type === 'gas_refuel') {
+          totalGasRefuelsCelo += numAmount;
+          gasRefuelsCount++;
+        }
       }
 
       // Link corresponding job
@@ -124,7 +126,7 @@ export class AdminService {
       classifiedPayments.push({
         ...p,
         isCustomerPayment,
-        isGasRefuel: tokenUpper === 'CELO',
+        isGasRefuel: tokenUpper === 'CELO' && (numAmount > 0 || p.type === 'gas_refuel'),
         formattedAmount: isUsdtStable ? formatUsd(numAmount) : formatTokenAmount(numAmount, tokenUpper),
         maskedWallet: maskAddress(p.wallet),
         maskedTx: maskTxHash(p.tx_hash),

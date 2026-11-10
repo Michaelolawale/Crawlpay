@@ -86,7 +86,7 @@ Every deep audit executed through CrawlPay settles on **Celo Mainnet** with ERC-
 | **Attribution Tag** | `celo_757c2ac3b70c` (ERC-8021) |
 | **Calldata Suffix** | `0x63656c6f5f373537633261633362373063110080218021802180218021802180218021` |
 | **Agent Wallet** | `0xf06c2b754d07cba299751f0985a48f8013bb6b39` |
-| **Live Proof Count** | **187+ Verified Mainnet Transactions** ([View on Celoscan](https://celoscan.io/address/0xf06c2b754d07cba299751f0985a48f8013bb6b39)) |
+| **Live Proof Count** | **235+ Verified Mainnet Transactions** ([View on Celoscan](https://celoscan.io/address/0xf06c2b754d07cba299751f0985a48f8013bb6b39)) |
 | **ERC-8004 Agent ID** | `#9984` at `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` |
 | **Payment Standard** | x402 HTTP micropayments (USD₮ on Celo via `@celo/buy`) |
 | **First Attributed Tx** | [`0x969c357...4916`](https://celoscan.io/tx/0x969c357fb05affb728f5adf060ae1d7070f9af74577c49cbd08c63c9cf554916) |

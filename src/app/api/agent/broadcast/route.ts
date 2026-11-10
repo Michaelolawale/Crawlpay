@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { identityService } from '@/services/identityService';
+import { db } from '@/services/db';
+import { CONFIG } from '@/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +14,21 @@ export async function POST() {
         { error: result.error || 'Broadcast failed', details: result },
         { status: 400 }
       );
+    }
+
+    if (result.txHash) {
+      await db.addPayment({
+        id: `pay_ping_${Date.now()}`,
+        wallet: CONFIG.AGENT_WALLET_ADDRESS,
+        amount: '0.00',
+        token: 'CELO',
+        chain_id: 42220,
+        tx_hash: result.txHash,
+        status: 'confirmed',
+        type: 'agent_sponsored',
+        is_test: false,
+        created_at: new Date().toISOString(),
+      }).catch(() => {});
     }
 
     return NextResponse.json(result);

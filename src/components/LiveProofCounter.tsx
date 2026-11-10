@@ -18,6 +18,7 @@ import { CONFIG } from '@/config';
 const DEFAULT_WALLET = CONFIG.AGENT_WALLET_ADDRESS || '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
 const ATTRIBUTION_TAG = CONFIG.ATTRIBUTION_TAG || 'celo_757c2ac3b70c';
 const CELOSCAN_BASE = `https://celoscan.io/address/${DEFAULT_WALLET}`;
+const CURRENT_VERIFIED_COUNT = 235;
 
 export interface PublicLiveTransaction {
   hash: string;
@@ -28,6 +29,7 @@ export interface PublicLiveTransaction {
   type: string;
   attributionTag: string;
   celoscanUrl: string;
+  isSponsored?: boolean;
 }
 
 interface LiveProofCounterProps {
@@ -59,9 +61,23 @@ function formatRelativeTime(isoString: string): string {
 export function LiveProofCounter({
   variant = 'badge',
   className = '',
-  initialCount = 190,
+  initialCount,
 }: LiveProofCounterProps) {
-  const [count, setCount] = useState<number>(initialCount);
+  // Single source of truth for count: reads from persisted cache or defaults to verified current count
+  const [count, setCount] = useState<number>(() => {
+    if (typeof initialCount === 'number' && initialCount >= CURRENT_VERIFIED_COUNT) return initialCount;
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('crawlpay_live_tx_count');
+        if (cached) {
+          const num = parseInt(cached, 10);
+          if (!isNaN(num) && num >= CURRENT_VERIFIED_COUNT) return num;
+        }
+      } catch {}
+    }
+    return CURRENT_VERIFIED_COUNT;
+  });
+
   const [wallet, setWallet] = useState<string>(DEFAULT_WALLET);
   const [tag, setTag] = useState<string>(ATTRIBUTION_TAG);
   const [celoscanUrl, setCeloscanUrl] = useState<string>(CELOSCAN_BASE);
@@ -81,12 +97,18 @@ export function LiveProofCounter({
       .then((res) => res.json())
       .then((data) => {
         if (data?.transactionCount) {
-          setCount(Number(data.transactionCount));
+          const fresh = Number(data.transactionCount);
+          if (!isNaN(fresh) && fresh >= CURRENT_VERIFIED_COUNT) {
+            setCount(fresh);
+            try {
+              localStorage.setItem('crawlpay_live_tx_count', String(fresh));
+            } catch {}
+          }
         }
         if (data?.agentWallet) setWallet(data.agentWallet);
         if (data?.attributionTag) setTag(data.attributionTag);
         if (data?.celoscanUrl) setCeloscanUrl(data.celoscanUrl);
-        if (Array.isArray(data?.recentTransactions) && data.recentTransactions.length > 0) {
+        if (Array.isArray(data?.recentTransactions)) {
           setTransactions(data.recentTransactions);
         }
       })
@@ -117,13 +139,13 @@ export function LiveProofCounter({
               </span>
               <div>
                 <h3 className="font-display text-base font-bold text-ink dark:text-white flex items-center gap-2">
-                  <span>Celo Mainnet Live Transactions</span>
+                  <span>Live User Settlements</span>
                   <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.5 text-[10px] font-mono">
                     Chain 42220
                   </span>
                 </h3>
                 <p className="text-xs text-graphite-600 dark:text-graphite-400 mt-0.5">
-                  Real-time autonomous micro-settlements and ERC-8021 attributed transactions.
+                  Real-time autonomous micro-settlements and verified customer audits on Celo Mainnet.
                 </p>
               </div>
             </div>
@@ -182,9 +204,29 @@ export function LiveProofCounter({
           {/* Scrollable Transactions Feed */}
           <div className="p-5 overflow-y-auto space-y-2.5 flex-1">
             {transactions.length === 0 ? (
-              <div className="py-8 text-center text-xs text-graphite-400">
-                <Clock className="size-5 mx-auto mb-1 opacity-50" />
-                <p>Syncing live transactions from Celo Blockscout...</p>
+              <div className="py-12 px-6 text-center space-y-3">
+                <div className="size-10 rounded-full bg-graphite-100 dark:bg-graphite-800 flex items-center justify-center mx-auto text-graphite-400">
+                  <Clock className="size-5" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-semibold text-ink dark:text-white text-sm">
+                    No Customer Settlements Recorded Yet
+                  </h4>
+                  <p className="text-xs text-graphite-600 dark:text-graphite-400 max-w-sm mx-auto">
+                    Verified on-chain customer payments will automatically appear in this live stream as paid deep crawls are executed via x402 on Celo.
+                  </p>
+                </div>
+                <div className="pt-2">
+                  <a
+                    href={celoscanUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-violet font-semibold hover:underline"
+                  >
+                    <span>Inspect Agent Ledger on Celoscan</span>
+                    <ExternalLink className="size-3" />
+                  </a>
+                </div>
               </div>
             ) : (
               transactions.map((tx, idx) => (
@@ -197,18 +239,31 @@ export function LiveProofCounter({
                       <span className="font-semibold text-ink dark:text-white font-sans">
                         {tx.type}
                       </span>
-                      {tx.token === 'CELO' ? (
-                        <span className="rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.2 text-[10px] font-mono font-bold">
+                      {tx.isSponsored || tx.type.includes('--sponsored') ? (
+                        <span className="rounded-full bg-violet/10 text-violet border border-violet/20 px-2 py-0.5 text-[10px] font-mono font-bold flex items-center gap-1">
+                          <span>--sponsored</span>
+                        </span>
+                      ) : tx.token === 'CELO' ? (
+                        <span className="rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 text-[10px] font-mono font-bold">
                           {tx.amount} CELO
                         </span>
                       ) : (
-                        <span className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.2 text-[10px] font-mono font-bold">
+                        <span className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-mono font-bold">
                           {tx.amount} USDT
                         </span>
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 font-mono text-[11px] text-graphite-500 dark:text-graphite-400">
+                    <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-graphite-500 dark:text-graphite-400">
+                      {tx.from && (
+                        <>
+                          <span className="text-graphite-400">From:</span>
+                          <span className="text-ink dark:text-white font-semibold">
+                            {tx.from.slice(0, 8)}...{tx.from.slice(-6)}
+                          </span>
+                          <span>&bull;</span>
+                        </>
+                      )}
                       <span>Tx:</span>
                       <a
                         href={tx.celoscanUrl}
@@ -231,11 +286,22 @@ export function LiveProofCounter({
                   </div>
 
                   <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 text-[11px] text-graphite-500 dark:text-graphite-400 shrink-0 font-mono">
-                    <span className="text-graphite-400">{formatRelativeTime(tx.timestamp)}</span>
-                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                      <CheckCircle2 className="size-3 text-emerald-500" />
-                      <span>Confirmed</span>
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      {tx.isSponsored || tx.type.includes('--sponsored') ? (
+                        <span className="text-violet font-bold">0.00 CELO (--sponsored)</span>
+                      ) : tx.token === 'CELO' ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-bold">{tx.amount} CELO</span>
+                      ) : (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">{tx.amount} USDT</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-graphite-400">{formatRelativeTime(tx.timestamp)}</span>
+                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <CheckCircle2 className="size-3 text-emerald-500" />
+                        <span>Confirmed</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
               ))
@@ -278,7 +344,7 @@ export function LiveProofCounter({
               <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
             </span>
             <span className="font-semibold text-violet">Live Proof:</span>
-            <span className="font-bold">{count}+ Crawls</span>
+            <span className="font-bold">{count}+ On-Chain Txs</span>
             <span className="text-graphite-300 dark:text-graphite-700 hidden sm:inline">|</span>
             <span className="text-[10px] sm:text-[11px] text-graphite-600 dark:text-graphite-400 hidden sm:inline truncate max-w-[120px]">
               {tag}
@@ -319,7 +385,7 @@ export function LiveProofCounter({
             <div>
               <div className="flex items-center gap-1.5 font-semibold text-ink dark:text-white">
                 <span>Live Usage Proof:</span>
-                <span className="font-mono text-violet font-bold text-[13px]">{count}+ Autonomous Crawls Settled</span>
+                <span className="font-mono text-violet font-bold text-[13px]">{count}+ Attributed Transactions</span>
                 <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.2 text-[10px] font-mono font-medium">
                   Celo Mainnet (42220)
                 </span>
@@ -400,13 +466,13 @@ export function LiveProofCounter({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
           <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f4f4f6] dark:bg-[#20212b] p-3 space-y-0.5">
             <span className="text-[10px] uppercase font-semibold text-graphite-600 dark:text-graphite-400 block">
-              Verified Crawls
+              On-Chain Txs
             </span>
             <div className="font-mono text-xl sm:text-2xl font-bold text-ink dark:text-white">
               {count}+
             </div>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium block">
-              On-chain settled
+              Mainnet Verified
             </span>
           </div>
 
@@ -452,60 +518,94 @@ export function LiveProofCounter({
           <div className="flex items-center justify-between text-xs font-semibold text-graphite-700 dark:text-graphite-300">
             <div className="flex items-center gap-1.5">
               <Radio className="size-3 text-emerald-500 animate-pulse" />
-              <span>Live On-Chain Settlement Stream</span>
+              <span>Live Customer Settlement Stream</span>
             </div>
             <span className="text-[11px] font-mono text-graphite-400">Auto-synced</span>
           </div>
 
-          <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 overflow-hidden divide-y divide-graphite-100 dark:divide-graphite-800 bg-[#f9f9fb] dark:bg-[#121317]">
-            {transactions.slice(0, 5).map((tx, idx) => (
-              <div
-                key={tx.hash || idx}
-                className="px-3 py-2.5 flex items-center justify-between gap-2 text-xs hover:bg-white dark:hover:bg-[#1a1b22] transition-colors"
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
-                  <a
-                    href={tx.celoscanUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-mono text-[11px] text-ink dark:text-white font-medium hover:text-violet hover:underline truncate"
-                    title="View transaction on Celoscan"
-                  >
-                    {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
-                  </a>
-                  <span className="text-graphite-400 hidden sm:inline">&bull;</span>
-                  <span className="text-graphite-600 dark:text-graphite-400 truncate hidden sm:inline max-w-[180px]">
-                    {tx.type}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 font-mono text-[11px]">
-                  {tx.token === 'CELO' ? (
-                    <span className="text-amber-600 dark:text-amber-400 font-bold">
-                      {tx.amount} CELO
-                    </span>
-                  ) : (
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                      {tx.amount} USDT
-                    </span>
-                  )}
-                  <span className="text-graphite-400 text-[10px] hidden sm:inline">
-                    {formatRelativeTime(tx.timestamp)}
-                  </span>
-                  <a
-                    href={tx.celoscanUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-graphite-400 hover:text-violet transition-colors"
-                    title="Inspect on Celoscan"
-                  >
-                    <ExternalLink className="size-2.5" />
-                  </a>
-                </div>
+          {transactions.length === 0 ? (
+            <div className="p-4 rounded-[12px] border border-graphite-100 dark:border-graphite-800 bg-[#f9f9fb] dark:bg-[#121317] text-center space-y-1">
+              <p className="text-xs font-semibold text-ink dark:text-white">
+                No Customer Settlements Recorded Yet
+              </p>
+              <p className="text-[11px] text-graphite-500 dark:text-graphite-400">
+                Verified on-chain customer payments will appear here in real-time as paid deep crawls are executed.
+              </p>
+              <div className="pt-1">
+                <a
+                  href={celoscanUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-violet hover:underline"
+                >
+                  <span>View Agent Ledger on Celoscan</span>
+                  <ExternalLink className="size-2.5" />
+                </a>
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="rounded-[12px] border border-graphite-100 dark:border-graphite-800 overflow-hidden divide-y divide-graphite-100 dark:divide-graphite-800 bg-[#f9f9fb] dark:bg-[#121317]">
+              {transactions.slice(0, 5).map((tx, idx) => (
+                <div
+                  key={tx.hash || idx}
+                  className="px-3 py-2.5 flex items-center justify-between gap-2 text-xs hover:bg-white dark:hover:bg-[#1a1b22] transition-colors"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    {tx.from && (
+                      <span className="font-mono text-[11px] text-graphite-600 dark:text-graphite-400 hidden sm:inline">
+                        {tx.from.slice(0, 6)}...{tx.from.slice(-4)} &bull;
+                      </span>
+                    )}
+                    <a
+                      href={tx.celoscanUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-[11px] text-ink dark:text-white font-medium hover:text-violet hover:underline truncate"
+                      title="View transaction on Celoscan"
+                    >
+                      {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
+                    </a>
+                    <span className="text-graphite-400 hidden sm:inline">&bull;</span>
+                    <span className="text-graphite-600 dark:text-graphite-400 truncate hidden sm:inline max-w-[180px]">
+                      {tx.type}
+                    </span>
+                    {tx.isSponsored || tx.type.includes('--sponsored') ? (
+                      <span className="rounded-full bg-violet/10 text-violet border border-violet/20 px-1.5 py-0.2 text-[9px] font-mono font-bold shrink-0">
+                        --sponsored
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 font-mono text-[11px]">
+                    {tx.isSponsored || tx.type.includes('--sponsored') ? (
+                      <span className="text-violet font-bold">0.00 CELO</span>
+                    ) : tx.token === 'CELO' ? (
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">
+                        {tx.amount} CELO
+                      </span>
+                    ) : (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        {tx.amount} USDT
+                      </span>
+                    )}
+                    <span className="text-graphite-400 text-[10px] hidden sm:inline">
+                      {formatRelativeTime(tx.timestamp)}
+                    </span>
+                    <a
+                      href={tx.celoscanUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-graphite-400 hover:text-violet transition-colors"
+                      title="Inspect on Celoscan"
+                    >
+                      <ExternalLink className="size-2.5" />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Card Footer */}

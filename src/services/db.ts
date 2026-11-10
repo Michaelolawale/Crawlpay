@@ -9,7 +9,7 @@ export interface PaymentRecord {
   tx_hash: string;
   status: 'pending' | 'confirmed' | 'failed';
   is_test?: boolean;
-  type?: 'customer_payment' | 'gas_refuel' | 'ping' | 'deployment';
+  type?: 'customer_payment' | 'gas_refuel' | 'ping' | 'deployment' | 'agent_sponsored';
   created_at: string;
 }
 
@@ -266,13 +266,13 @@ class CrawlpayDatabase {
               existingTxHashes.add(cleanHash);
             }
 
-            // Attributed heartbeat ping / agent registration broadcast
+            // Attributed heartbeat ping / agent free broadcast (--sponsored)
             if (tx.from && tx.from.toLowerCase() === agent && tx.input && tx.input.includes('63656c6f5f373537633261633362373063')) {
               const jobId = `job_ping_${cleanHash.slice(2, 10)}`;
               if (!existingJobIds.has(jobId)) {
                 await this.addJob({
                   id: jobId,
-                  url: 'Attributed Agent Ping (ERC-8021)',
+                  url: 'Attributed Agent Broadcast (ERC-8021) --sponsored',
                   depth: 'quick',
                   status: 'done',
                   started_at: new Date(Number(tx.timeStamp) * 1000).toISOString(),
@@ -282,6 +282,23 @@ class CrawlpayDatabase {
                   is_test: false,
                 });
                 existingJobIds.add(jobId);
+              }
+
+              if (!existingTxHashes.has(cleanHash)) {
+                const payId = `pay_sponsored_${cleanHash.slice(2, 10)}`;
+                await this.addPayment({
+                  id: payId,
+                  wallet: tx.from,
+                  amount: '0.00',
+                  token: 'CELO',
+                  chain_id: 42220,
+                  tx_hash: tx.hash,
+                  status: 'confirmed',
+                  type: 'agent_sponsored',
+                  is_test: false,
+                  created_at: new Date(Number(tx.timeStamp) * 1000).toISOString(),
+                });
+                existingTxHashes.add(cleanHash);
               }
             }
           }

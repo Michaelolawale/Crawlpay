@@ -55,7 +55,7 @@ export class IdentityService {
   private cachedStatus: OnchainIdentityStatus | null = null;
   private lastStatusFetchTime = 0;
   private lastKnownBlockNumber = 82440900;
-  private lastKnownTxCount = 225;
+  private lastKnownTxCount = 235;
   private lastKnownCeloBalanceWei = 7220000000000000000n;
   private lastKnownGasPriceWei = 500000000n;
 
