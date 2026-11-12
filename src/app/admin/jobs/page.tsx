@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { JobRecord } from '../../../services/db';
 import { getAdminToken } from '../../../utils/adminClient';
+import { useAdminRealtime, RealtimeStatusBadge } from '../../../utils/useAdminRealtime';
 
 function formatRelativeTime(isoString: string): string {
   try {
@@ -111,13 +112,36 @@ export default function AdminJobsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [includeTest]);
+
+  // Supabase Realtime live subscriptions for audit crawler queue
+  const realtime = useAdminRealtime({
+    onJobChange: (payload) => {
+      if (payload?.job) {
+        setJobs((prev) => {
+          const incoming = payload.job as JobRecord;
+          const idx = prev.findIndex((j) => j.id === incoming.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = { ...next[idx], ...incoming };
+            return next;
+          }
+          return [incoming, ...prev];
+        });
+      }
+      fetchJobs(false);
+    },
+    onRefresh: () => {
+      fetchJobs(false);
+    },
+  });
 
   useEffect(() => {
     fetchJobs();
+    // 30s background heartbeat as fallback to Supabase Realtime WebSocket
     const interval = setInterval(() => {
       fetchJobs();
-    }, 6000); // 6s fast live polling for active audits
+    }, 30000);
     return () => clearInterval(interval);
   }, [fetchJobs]);
 
@@ -260,6 +284,13 @@ export default function AdminJobsPage() {
               <span>Include Sandbox</span>
             </button>
           </div>
+
+          <RealtimeStatusBadge
+            status={realtime.status}
+            lastEventTime={realtime.lastEventTime}
+            eventCount={realtime.eventCount}
+            onReconnect={realtime.reconnect}
+          />
 
           {lastSyncTime && (
             <span className="hidden sm:inline-block text-[11px] font-mono text-graphite-800 dark:text-graphite-400">

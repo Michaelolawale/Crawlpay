@@ -1,7 +1,9 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
 
 let cachedAdminClient: SupabaseClient | null = null;
 let cachedAnonClient: SupabaseClient | null = null;
+let serverBroadcastChannel: RealtimeChannel | null = null;
+let serverBroadcastPromise: Promise<RealtimeChannel | null> | null = null;
 
 export function getSupabaseUrl(): string | undefined {
   return process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -49,6 +51,11 @@ export function getSupabaseAdminClient(): SupabaseClient | null {
       db: {
         schema: 'public',
       },
+      realtime: {
+        params: {
+          eventsPerSecond: 20,
+        },
+      },
     });
     return cachedAdminClient;
   } catch (err) {
@@ -75,6 +82,11 @@ export function getSupabaseClient(): SupabaseClient | null {
       auth: {
         persistSession: true,
       },
+      realtime: {
+        params: {
+          eventsPerSecond: 20,
+        },
+      },
     });
     return cachedAnonClient;
   } catch (err) {
@@ -82,3 +94,63 @@ export function getSupabaseClient(): SupabaseClient | null {
     return null;
   }
 }
+
+/**
+ * Initializes and retrieves a persistent subscribed server-side Realtime broadcast channel.
+ */
+async function getServerBroadcastChannel(): Promise<RealtimeChannel | null> {
+  if (serverBroadcastChannel) return serverBroadcastChannel;
+  if (serverBroadcastPromise) return serverBroadcastPromise;
+
+  const admin = getSupabaseAdminClient();
+  if (!admin) return null;
+
+  serverBroadcastPromise = new Promise((resolve) => {
+    try {
+      const channel = admin.channel('crawlpay-admin-telemetry', {
+        config: { broadcast: { ack: true } },
+      });
+
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          serverBroadcastChannel = channel;
+          resolve(channel);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          serverBroadcastPromise = null;
+          resolve(null);
+        }
+      });
+    } catch (e) {
+      serverBroadcastPromise = null;
+      resolve(null);
+    }
+  });
+
+  return serverBroadcastPromise;
+}
+
+/**
+ * Broadcasts an instant Realtime message across the WebSocket cluster to all active admin clients.
+ */
+export async function broadcastAdminEvent(
+  event: 'job_change' | 'payment_change' | 'report_change' | 'config_change' | 'blocklist_change' | 'telemetry_sync',
+  payload?: any
+): Promise<void> {
+  try {
+    const ch = await getServerBroadcastChannel();
+    if (ch) {
+      await ch.send({
+        type: 'broadcast',
+        event,
+        payload: {
+          ...payload,
+          timestamp: Date.now(),
+        },
+      });
+    }
+  } catch (err) {
+    // Non-blocking real-time broadcast warning
+    console.warn('[Supabase Realtime] Broadcast notice:', err);
+  }
+}
+

@@ -19,6 +19,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { getAdminToken } from '../../../utils/adminClient';
+import { useAdminRealtime, RealtimeStatusBadge } from '../../../utils/useAdminRealtime';
 
 interface EnrichedPayment {
   id: string;
@@ -100,9 +101,20 @@ export default function AdminPaymentsPage() {
     }
   }, [includeTest]);
 
+  // Supabase Realtime live subscriptions for payments
+  const realtime = useAdminRealtime({
+    onPaymentChange: () => {
+      fetchPayments(false);
+    },
+    onRefresh: () => {
+      fetchPayments(false);
+    },
+  });
+
   useEffect(() => {
     fetchPayments();
-    const interval = setInterval(() => fetchPayments(), 8000);
+    // 30s background heartbeat as fallback to Supabase Realtime WebSocket
+    const interval = setInterval(() => fetchPayments(), 30000);
     return () => clearInterval(interval);
   }, [fetchPayments]);
 
@@ -179,6 +191,13 @@ export default function AdminPaymentsPage() {
               <span>Include Sandbox</span>
             </button>
           </div>
+
+          <RealtimeStatusBadge
+            status={realtime.status}
+            lastEventTime={realtime.lastEventTime}
+            eventCount={realtime.eventCount}
+            onReconnect={realtime.reconnect}
+          />
 
           {lastSyncTime && (
             <span className="hidden sm:inline-block text-[11px] font-mono text-graphite-800 dark:text-graphite-400">

@@ -18,6 +18,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { getAdminToken } from '../../../utils/adminClient';
+import { useAdminRealtime, RealtimeStatusBadge } from '../../../utils/useAdminRealtime';
 
 interface AdminReportSummary {
   id: string;
@@ -64,9 +65,20 @@ export default function AdminReportsArchivePage() {
     }
   };
 
+  // Supabase Realtime live subscriptions for generated audit reports
+  const realtime = useAdminRealtime({
+    onReportChange: () => {
+      fetchReports();
+    },
+    onRefresh: () => {
+      fetchReports();
+    },
+  });
+
   useEffect(() => {
     fetchReports();
-    const interval = setInterval(fetchReports, 12000);
+    // 30s background heartbeat as fallback to Supabase Realtime WebSocket
+    const interval = setInterval(fetchReports, 30000);
     return () => clearInterval(interval);
   }, [includeTest]);
 
@@ -114,6 +126,13 @@ export default function AdminReportsArchivePage() {
               Sandbox
             </button>
           </div>
+
+          <RealtimeStatusBadge
+            status={realtime.status}
+            lastEventTime={realtime.lastEventTime}
+            eventCount={realtime.eventCount}
+            onReconnect={realtime.reconnect}
+          />
 
           <button
             type="button"

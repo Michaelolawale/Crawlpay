@@ -12,6 +12,9 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    serverComponentsExternalPackages: ['@supabase/supabase-js'],
+  },
   webpack: (config) => {
     config.resolve.alias['@'] = path.resolve(__dirname, 'src');
     return config;

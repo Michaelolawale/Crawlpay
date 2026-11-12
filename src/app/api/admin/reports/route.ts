@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/services/db';
+import { db, isDemoRecord } from '@/services/db';
 import { verifyAdminAuth } from '@/utils/adminAuth';
 import { maskAddress } from '@/utils/currency';
 
@@ -21,11 +21,10 @@ export async function GET(req: NextRequest) {
   const reportJobMap = new Map(jobs.filter((j) => j.report_id).map((j) => [j.report_id, j]));
 
   const filtered = reports.filter((r) => {
-    if (includeTest) return true;
-    const isTestReport = r.id.includes('test') || r.id.includes('sandbox');
     const linkedJob = reportJobMap.get(r.id);
-    if (linkedJob?.is_test) return false;
-    return !isTestReport;
+    const isDemo = isDemoRecord(r) || (linkedJob ? isDemoRecord(linkedJob) : false);
+    if (!includeTest && isDemo) return false;
+    return true;
   });
 
   const enriched = filtered.map((r) => {

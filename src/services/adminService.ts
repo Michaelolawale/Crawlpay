@@ -4,7 +4,7 @@
  * Zero duplicate calculations, zero fabrication, strict token precision.
  */
 
-import { db, PaymentRecord, JobRecord, SavedReportRecord } from './db';
+import { db, PaymentRecord, JobRecord, SavedReportRecord, isDemoRecord } from './db';
 import { identityService, OnchainIdentityStatus } from './identityService';
 import { CONFIG } from '../config';
 import { formatUsd, formatTokenAmount, maskAddress, maskTxHash } from '../utils/currency';
@@ -69,7 +69,7 @@ export class AdminService {
 
     // 2. Load all raw records concurrently
     const [allPayments, allJobs, allReports, blocklist, onchainStatus] = await Promise.all([
-      db.listPayments(),
+      db.listPayments(includeTest),
       db.listJobs(true),
       db.listReportsForWallet(),
       db.listBlocklist(),
@@ -97,7 +97,7 @@ export class AdminService {
     for (const p of allPayments) {
       if (p.status !== 'confirmed') continue;
 
-      const isTestPayment = Boolean(p.is_test || p.id === 'pay_init_1' || p.id.includes('test') || p.id.includes('sandbox'));
+      const isTestPayment = Boolean(p.is_test || isDemoRecord(p));
       if (isTestPayment && !includeTest) {
         continue;
       }
@@ -144,8 +144,8 @@ export class AdminService {
     }
 
     // 4. Classify and reconcile jobs
-    const productionJobs = allJobs.filter((j) => !j.is_test);
-    const sandboxJobs = allJobs.filter((j) => Boolean(j.is_test));
+    const productionJobs = allJobs.filter((j) => !j.is_test && !isDemoRecord(j));
+    const sandboxJobs = allJobs.filter((j) => Boolean(j.is_test || isDemoRecord(j)));
     const activeJobs = includeTest ? allJobs : productionJobs;
 
     const completedAudits = activeJobs.filter((j) => j.status === 'done').length;
@@ -164,7 +164,7 @@ export class AdminService {
     }));
 
     // 5. Reports count
-    const productionReports = allReports.filter((r) => !r.id.includes('test') && !r.id.includes('sandbox'));
+    const productionReports = allReports.filter((r) => !r.id.includes('test') && !r.id.includes('sandbox') && !isDemoRecord(r));
     const reportsCount = includeTest ? allReports.length : productionReports.length;
 
     const metrics: AdminMetricsSummary = {
@@ -235,8 +235,8 @@ export class AdminService {
   }> {
     const allJobs = await db.listJobs(true);
 
-    const productionJobs = allJobs.filter((j) => !j.is_test);
-    const sandboxJobs = allJobs.filter((j) => Boolean(j.is_test));
+    const productionJobs = allJobs.filter((j) => !j.is_test && !isDemoRecord(j));
+    const sandboxJobs = allJobs.filter((j) => Boolean(j.is_test || isDemoRecord(j)));
 
     let filtered = options?.includeTest ? allJobs : productionJobs;
 

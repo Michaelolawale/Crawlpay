@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { ShieldBan, Trash2, Plus, AlertCircle, ShieldAlert } from 'lucide-react';
 import { BlocklistRecord } from '../../../services/db';
 import { getAdminToken } from '../../../utils/adminClient';
+import { useAdminRealtime, RealtimeStatusBadge } from '../../../utils/useAdminRealtime';
 
 export default function AdminAbusePage() {
   const [blocklist, setBlocklist] = useState<BlocklistRecord[]>([]);
@@ -30,6 +31,16 @@ export default function AdminAbusePage() {
       setLoading(false);
     }
   };
+
+  // Supabase Realtime live subscriptions for abuse blocklist
+  const realtime = useAdminRealtime({
+    onBlocklistChange: () => {
+      fetchBlocklist();
+    },
+    onRefresh: () => {
+      fetchBlocklist();
+    },
+  });
 
   useEffect(() => {
     fetchBlocklist();
@@ -76,13 +87,21 @@ export default function AdminAbusePage() {
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-300 max-w-4xl">
-      <div className="border-b border-graphite-100 dark:border-graphite-800 pb-6">
-        <h1 className="font-sans text-2xl font-bold tracking-tight text-ink dark:text-white sm:text-3xl">
-          Abuse Prevention &amp; Blocklist
-        </h1>
-        <p className="mt-1 text-sm text-graphite-800 dark:text-graphite-400 font-normal">
-          Block abusive wallets, prohibited domains, or high-velocity scraping IPs from initiating audits.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-graphite-100 dark:border-graphite-800 pb-6">
+        <div>
+          <h1 className="font-sans text-2xl font-bold tracking-tight text-ink dark:text-white sm:text-3xl">
+            Abuse Prevention &amp; Blocklist
+          </h1>
+          <p className="mt-1 text-sm text-graphite-800 dark:text-graphite-400 font-normal">
+            Block abusive wallets, prohibited domains, or high-velocity scraping IPs from initiating audits.
+          </p>
+        </div>
+        <RealtimeStatusBadge
+          status={realtime.status}
+          lastEventTime={realtime.lastEventTime}
+          eventCount={realtime.eventCount}
+          onReconnect={realtime.reconnect}
+        />
       </div>
 
       {/* Add New Rule */}

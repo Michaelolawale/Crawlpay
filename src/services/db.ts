@@ -1,4 +1,4 @@
-import { getSupabaseAdminClient, isSupabaseConfigured } from './supabase';
+import { getSupabaseAdminClient, isSupabaseConfigured, broadcastAdminEvent } from './supabase';
 
 export interface PaymentRecord {
   id: string;
@@ -62,6 +62,37 @@ const DEFAULT_CONFIG: DynamicConfig = {
   rate_limit_per_minute: 20,
 };
 
+/**
+ * Strict validator to isolate synthetic seed/demo mock items from real production telemetry
+ */
+export function isDemoRecord(record: {
+  id?: string;
+  url?: string;
+  report_id?: string;
+  target_url?: string;
+  is_test?: boolean;
+  wallet?: string;
+  tx_hash?: string;
+}): boolean {
+  if (record.is_test) return true;
+  if (!record.id) return false;
+  const id = record.id.toLowerCase();
+  if (id === 'pay_init_1' || id === 'job_evangel_example' || id === 'rep_evangel_example') return true;
+  if (id.includes('demo') || id.includes('example') || id.includes('test') || id.includes('sandbox') || id.includes('mock') || id.includes('sample') || id.includes('prod_customer_usdt')) return true;
+  if (record.wallet) {
+    const w = record.wallet.toLowerCase();
+    if (w.includes('1234567890') || w === '0x0000000000000000000000000000000000000000') return true;
+  }
+  if (record.tx_hash) {
+    const h = record.tx_hash.toLowerCase();
+    if (h.includes('1111111111111111') || h.includes('0000000000000000') || h.includes('deadbeef')) return true;
+  }
+  if (record.url && record.url.toLowerCase().includes('evangelcarriersnetwork.org')) return true;
+  if (record.target_url && record.target_url.toLowerCase().includes('evangelcarriersnetwork.org')) return true;
+  if (record.report_id && record.report_id.toLowerCase().includes('evangel')) return true;
+  return false;
+}
+
 interface DbSchema {
   payments: PaymentRecord[];
   jobs: JobRecord[];
@@ -77,35 +108,10 @@ class CrawlpayDatabase {
   private freeAuditTracker: Map<string, number[]> = new Map();
 
   constructor() {
+    // Pure production database initialization: zero hardcoded demo rows
     this.inMemoryData = {
-      payments: [
-        {
-          id: 'pay_init_1',
-          wallet: '0xf06c2b754d07cba299751f0985a48f8013bb6b39',
-          amount: '0.50',
-          token: 'USDT',
-          chain_id: 42220,
-          tx_hash: '0x3fc8402348c27474548c645bb2290dbeee4f47aeb38107342b108cbb34a062f5',
-          status: 'confirmed',
-          is_test: true,
-          type: 'customer_payment',
-          created_at: '2026-10-25T12:00:00.000Z',
-        },
-      ],
-      jobs: [
-        {
-          id: 'job_evangel_example',
-          payment_id: 'pay_init_1',
-          url: 'https://evangelcarriersnetwork.org',
-          depth: 'full',
-          status: 'done',
-          started_at: '2026-10-25T12:00:00.000Z',
-          finished_at: '2026-10-25T12:00:03.500Z',
-          duration_ms: 3500,
-          is_test: true,
-          report_id: 'rep_evangel_example',
-        },
-      ],
+      payments: [],
+      jobs: [],
       config: {
         quick_price_usd: '0.00',
         full_price_usd: '0.50',
@@ -343,6 +349,10 @@ class CrawlpayDatabase {
         console.warn('[DB] Supabase addPayment error:', err);
       }
     }
+
+    // Broadcast instant Realtime notification
+    broadcastAdminEvent('payment_change', { payment }).catch(() => {});
+    broadcastAdminEvent('telemetry_sync').catch(() => {});
   }
 
   public async getPayment(id: string): Promise<PaymentRecord | undefined> {
@@ -382,7 +392,19 @@ class CrawlpayDatabase {
     return undefined;
   }
 
-  public async listPayments(): Promise<PaymentRecord[]> {
+  public async deletePayment(id: string): Promise<void> {
+    this.inMemoryData.payments = this.inMemoryData.payments.filter((p) => p.id !== id);
+    const supabase = getSupabaseAdminClient();
+    if (supabase) {
+      try {
+        await supabase.from('payments').delete().eq('id', id);
+      } catch (err) {
+        console.warn('[DB] Supabase deletePayment error:', err);
+      }
+    }
+  }
+
+  public async listPayments(includeTest: boolean = false): Promise<PaymentRecord[]> {
     const supabase = getSupabaseAdminClient();
     if (supabase) {
       try {
@@ -406,7 +428,12 @@ class CrawlpayDatabase {
         console.warn('[DB] Supabase listPayments fallback:', err);
       }
     }
-    return [...this.inMemoryData.payments].sort(
+
+    const filtered = includeTest
+      ? this.inMemoryData.payments
+      : this.inMemoryData.payments.filter((p) => !isDemoRecord(p));
+
+    return [...filtered].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }
@@ -446,6 +473,10 @@ class CrawlpayDatabase {
         console.warn('[DB] Supabase addJob error:', err);
       }
     }
+
+    // Broadcast instant Realtime notification
+    broadcastAdminEvent('job_change', { job, eventType: 'INSERT' }).catch(() => {});
+    broadcastAdminEvent('telemetry_sync').catch(() => {});
   }
 
   public async updateJob(id: string, updates: Partial<JobRecord>): Promise<JobRecord | undefined> {
@@ -464,6 +495,10 @@ class CrawlpayDatabase {
         console.warn('[DB] Supabase updateJob error:', err);
       }
     }
+
+    // Broadcast instant Realtime notification
+    broadcastAdminEvent('job_change', { id, updates, job, eventType: 'UPDATE' }).catch(() => {});
+    broadcastAdminEvent('telemetry_sync').catch(() => {});
 
     return job;
   }
@@ -518,7 +553,7 @@ class CrawlpayDatabase {
 
     const filtered = includeTest
       ? this.inMemoryData.jobs
-      : this.inMemoryData.jobs.filter((j) => !j.is_test);
+      : this.inMemoryData.jobs.filter((j) => !j.is_test && !isDemoRecord(j));
 
     return [...filtered].sort(
       (a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
@@ -576,6 +611,10 @@ class CrawlpayDatabase {
         console.warn('[DB] Supabase saveReport error:', err);
       }
     }
+
+    // Broadcast instant Realtime notification
+    broadcastAdminEvent('report_change', { id, meta }).catch(() => {});
+    broadcastAdminEvent('telemetry_sync').catch(() => {});
   }
 
   public async getReport(id: string): Promise<any | undefined> {
@@ -673,6 +712,10 @@ class CrawlpayDatabase {
       }
     }
 
+    // Broadcast instant Realtime notification
+    broadcastAdminEvent('config_change', { config: newConfig }).catch(() => {});
+    broadcastAdminEvent('telemetry_sync').catch(() => {});
+
     return this.getConfig();
   }
 
@@ -749,6 +792,9 @@ class CrawlpayDatabase {
         console.warn('[DB] Supabase addBlocklist error:', err);
       }
     }
+
+    // Broadcast instant Realtime notification
+    broadcastAdminEvent('blocklist_change', { entry }).catch(() => {});
   }
 
   public async removeBlocklist(type: string, value: string): Promise<void> {
@@ -765,6 +811,9 @@ class CrawlpayDatabase {
         console.warn('[DB] Supabase removeBlocklist error:', err);
       }
     }
+
+    // Broadcast instant Realtime notification
+    broadcastAdminEvent('blocklist_change', { type, value: clean, deleted: true }).catch(() => {});
   }
 
   private rateLimitMap = new Map<string, number[]>();

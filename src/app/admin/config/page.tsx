@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Sliders, Check, Loader2, Save } from 'lucide-react';
 import { DynamicConfig } from '../../../services/db';
 import { getAdminToken } from '../../../utils/adminClient';
+import { useAdminRealtime, RealtimeStatusBadge } from '../../../utils/useAdminRealtime';
 
 export default function AdminConfigPage() {
   const [config, setConfig] = useState<DynamicConfig>({
@@ -17,7 +18,7 @@ export default function AdminConfigPage() {
   const [saving, setSaving] = useState(false);
   const [savedFeedback, setSavedFeedback] = useState(false);
 
-  useEffect(() => {
+  const fetchConfig = () => {
     const authKey = getAdminToken();
     fetch('/api/admin/config', {
       cache: 'no-store',
@@ -29,6 +30,20 @@ export default function AdminConfigPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
+  };
+
+  // Supabase Realtime live subscriptions for dynamic configuration
+  const realtime = useAdminRealtime({
+    onConfigChange: () => {
+      fetchConfig();
+    },
+    onRefresh: () => {
+      fetchConfig();
+    },
+  });
+
+  useEffect(() => {
+    fetchConfig();
   }, []);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -60,13 +75,21 @@ export default function AdminConfigPage() {
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-300 max-w-3xl">
-      <div className="border-b border-graphite-100 dark:border-graphite-800 pb-6">
-        <h1 className="font-sans text-2xl font-bold tracking-tight text-ink dark:text-white sm:text-3xl">
-          Dynamic System Configuration
-        </h1>
-        <p className="mt-1 text-sm text-graphite-800 dark:text-graphite-400 font-normal">
-          Modify runtime pricing, timeout limits, max page caps, and rate limits instantly without redeploying code.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-graphite-100 dark:border-graphite-800 pb-6">
+        <div>
+          <h1 className="font-sans text-2xl font-bold tracking-tight text-ink dark:text-white sm:text-3xl">
+            Dynamic System Configuration
+          </h1>
+          <p className="mt-1 text-sm text-graphite-800 dark:text-graphite-400 font-normal">
+            Modify runtime pricing, timeout limits, max page caps, and rate limits instantly without redeploying code.
+          </p>
+        </div>
+        <RealtimeStatusBadge
+          status={realtime.status}
+          lastEventTime={realtime.lastEventTime}
+          eventCount={realtime.eventCount}
+          onReconnect={realtime.reconnect}
+        />
       </div>
 
       <form onSubmit={handleSave} className="space-y-6 rounded-[20px] border border-graphite-100 dark:border-graphite-800 bg-white dark:bg-[#16171d] p-6 sm:p-8 shadow-sm">
