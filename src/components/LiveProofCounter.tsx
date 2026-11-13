@@ -14,11 +14,12 @@ import {
   Radio,
 } from 'lucide-react';
 import { CONFIG } from '@/config';
+import { useConfig } from '@/context/ConfigContext';
 
 const DEFAULT_WALLET = CONFIG.AGENT_WALLET_ADDRESS || '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
 const ATTRIBUTION_TAG = CONFIG.ATTRIBUTION_TAG || 'celo_757c2ac3b70c';
 const CELOSCAN_BASE = `https://celoscan.io/address/${DEFAULT_WALLET}`;
-const CURRENT_VERIFIED_COUNT = 235;
+const CURRENT_VERIFIED_COUNT = 253;
 
 export interface PublicLiveTransaction {
   hash: string;
@@ -63,20 +64,9 @@ export function LiveProofCounter({
   className = '',
   initialCount,
 }: LiveProofCounterProps) {
-  // Single source of truth for count: reads from persisted cache or defaults to verified current count
-  const [count, setCount] = useState<number>(() => {
-    if (typeof initialCount === 'number' && initialCount >= CURRENT_VERIFIED_COUNT) return initialCount;
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem('crawlpay_live_tx_count');
-        if (cached) {
-          const num = parseInt(cached, 10);
-          if (!isNaN(num) && num >= CURRENT_VERIFIED_COUNT) return num;
-        }
-      } catch {}
-    }
-    return CURRENT_VERIFIED_COUNT;
-  });
+  const { fullPriceFormatted } = useConfig();
+  // Always initialize identically on server and client to prevent hydration mismatch
+  const [count, setCount] = useState<number>(initialCount ?? CURRENT_VERIFIED_COUNT);
 
   const [wallet, setWallet] = useState<string>(DEFAULT_WALLET);
   const [tag, setTag] = useState<string>(ATTRIBUTION_TAG);
@@ -116,6 +106,17 @@ export function LiveProofCounter({
   };
 
   useEffect(() => {
+    // Read persisted count client-side only (after initial hydration)
+    try {
+      const cached = localStorage.getItem('crawlpay_live_tx_count');
+      if (cached) {
+        const num = parseInt(cached, 10);
+        if (!isNaN(num) && num >= CURRENT_VERIFIED_COUNT) {
+          setCount(num);
+        }
+      }
+    } catch {}
+
     fetchProof();
     const interval = setInterval(fetchProof, 12000);
     return () => clearInterval(interval);
@@ -344,7 +345,7 @@ export function LiveProofCounter({
               <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
             </span>
             <span className="font-semibold text-violet">Live Proof:</span>
-            <span className="font-bold">{count}+ On-Chain Txs</span>
+            <span className="font-bold" suppressHydrationWarning>{count}+ On-Chain Txs</span>
             <span className="text-graphite-300 dark:text-graphite-700 hidden sm:inline">|</span>
             <span className="text-[10px] sm:text-[11px] text-graphite-600 dark:text-graphite-400 hidden sm:inline truncate max-w-[120px]">
               {tag}
@@ -385,7 +386,7 @@ export function LiveProofCounter({
             <div>
               <div className="flex items-center gap-1.5 font-semibold text-ink dark:text-white">
                 <span>Live Usage Proof:</span>
-                <span className="font-mono text-violet font-bold text-[13px]">{count}+ Attributed Transactions</span>
+                <span className="font-mono text-violet font-bold text-[13px]" suppressHydrationWarning>{count}+ Attributed Transactions</span>
                 <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/80 px-2 py-0.2 text-[10px] font-mono font-medium">
                   Celo Mainnet (42220)
                 </span>
@@ -468,7 +469,7 @@ export function LiveProofCounter({
             <span className="text-[10px] uppercase font-semibold text-graphite-600 dark:text-graphite-400 block">
               On-Chain Txs
             </span>
-            <div className="font-mono text-xl sm:text-2xl font-bold text-ink dark:text-white">
+            <div className="font-mono text-xl sm:text-2xl font-bold text-ink dark:text-white" suppressHydrationWarning>
               {count}+
             </div>
             <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium block">
@@ -504,8 +505,8 @@ export function LiveProofCounter({
             <span className="text-[10px] uppercase font-semibold text-graphite-600 dark:text-graphite-400 block">
               Deep Crawl Cost
             </span>
-            <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              $0.50
+            <div className="font-mono text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400" suppressHydrationWarning>
+              {fullPriceFormatted}
             </div>
             <span className="text-[10px] text-graphite-600 dark:text-graphite-400 block">
               in USDT on Celo

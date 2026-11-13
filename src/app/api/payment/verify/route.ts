@@ -21,7 +21,9 @@ export async function POST(req: NextRequest) {
       const payId = existingPayment ? existingPayment.id : `pay_${Date.now()}_${txHash.slice(2, 8)}`;
       const isUsdt = verification.token === 'USDT' || Boolean(verification.valueUsdt);
       const isCelo = !isUsdt && Number(verification.valueCelo || 0) > 0;
-      const paymentAmount = isUsdt ? (verification.valueUsdt || '0.50') : (verification.valueCelo || '6.60');
+      const dynamicConfig = await db.getConfig().catch(() => null);
+      const defaultUsdtPrice = dynamicConfig?.full_price_usd || '0.50';
+      const paymentAmount = isUsdt ? (verification.valueUsdt || defaultUsdtPrice) : (verification.valueCelo || '6.60');
       const paymentToken = isUsdt ? 'USDT' : 'CELO';
 
       if (!existingPayment) {

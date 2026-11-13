@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { identityService } from '@/services/identityService';
+import { verifyAdminAuth } from '@/utils/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
+  // Protect agent identity contract - require operator authentication
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ error: 'Unauthorized: Operator passkey required for identity registration' }, { status: 401 });
+  }
+
   try {
     const host = req.headers.get('host') || 'crawlpay.vercel.app';
     const protocol = host.includes('localhost') ? 'http' : 'https';

@@ -24,9 +24,11 @@ import { parseGscFile, GscAnalysisResult } from '@/utils/gscParser';
 import exampleReportData from '@/data/exampleReport.json';
 import { FullAuditReport } from '@/types/audit';
 import { focusRing } from '@/components/SiteHeader';
+import { useConfig } from '@/context/ConfigContext';
 
 function AuditPageContent() {
   const router = useRouter();
+  const { fullPriceFormatted } = useConfig();
   const searchParams = useSearchParams();
   const initialTarget = searchParams.get('target') || '';
   const initialMode = searchParams.get('mode') || searchParams.get('depth');
@@ -390,8 +392,8 @@ function AuditPageContent() {
                         Deep crawl
                       </span>
                     </div>
-                    <span className="rounded-full px-2.5 py-0.5 text-[12px] font-sans font-semibold bg-violet/10 dark:bg-violet/20 text-violet">
-                      $0.50 in USDT
+                    <span className="rounded-full px-2.5 py-0.5 text-[12px] font-sans font-semibold bg-violet/10 dark:bg-violet/20 text-violet" suppressHydrationWarning>
+                      {fullPriceFormatted} in USDT
                     </span>
                   </div>
                   <p className="mt-3 text-[14px] text-graphite-700 dark:text-graphite-300 leading-relaxed font-normal">
@@ -503,7 +505,7 @@ function AuditPageContent() {
                   className="inline-flex items-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-4 py-2 text-xs font-semibold text-white dark:text-ink hover:opacity-90 shadow-sm cursor-pointer"
                 >
                   <Layers className="size-3.5" />
-                  <span>Start Deep Crawl ($0.50 in USDT)</span>
+                  <span suppressHydrationWarning>Start Deep Crawl ({fullPriceFormatted} in USDT)</span>
                 </button>
                 <button
                   type="button"
@@ -552,7 +554,7 @@ function AuditPageContent() {
               ) : (
                 <>
                   <ShieldCheck className="size-4" />
-                  <span>Start a deep crawl ($0.50 in USDT)</span>
+                  <span suppressHydrationWarning>Start a deep crawl ({fullPriceFormatted} in USDT)</span>
                 </>
               )}
             </button>

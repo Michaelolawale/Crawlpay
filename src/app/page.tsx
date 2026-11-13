@@ -8,6 +8,7 @@ import { LiveProofCounter } from '@/components/LiveProofCounter';
 import { HeroBackground } from '@/components/HeroBackground';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
+import { useConfig } from '@/context/ConfigContext';
 
 const SUPPORT_TELEGRAM = 'https://t.me/Noble249';
 
@@ -26,163 +27,164 @@ const STEPS = [
   { title: 'Copy the fix', text: 'Paste-ready code for Next.js, WordPress, Shopify and plain HTML.' },
 ];
 
-const PLANS = [
-  {
-    name: 'Quick audit',
-    price: 'Free',
-    note: 'One page, up to 5 per hour',
-    features: [
-      'Every problem found on the page, with its fix',
-      'Search, AI-crawler and direct-answer checks',
-      'Keyword and question ideas from your own content',
-      'Copy-paste code fixes',
-    ],
-    cta: 'Run free audit',
-    href: '/app/audit',
-    featured: false,
-  },
-  {
-    name: 'Deep crawl',
-    price: '$0.50',
-    note: 'Up to 50 pages, paid in USDT on Celo',
-    features: [
-      'Orphan pages, redirect chains and status errors across the site',
-      'Duplicate titles and canonical clashes between pages',
-      'Saved reports and before-and-after comparison',
-      'Client-ready PDF and an onchain receipt',
-    ],
-    cta: 'Start a deep crawl',
-    href: '/app/audit',
-    featured: true,
-  },
-];
-
-const FAQS: { q: string; a: React.ReactNode }[] = [
-  {
-    q: 'What does CrawlPay check?',
-    a: 'Whether Google can find and index the page, whether AI crawlers such as GPTBot, ClaudeBot and PerplexityBot are allowed in (and which robots.txt rule decides it), whether the page gives direct answers, and whether titles, headings, links and structured data are set up correctly. When it cannot tell, it says “unknown” instead of guessing.',
-  },
-  {
-    q: 'Is the free audit really free?',
-    a: 'Yes. A quick audit covers one page and shows every problem it finds, with fixes. There is a fair-use limit of 5 free audits per hour.',
-  },
-  {
-    q: 'Do I need a wallet?',
-    a: 'Only for a deep crawl. Any EVM wallet connected to Celo works (MetaMask, Rabby, Valora, MiniPay, Coinbase Wallet), and you pay $0.50 in USDT. There is no subscription.',
-  },
-  {
-    q: 'Can my AI assistant use it?',
-    a: (
-      <>
-        Yes. Connect CrawlPay to Claude or another MCP client and ask “can search engines and AI assistants read my site?” It audits your live page instead of guessing. Developers can also call the API, and AI agents can pay per call with x402 on Celo. See the{' '}
-        <Link href="/docs#mcp" className="underline hover:text-white">setup guide</Link>.
-      </>
-    ),
-  },
-  {
-    q: 'Will fixing everything improve my rankings or get me cited by AI?',
-    a: 'No tool can promise that. CrawlPay finds what blocks or confuses search engines and AI tools so you can fix it. It does not show keyword volumes, backlinks or live rankings; tools built for that cover those.',
-  },
-  {
-    q: 'What if an audit fails?',
-    a: (
-      <>
-        If a paid audit cannot finish, you are eligible for a refund. Message our official support operator on{' '}
-        <a href={SUPPORT_TELEGRAM} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Telegram (@Noble249)</a>{' '}
-        with your transaction hash. Full terms are in the{' '}
-        <Link href="/terms#refund" className="underline hover:text-white">refund policy</Link>.
-      </>
-    ),
-  },
-];
-
-const structuredData = [
-  {
-    '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: 'CrawlPay',
-    url: 'https://crawlpay.vercel.app',
-    applicationCategory: 'DeveloperApplication',
-    operatingSystem: 'All',
-    description: 'Autonomous technical SEO, AEO query mapping, and GEO generative citability audits—settled per crawl via x402 on Celo.',
-    offers: [
-      {
-        '@type': 'Offer',
-        name: 'Quick Audit',
-        price: '0.00',
-        priceCurrency: 'USD',
-        description: 'Single-page audit covering technical SEO, AEO query directness, and GEO AI crawler accessibility with copy-paste code fixes.',
-      },
-      {
-        '@type': 'Offer',
-        name: 'Deep Crawl',
-        price: '0.50',
-        priceCurrency: 'USD',
-        description: 'Multi-page deep crawl up to 50 pages, orphan page detection, redirect chains, and client-ready reports settled onchain via x402 on Celo.',
-      },
-    ],
-  },
-  {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: [
-      {
-        '@type': 'Question',
-        name: 'What does CrawlPay check?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Whether Google can find and index the page, whether AI crawlers such as GPTBot, ClaudeBot and PerplexityBot are allowed in (and which robots.txt rule decides it), whether the page gives direct answers, and whether titles, headings, links and structured data are set up correctly. When it cannot tell, it says “unknown” instead of guessing.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'Is the free audit really free?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Yes. A quick audit covers one page and shows every problem it finds, with fixes. There is a fair-use limit of 5 free audits per hour.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'Do I need a wallet?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Only for a deep crawl. Any EVM wallet connected to Celo works (MetaMask, Rabby, Valora, MiniPay, Coinbase Wallet), and you pay $0.50 in USDT. There is no subscription.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'Can my AI assistant use it?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'Yes. Connect CrawlPay to Claude or another MCP client and ask “can search engines and AI assistants read my site?” It audits your live page instead of guessing. Developers can also call the API, and AI agents can pay per call with x402 on Celo.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'Will fixing everything improve my rankings or get me cited by AI?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'No tool can promise that. CrawlPay finds what blocks or confuses search engines and AI tools so you can fix it. It does not show keyword volumes, backlinks or live rankings; tools built for that cover those.',
-        },
-      },
-      {
-        '@type': 'Question',
-        name: 'What if an audit fails?',
-        acceptedAnswer: {
-          '@type': 'Answer',
-          text: 'If a paid audit cannot finish, you are eligible for a refund. Message our official support operator on Telegram (@Noble249) with your transaction hash.',
-        },
-      },
-    ],
-  },
-];
-
 export default function LandingPage() {
   const router = useRouter();
+  const { fullPriceFormatted, fullPriceRaw } = useConfig();
   const [heroUrl, setHeroUrl] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const plans = [
+    {
+      name: 'Quick audit',
+      price: 'Free',
+      note: 'One page, up to 5 per hour',
+      features: [
+        'Every problem found on the page, with its fix',
+        'Search, AI-crawler and direct-answer checks',
+        'Keyword and question ideas from your own content',
+        'Copy-paste code fixes',
+      ],
+      cta: 'Run free audit',
+      href: '/app/audit',
+      featured: false,
+    },
+    {
+      name: 'Deep crawl',
+      price: fullPriceFormatted,
+      note: 'Up to 50 pages, paid in USDT on Celo',
+      features: [
+        'Orphan pages, redirect chains and status errors across the site',
+        'Duplicate titles and canonical clashes between pages',
+        'Saved reports and before-and-after comparison',
+        'Client-ready PDF and an onchain receipt',
+      ],
+      cta: 'Start a deep crawl',
+      href: '/app/audit',
+      featured: true,
+    },
+  ];
+
+  const faqs: { q: string; a: React.ReactNode }[] = [
+    {
+      q: 'What does CrawlPay check?',
+      a: 'Whether Google can find and index the page, whether AI crawlers such as GPTBot, ClaudeBot and PerplexityBot are allowed in (and which robots.txt rule decides it), whether the page gives direct answers, and whether titles, headings, links and structured data are set up correctly. When it cannot tell, it says “unknown” instead of guessing.',
+    },
+    {
+      q: 'Is the free audit really free?',
+      a: 'Yes. A quick audit covers one page and shows every problem it finds, with fixes. There is a fair-use limit of 5 free audits per hour.',
+    },
+    {
+      q: 'Do I need a wallet?',
+      a: `Only for a deep crawl. Any EVM wallet connected to Celo works (MetaMask, Rabby, Valora, MiniPay, Coinbase Wallet), and you pay ${fullPriceFormatted} in USDT. There is no subscription.`,
+    },
+    {
+      q: 'Can my AI assistant use it?',
+      a: (
+        <>
+          Yes. Connect CrawlPay to Claude or another MCP client and ask “can search engines and AI assistants read my site?” It audits your live page instead of guessing. Developers can also call the API, and AI agents can pay per call with x402 on Celo. See the{' '}
+          <Link href="/docs#mcp" className="underline hover:text-white">setup guide</Link>.
+        </>
+      ),
+    },
+    {
+      q: 'Will fixing everything improve my rankings or get me cited by AI?',
+      a: 'No tool can promise that. CrawlPay finds what blocks or confuses search engines and AI tools so you can fix it. It does not show keyword volumes, backlinks or live rankings; tools built for that cover those.',
+    },
+    {
+      q: 'What if an audit fails?',
+      a: (
+        <>
+          If a paid audit cannot finish, you are eligible for a refund. Message our official support operator on{' '}
+          <a href={SUPPORT_TELEGRAM} target="_blank" rel="noopener noreferrer" className="underline hover:text-white">Telegram (@Noble249)</a>{' '}
+          with your transaction hash. Full terms are in the{' '}
+          <Link href="/terms#refund" className="underline hover:text-white">refund policy</Link>.
+        </>
+      ),
+    },
+  ];
+
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: 'CrawlPay',
+      url: 'https://crawlpay.vercel.app',
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'All',
+      description: 'Autonomous technical SEO, AEO query mapping, and GEO generative citability audits—settled per crawl via x402 on Celo.',
+      offers: [
+        {
+          '@type': 'Offer',
+          name: 'Quick Audit',
+          price: '0.00',
+          priceCurrency: 'USD',
+          description: 'Single-page audit covering technical SEO, AEO query directness, and GEO AI crawler accessibility with copy-paste code fixes.',
+        },
+        {
+          '@type': 'Offer',
+          name: 'Deep Crawl',
+          price: fullPriceRaw,
+          priceCurrency: 'USD',
+          description: 'Multi-page deep crawl up to 50 pages, orphan page detection, redirect chains, and client-ready reports settled onchain via x402 on Celo.',
+        },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'What does CrawlPay check?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Whether Google can find and index the page, whether AI crawlers such as GPTBot, ClaudeBot and PerplexityBot are allowed in (and which robots.txt rule decides it), whether the page gives direct answers, and whether titles, headings, links and structured data are set up correctly. When it cannot tell, it says “unknown” instead of guessing.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Is the free audit really free?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. A quick audit covers one page and shows every problem it finds, with fixes. There is a fair-use limit of 5 free audits per hour.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Do I need a wallet?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: `Only for a deep crawl. Any EVM wallet connected to Celo works (MetaMask, Rabby, Valora, MiniPay, Coinbase Wallet), and you pay ${fullPriceFormatted} in USDT. There is no subscription.`,
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Can my AI assistant use it?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. Connect CrawlPay to Claude or another MCP client and ask “can search engines and AI assistants read my site?” It audits your live page instead of guessing. Developers can also call the API, and AI agents can pay per call with x402 on Celo.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'Will fixing everything improve my rankings or get me cited by AI?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'No tool can promise that. CrawlPay finds what blocks or confuses search engines and AI tools so you can fix it. It does not show keyword volumes, backlinks or live rankings; tools built for that cover those.',
+          },
+        },
+        {
+          '@type': 'Question',
+          name: 'What if an audit fails?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'If a paid audit cannot finish, you are eligible for a refund. Message our official support operator on Telegram (@Noble249) with your transaction hash.',
+          },
+        },
+      ],
+    },
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -315,7 +317,7 @@ export default function LandingPage() {
             </p>
 
             <div className="mt-10 grid md:grid-cols-2 gap-5 sm:gap-6 max-w-[900px]">
-              {PLANS.map((p) => (
+              {plans.map((p) => (
                 <div
                   key={p.name}
                   className={`rounded-[20px] p-6 sm:p-7 flex flex-col ${
@@ -324,7 +326,7 @@ export default function LandingPage() {
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <h3 className="font-sans font-[600] text-[20px]">{p.name}</h3>
-                    <span className="font-sans font-[600] text-[28px]">{p.price}</span>
+                    <span className="font-sans font-[600] text-[28px]" suppressHydrationWarning>{p.price}</span>
                   </div>
                   <p className="text-[14px] mt-1 opacity-80">{p.note}</p>
                   <ul className="mt-5 space-y-2.5 flex-1">
@@ -397,7 +399,7 @@ export default function LandingPage() {
           <div className="max-w-[760px] mx-auto px-4 sm:px-6 text-left">
             <h2 className="font-sans text-[28px] sm:text-[40px] font-[600] leading-[1.15] text-white">Questions</h2>
             <div className="mt-8 border-t border-graphite-900">
-              {FAQS.map((faq, idx) => {
+              {faqs.map((faq, idx) => {
                 const open = openFaq === idx;
                 return (
                   <div key={faq.q} className="border-b border-graphite-900">

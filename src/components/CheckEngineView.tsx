@@ -50,6 +50,7 @@ import { getFindingKnowledge } from '../analyzer/findingKnowledge';
 import { OverviewAuditGraph } from './OverviewAuditGraph';
 import { SiteLogo } from './audit/ui/SiteLogo';
 import { CardCarousel } from './audit/ui/CardCarousel';
+import { useConfig } from '@/context/ConfigContext';
 
 interface CheckEngineViewProps {
   groups?: FindingGroup[];
@@ -67,6 +68,7 @@ interface CheckEngineViewProps {
 }
 
 export function CheckEngineView(props: CheckEngineViewProps) {
+  const { fullPriceFormatted } = useConfig();
   const groups = props.groups || props.report?.prioritizedGroups || props.report?.checkEngineReport?.prioritizedGroups || [];
   const whatPassed = props.whatPassed || props.report?.whatPassed || props.report?.checkEngineReport?.whatPassed || '';
   const notChecked = props.notChecked || props.report?.notChecked || props.report?.checkEngineReport?.notChecked || [];
@@ -127,16 +129,17 @@ export function CheckEngineView(props: CheckEngineViewProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [showJson, setShowJson] = useState(false);
 
-  // Fix Tracker State (persist fixed IDs per domain in localStorage)
-  const [fixedKeys, setFixedKeys] = useState<Record<string, boolean>>(() => {
-    if (typeof window === 'undefined') return {};
+  // Fix Tracker State (persist fixed IDs per domain in localStorage, loaded post-hydration)
+  const [fixedKeys, setFixedKeys] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
     try {
       const raw = localStorage.getItem(`crawlpay_fixed_${cleanDomain}`);
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  });
+      if (raw) {
+        setFixedKeys(JSON.parse(raw));
+      }
+    } catch {}
+  }, [cleanDomain]);
 
   const toggleFixed = (key: string) => {
     setFixedKeys((prev) => {
@@ -3743,7 +3746,7 @@ Allow: /`;
                     className="inline-flex items-center justify-center gap-2 rounded-[48px] bg-ink dark:bg-white px-6 py-3 text-xs sm:text-[13px] font-semibold text-white dark:text-ink hover:opacity-90 transition-all shadow-sm w-full sm:w-auto cursor-pointer"
                   >
                     <Zap className="size-3.5 fill-current" />
-                    <span>Unlock in Deep Crawl ($0.50 in USDT)</span>
+                    <span suppressHydrationWarning>Unlock in Deep Crawl ({fullPriceFormatted} in USDT)</span>
                   </Link>
 
                   <Link

@@ -59,33 +59,22 @@ export class PageCrawler {
     let llmsTxtFound = false;
 
     const [robotsRes, wafRes, llmsRes] = await Promise.allSettled([
-      // A. Robots.txt
-      fetch(`${rootOrigin}/robots.txt`, {
-        headers: { 'User-Agent': this.config.userAgent, 'Cache-Control': 'no-cache' },
-        cache: 'no-store',
-        signal: AbortSignal.timeout(4000),
-      }),
-      // B. AI User-Agent WAF Probe (HEAD request with GPTBot user-agent)
-      fetch(startUrl, {
-        method: 'HEAD',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)',
-          Accept: 'text/html,application/xhtml+xml',
-        },
-        cache: 'no-store',
-        signal: AbortSignal.timeout(3000),
-      }),
-      // C. llms.txt probe
-      fetch(`${rootOrigin}/llms.txt`, {
-        headers: { 'User-Agent': this.config.userAgent },
-        cache: 'no-store',
-        signal: AbortSignal.timeout(2500),
-      }),
+      // A. Robots.txt (Secure probe with redirect hop verification)
+      this.safeProbe(`${rootOrigin}/robots.txt`, 'GET', this.config.userAgent, 4000),
+      // B. AI User-Agent WAF Probe (HEAD request with GPTBot user-agent, redirect-safe)
+      this.safeProbe(
+        startUrl,
+        'HEAD',
+        'Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)',
+        3000
+      ),
+      // C. llms.txt probe (Secure probe with redirect hop verification)
+      this.safeProbe(`${rootOrigin}/llms.txt`, 'GET', this.config.userAgent, 2500),
     ]);
 
     if (robotsRes.status === 'fulfilled') {
       if (robotsRes.value.ok) {
-        robotsTxtContent = await robotsRes.value.text();
+        robotsTxtContent = robotsRes.value.text;
       } else if (robotsRes.value.status >= 500) {
         isRobotsFetchFailed = true;
       }
@@ -222,6 +211,83 @@ export class PageCrawler {
       crawlDurationMs: Date.now() - this.startTime,
       stoppedEarlyReason,
     };
+  }
+
+  /**
+   * SSRF-safe probe helper that enforces pre-hop DNS checks and manual redirect handling
+   */
+  private async safeProbe(
+    targetUrl: string,
+    method: 'GET' | 'HEAD' = 'GET',
+    customUserAgent?: string,
+    timeoutMs: number = 3500,
+    maxRedirects: number = 3
+  ): Promise<{ ok: boolean; status: number; text: string }> {
+    let currentUrl = targetUrl;
+    let redirectCount = 0;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      while (redirectCount <= maxRedirects) {
+        const check = await validateAndNormalizeTargetUrl(currentUrl);
+        if (!check.valid || !check.normalizedUrl) {
+          return { ok: false, status: 403, text: '' };
+        }
+
+        const res = await fetch(currentUrl, {
+          method,
+          headers: {
+            'User-Agent': customUserAgent || this.config.userAgent,
+            Accept: method === 'HEAD' ? 'text/html,application/xhtml+xml' : '*/*',
+            'Cache-Control': 'no-cache, no-store',
+          },
+          cache: 'no-store',
+          redirect: 'manual',
+          signal: controller.signal,
+        });
+
+        const status = res.status;
+        if ([301, 302, 303, 307, 308].includes(status)) {
+          const loc = res.headers.get('location');
+          if (!loc) {
+            clearTimeout(timeout);
+            return { ok: false, status, text: '' };
+          }
+          currentUrl = new URL(loc, currentUrl).toString();
+          redirectCount++;
+          continue;
+        }
+
+        let text = '';
+        if (method !== 'HEAD' && res.body) {
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let bytes = 0;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            bytes += value.byteLength;
+            if (bytes > 256 * 1024) {
+              reader.cancel();
+              break;
+            }
+            text += decoder.decode(value, { stream: true });
+          }
+          text += decoder.decode();
+        }
+
+        clearTimeout(timeout);
+        return { ok: res.ok, status, text };
+      }
+
+      clearTimeout(timeout);
+      return { ok: false, status: 310, text: '' };
+    } catch {
+      clearTimeout(timeout);
+      return { ok: false, status: 500, text: '' };
+    }
   }
 
   private async fetchAndExtractPage(

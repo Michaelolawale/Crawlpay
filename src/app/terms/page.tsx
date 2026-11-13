@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { ShieldCheck, RefreshCw, Lock, CheckCircle2, Send, MessageCircle } from 'lucide-react';
 import { SiteHeader, focusRing } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
+import { useConfig } from '@/context/ConfigContext';
 
 const SUPPORT_TELEGRAM = 'https://t.me/Noble249';
 
 export default function TermsPage() {
+  const { fullPriceFormatted } = useConfig();
   useEffect(() => {
     document.title = 'Terms of service and refund policy | CrawlPay';
   }, []);
@@ -38,8 +40,8 @@ export default function TermsPage() {
             About CrawlPay
           </h2>
           <div className="rounded-[20px] bg-[#f4f4f6] dark:bg-[#16171d] border border-graphite-200 dark:border-graphite-800 p-6 sm:p-7 text-[15px] leading-[1.6] text-graphite-800 dark:text-graphite-200">
-            <p>
-              CrawlPay checks websites to see how search engines and AI assistants read your pages. Free quick audits check any single page without an account or signup. Deep crawls audit up to 50 pages for $0.50, paid with USDT on Celo. There are no monthly subscriptions, lock-ins, or hidden charges.
+            <p suppressHydrationWarning>
+              CrawlPay checks websites to see how search engines and AI assistants read your pages. Free quick audits check any single page without an account or signup. Deep crawls audit up to 50 pages for {fullPriceFormatted}, paid with USDT on Celo. There are no monthly subscriptions, lock-ins, or hidden charges.
             </p>
           </div>
         </section>
@@ -54,8 +56,8 @@ export default function TermsPage() {
           </div>
 
           <div className="rounded-[20px] bg-[#f4f4f6] dark:bg-[#16171d] border border-graphite-200 dark:border-graphite-800 p-6 sm:p-7 space-y-5 text-[15px] leading-[1.6] text-graphite-800 dark:text-graphite-200">
-            <p>
-              When you start a deep crawl, your $0.50 payment in USDT is confirmed on the Celo blockchain. If CrawlPay cannot deliver your completed audit, you are entitled to a full refund.
+            <p suppressHydrationWarning>
+              When you start a deep crawl, your {fullPriceFormatted} payment in USDT is confirmed on the Celo blockchain. If CrawlPay cannot deliver your completed audit, you are entitled to a full refund.
             </p>
 
             <ul className="space-y-4">

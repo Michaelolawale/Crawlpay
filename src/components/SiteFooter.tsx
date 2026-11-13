@@ -1,12 +1,17 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { CrawlLogo } from '@/components/CrawlLogo';
 import { focusRing } from '@/components/SiteHeader';
+import { useConfig } from '@/context/ConfigContext';
 
 const PUBLIC_AGENT_ADDRESS = '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
 const SUPPORT_TELEGRAM = 'https://t.me/Noble249';
 
 export function SiteFooter() {
+  const { fullPriceFormatted } = useConfig();
+
   return (
     <footer className="w-full bg-ink border-t border-graphite-900 pt-[48px] sm:pt-[64px] pb-[36px] sm:pb-[48px] text-white">
       <div className="max-w-[1176px] mx-auto px-4 sm:px-6">
@@ -21,8 +26,8 @@ export function SiteFooter() {
                 CrawlPay
               </span>
             </Link>
-            <p className="font-footer text-[14px] leading-[20px] text-graphite-200 font-normal">
-              A site audit for Google and AI search. Free quick audit, $0.50 deep crawl in USDT on Celo.
+            <p className="font-footer text-[14px] leading-[20px] text-graphite-200 font-normal" suppressHydrationWarning>
+              A site audit for Google and AI search. Free quick audit, {fullPriceFormatted} deep crawl in USDT on Celo.
             </p>
             <div className="pt-2">
               <span className="font-footer text-[13px] sm:text-[14px] leading-[20px] text-graphite-300 block">

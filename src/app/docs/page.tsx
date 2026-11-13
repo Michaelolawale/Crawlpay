@@ -17,12 +17,14 @@ import {
 } from 'lucide-react';
 import { SiteHeader, focusRing } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
+import { useConfig } from '@/context/ConfigContext';
 
 const PUBLIC_AGENT_ADDRESS = '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
 const USDT_CELO_ADDRESS = '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e';
 const DATA_SUFFIX = '0x63656c6f5f37353763326163336237306311008021802180218021802180218021';
 
 export default function DocsPage() {
+  const { fullPriceFormatted, fullPriceRaw } = useConfig();
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   useEffect(() => {
@@ -325,8 +327,8 @@ export default function DocsPage() {
                   </span>
                   <span className="font-bold text-ink dark:text-white">/api/audit</span>
                 </div>
-                <span className="text-[13px] text-violet font-mono font-medium">
-                  Free (Quick audit) or $0.50 USDT (Deep crawl)
+                <span className="text-[13px] text-violet font-mono font-medium" suppressHydrationWarning>
+                  Free (Quick audit) or {fullPriceFormatted} USDT (Deep crawl)
                 </span>
               </div>
               <p className="text-[14px] text-graphite-800 dark:text-graphite-200 leading-relaxed font-normal">
@@ -336,7 +338,7 @@ export default function DocsPage() {
                 <pre>{`// Request Body:
 {
   "url": "https://example.com",
-  "mode": "quick", // "quick" (free single page) or "full" ($0.50 deep crawl)
+  "mode": "quick", // "quick" (free single page) or "full" (${fullPriceFormatted} deep crawl)
   "paymentProof": "0x3fc8402348c27474548c645bb2290dbeee4f47aeb38107342b108cbb34a062f5" // required for full mode
 }`}</pre>
               </div>
@@ -559,7 +561,7 @@ export default function DocsPage() {
                 <code className="rounded-[4px] bg-graphite-100 dark:bg-graphite-800 px-1.5 py-0.5 text-violet font-mono text-[13px]">
                   402 Payment Required
                 </code>{' '}
-                specifying the Celo recipient (<code className="font-mono text-ink dark:text-white text-[12px]">{PUBLIC_AGENT_ADDRESS}</code>), price ($0.50 in USDT on Celo; quick audits are free), and attribution tag.
+                specifying the Celo recipient (<code className="font-mono text-ink dark:text-white text-[12px]">{PUBLIC_AGENT_ADDRESS}</code>), price ({fullPriceFormatted} in USDT on Celo; quick audits are free), and attribution tag.
               </li>
               <li>
                 <strong className="text-ink dark:text-white font-medium">Attributed Settlement:</strong> The agent broadcasts an ERC-20 transfer in USDT on Celo Mainnet appending the ERC-8021 calldata tag:
@@ -609,15 +611,15 @@ const client = createWalletClient({
   transport: http('https://forno.celo.org')
 });
 
-// Broadcast attributed 0.50 USDT payment on Celo
+// Broadcast attributed ${fullPriceRaw} USDT payment on Celo
 const USDT_ADDRESS = '${USDT_CELO_ADDRESS}';
 const txHash = await client.sendTransaction({
   to: USDT_ADDRESS,
   value: 0n,
-  // ERC-20 transfer(to, 500000 units = $0.50 USDT) + ERC-8021 suffix
+  // ERC-20 transfer(to, ${(parseFloat(fullPriceRaw || '0.50') * 1_000_000).toFixed(0)} units = ${fullPriceFormatted} USDT) + ERC-8021 suffix
   data: ('0xa9059cbb' +
     '${PUBLIC_AGENT_ADDRESS.toLowerCase().replace('0x', '').padStart(64, '0')}' +
-    '000000000000000000000000000000000000000000000000000000000007a120' +
+    '${(BigInt(Math.round(parseFloat(fullPriceRaw || '0.50') * 1_000_000))).toString(16).padStart(64, '0')}' +
     '${DATA_SUFFIX.replace('0x', '')}') as \`0x\${string}\`
 });
 

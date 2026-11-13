@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { FullAuditReport } from '@/types/audit';
 import { focusRing } from '@/components/SiteHeader';
+import { useConfig } from '@/context/ConfigContext';
 
 export interface SavedReportItem {
   id: string;
@@ -42,6 +43,7 @@ export interface SavedReportItem {
 
 export default function AppReportsPage() {
   const router = useRouter();
+  const { fullPriceFormatted } = useConfig();
   const [reports, setReports] = useState<SavedReportItem[]>([]);
   const [searchFilter, setSearchFilter] = useState('');
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
@@ -270,11 +272,11 @@ export default function AppReportsPage() {
                     router.push(`/app/audit?target=${encodeURIComponent(item.targetUrl)}&mode=${rerunMode}`);
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3.5 py-1.5 text-[13px] font-medium text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors shadow-sm cursor-pointer ${focusRing}`}
-                  title={item.mode === 'full' ? 'Re-run deep crawl ($0.50 in USDT)' : 'Re-run free quick audit'}
+                  title={item.mode === 'full' ? `Re-run deep crawl (${fullPriceFormatted} in USDT)` : 'Re-run free quick audit'}
                 >
                   <RotateCcw className="size-3.5 text-violet" />
-                  <span className="hidden sm:inline">{item.mode === 'full' ? 'Run again ($0.50)' : 'Run again'}</span>
-                  <span className="sm:hidden">{item.mode === 'full' ? 'Rerun ($0.50)' : 'Rerun'}</span>
+                  <span className="hidden sm:inline" suppressHydrationWarning>{item.mode === 'full' ? `Run again (${fullPriceFormatted})` : 'Run again'}</span>
+                  <span className="sm:hidden" suppressHydrationWarning>{item.mode === 'full' ? `Rerun (${fullPriceFormatted})` : 'Rerun'}</span>
                 </button>
                 <button
                   type="button"

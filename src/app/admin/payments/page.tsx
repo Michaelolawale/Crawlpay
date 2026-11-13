@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { getAdminToken } from '../../../utils/adminClient';
 import { useAdminRealtime, RealtimeStatusBadge } from '../../../utils/useAdminRealtime';
+import { useConfig } from '@/context/ConfigContext';
 
 interface EnrichedPayment {
   id: string;
@@ -58,6 +59,7 @@ interface PaymentSummary {
 }
 
 export default function AdminPaymentsPage() {
+  const { fullPriceFormatted } = useConfig();
   const [payments, setPayments] = useState<EnrichedPayment[]>([]);
   const [summary, setSummary] = useState<PaymentSummary>({
     totalRevenueUsd: '0.00',
@@ -252,8 +254,8 @@ export default function AdminPaymentsPage() {
             </span>
             <span className="text-xs font-medium text-graphite-400">transactions</span>
           </div>
-          <p className="mt-1 text-[11px] text-graphite-800 dark:text-graphite-400">
-            Strictly $0.50 USD₮ (ERC-20, 6 decimals)
+          <p className="mt-1 text-[11px] text-graphite-800 dark:text-graphite-400" suppressHydrationWarning>
+            Strictly {fullPriceFormatted} USD₮ (ERC-20, 6 decimals)
           </p>
         </div>
 

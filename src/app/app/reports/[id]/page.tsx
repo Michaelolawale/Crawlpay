@@ -18,10 +18,12 @@ import {
 import { CheckEngineView } from '@/components/CheckEngineView';
 import { FullAuditReport } from '@/types/audit';
 import { focusRing } from '@/components/SiteHeader';
+import { useConfig } from '@/context/ConfigContext';
 
 export default function SingleReportPage() {
   const params = useParams();
   const router = useRouter();
+  const { fullPriceFormatted } = useConfig();
   const reportId = params?.id as string;
 
   const [report, setReport] = useState<FullAuditReport | null>(null);
@@ -218,10 +220,10 @@ export default function SingleReportPage() {
                 <Link
                   href={`/app/audit?target=${encodeURIComponent(report.targetUrl)}&mode=${rerunMode}`}
                   className={`inline-flex items-center justify-center gap-1.5 rounded-[48px] bg-ink dark:bg-white px-4 py-2 text-xs sm:text-[13px] font-semibold text-white dark:text-ink hover:opacity-90 transition-opacity shadow-xs cursor-pointer w-full sm:w-auto shrink-0 ${focusRing}`}
-                  title={isDeepCrawl ? 'Re-run deep crawl ($0.50 in USDT)' : 'Re-run free quick audit'}
+                  title={isDeepCrawl ? `Re-run deep crawl (${fullPriceFormatted} in USDT)` : 'Re-run free quick audit'}
                 >
                   <RotateCcw className="size-3.5" />
-                  <span>{isDeepCrawl ? 'Run again ($0.50)' : 'Run again'}</span>
+                  <span suppressHydrationWarning>{isDeepCrawl ? `Run again (${fullPriceFormatted})` : 'Run again'}</span>
                 </Link>
               );
             })()}

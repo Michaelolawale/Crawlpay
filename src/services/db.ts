@@ -343,6 +343,8 @@ class CrawlpayDatabase {
           chain_id: payment.chain_id || 42220,
           tx_hash: payment.tx_hash.toLowerCase(),
           status: payment.status || 'confirmed',
+          type: payment.type || 'customer_payment',
+          is_test: Boolean(payment.is_test),
           created_at: payment.created_at || new Date().toISOString(),
         });
       } catch (err) {
@@ -909,11 +911,12 @@ class CrawlpayDatabase {
       const oldestDayTimestamp = timestampsDay.length > 0 ? Math.min(...timestampsDay) : now - 43200_000;
       const retryAfterSec = Math.max(1, Math.ceil((oldestDayTimestamp + 86400_000 - now) / 1000));
 
+      const fullPriceUsd = this.inMemoryData.config.full_price_usd || '0.50';
       return {
         allowed: false,
         code: 'RATE_LIMIT_EXCEEDED',
         limitType: 'daily',
-        message: `Daily free quick audit cap reached (maximum ${maxPerDay} per day). Upgrade to Deep Crawl on Celo ($0.50 in USDT) or check back tomorrow.`,
+        message: `Daily free quick audit cap reached (maximum ${maxPerDay} per day). Upgrade to Deep Crawl on Celo ($${fullPriceUsd} in USDT) or check back tomorrow.`,
         retryAfterSec,
         remaining: 0,
         remainingHourly: Math.max(0, maxPerHour - effectiveUsedHour),
@@ -933,11 +936,12 @@ class CrawlpayDatabase {
       const oldestHourTimestamp = timestampsHour.length > 0 ? Math.min(...timestampsHour) : now - 1800_000;
       const retryAfterSec = Math.max(1, Math.ceil((oldestHourTimestamp + 3600_000 - now) / 1000));
 
+      const fullPriceUsd = this.inMemoryData.config.full_price_usd || '0.50';
       return {
         allowed: false,
         code: 'RATE_LIMIT_EXCEEDED',
         limitType: 'hourly',
-        message: `Hourly free quick audit limit reached (maximum ${maxPerHour} per hour). Upgrade to Full Deep Crawl on Celo ($0.50 in USDT) or wait for the hourly reset.`,
+        message: `Hourly free quick audit limit reached (maximum ${maxPerHour} per hour). Upgrade to Full Deep Crawl on Celo ($${fullPriceUsd} in USDT) or wait for the hourly reset.`,
         retryAfterSec,
         remaining: 0,
         remainingHourly: 0,

@@ -13,5 +13,5 @@ dist/
 .DS_Store
 
 # Database Schema & Migrations
-supabase/
-*.sql
+!supabase/
+!supabase/schema.sql

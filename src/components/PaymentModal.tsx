@@ -20,6 +20,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { FullAuditReport } from '@/types/audit';
+import { useConfig } from '@/context/ConfigContext';
 
 const PUBLIC_AGENT_ADDRESS =
   process.env.NEXT_PUBLIC_AGENT_ADDRESS || '0xf06c2b754d07cba299751f0985a48f8013bb6b39';
@@ -116,23 +117,9 @@ export function PaymentModal({
   const [copiedManual, setCopiedManual] = useState(false);
   const [manualTxInput, setManualTxInput] = useState('');
   const [manualVerifying, setManualVerifying] = useState(false);
-  const [dynamicPrices, setDynamicPrices] = useState<{ quick: string; full: string }>({
-    quick: '0.00',
-    full: '0.50',
-  });
+  const { config, fullPriceFormatted } = useConfig();
 
-  useEffect(() => {
-    fetch('/api/config')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.quick_price_usd && data?.full_price_usd) {
-          setDynamicPrices({ quick: data.quick_price_usd, full: data.full_price_usd });
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  const priceUsd = mode === 'quick' ? dynamicPrices.quick : dynamicPrices.full;
+  const priceUsd = mode === 'quick' ? (config.quick_price_usd || '0.00') : (config.full_price_usd || '0.50');
   const celoAmount = mode === 'quick' ? CELO_PRICE_QUICK : CELO_PRICE_FULL;
   const payToAddress = PUBLIC_AGENT_ADDRESS;
 
@@ -459,7 +446,7 @@ export function PaymentModal({
           txErr?.message?.toLowerCase().includes('insufficient celo')
         ) {
           setErrorMessage(
-            'Nothing was charged. Insufficient USDT or CELO for gas. You need $0.50 USDT on Celo and a fraction of a cent of CELO for transaction gas (< $0.001). Please top up your wallet or use Manual Transfer.'
+            `Nothing was charged. Insufficient USDT or CELO for gas. You need ${fullPriceFormatted} USDT on Celo and a fraction of a cent of CELO for transaction gas (< $0.001). Please top up your wallet or use Manual Transfer.`
           );
           return;
         }

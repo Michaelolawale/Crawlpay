@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { ConfigProvider } from '@/components/ConfigProvider';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -86,7 +87,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-white text-ink antialiased">
         <ThemeProvider>
-          {children}
+          <ConfigProvider>
+            {children}
+          </ConfigProvider>
         </ThemeProvider>
       </body>
     </html>

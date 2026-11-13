@@ -447,31 +447,48 @@ export class IdentityService {
       const agentLower = CONFIG.AGENT_WALLET_ADDRESS.toLowerCase();
       const isDirectToAgent = tx.to?.toLowerCase() === agentLower;
       
+      // Known authoritative stablecoin contracts on Celo Mainnet (SSRF / Fake-token exploit prevention)
+      const CELO_USDT_ADDR = (CONFIG.CELO_USDT_ADDRESS || '0x48065fbBE25f71C9282ddf5e1cD6D6A887483D5e').toLowerCase();
+      const CELO_CUSD_ADDR = '0x765de816845861e75a25fca122bb6898b8b1282a'.toLowerCase();
+
       // Check ERC20 Transfer logs to agent wallet: Transfer(address,address,uint256)
       const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
       let valueUsdt: string | undefined = undefined;
+      let isVerifiedStablecoinTransfer = false;
+
       const erc20TransferToAgent = receipt.logs.some((log) => {
         if (!log.topics || log.topics.length < 3) return false;
         if (log.topics[0]?.toLowerCase() !== TRANSFER_TOPIC) return false;
         const toTopic = log.topics[2]?.toLowerCase() || '';
         const matchesAgent = toTopic.endsWith(agentLower.slice(2));
-        if (matchesAgent) {
+        if (!matchesAgent) return false;
+
+        // Security check: Contract address MUST match official USDT or cUSD
+        const contractAddr = (log.address || '').toLowerCase();
+        const isOfficialUsdt = contractAddr === CELO_USDT_ADDR;
+        const isOfficialCusd = contractAddr === CELO_CUSD_ADDR;
+
+        if (isOfficialUsdt || isOfficialCusd) {
           try {
             const rawAmount = BigInt(log.data || '0x0');
-            const isUsdt = log.address?.toLowerCase() === CONFIG.CELO_USDT_ADDRESS.toLowerCase();
-            const decimals = isUsdt ? CONFIG.USDT_DECIMALS : 18;
-            valueUsdt = (Number(rawAmount) / Math.pow(10, decimals)).toFixed(2);
+            const decimals = isOfficialUsdt ? CONFIG.USDT_DECIMALS : 18;
+            const parsedVal = Number(rawAmount) / Math.pow(10, decimals);
+            if (parsedVal > 0) {
+              valueUsdt = parsedVal.toFixed(2);
+              isVerifiedStablecoinTransfer = true;
+            }
           } catch {
             // Keep valueUsdt undefined if parse fails
           }
         }
-        return matchesAgent;
+        return isVerifiedStablecoinTransfer;
       });
 
-      const isToAgent = isDirectToAgent || erc20TransferToAgent;
-      const hasPositiveValue = (tx.value && tx.value > 0n) || erc20TransferToAgent;
-      const valueCelo = tx.value ? (Number(tx.value) / 1e18).toFixed(4) : '0';
-      const resolvedToken: 'USDT' | 'CELO' = (valueUsdt || erc20TransferToAgent) ? 'USDT' : 'CELO';
+      const isToAgent = isDirectToAgent || isVerifiedStablecoinTransfer;
+      const rawCeloVal = tx.value ? Number(tx.value) / 1e18 : 0;
+      const valueCelo = rawCeloVal > 0 ? rawCeloVal.toFixed(4) : '0';
+      const hasPositiveValue = (rawCeloVal > 0) || isVerifiedStablecoinTransfer;
+      const resolvedToken: 'USDT' | 'CELO' = isVerifiedStablecoinTransfer ? 'USDT' : 'CELO';
 
       if (!isToAgent) {
         return {
@@ -486,8 +503,30 @@ export class IdentityService {
           to: tx.to || undefined,
           blockNumber: Number(receipt.blockNumber),
           celoscanUrl: `https://celoscan.io/tx/${txHash}`,
-          error: `Transaction was not sent to agent address (${CONFIG.AGENT_WALLET_ADDRESS})`,
+          error: `Transaction was not sent to agent address (${CONFIG.AGENT_WALLET_ADDRESS}) or used an unverified token`,
         };
+      }
+
+      // Check transaction block freshness to mitigate replay of ancient transactions (max ~24 hours = ~17,280 blocks on Celo)
+      const currentBlock = await this.publicClient.getBlockNumber().catch(() => null);
+      if (currentBlock && receipt.blockNumber) {
+        const blockAge = Number(currentBlock - receipt.blockNumber);
+        if (blockAge > 20000) {
+          return {
+            valid: false,
+            mined: true,
+            hasAttributionTag,
+            isToAgent,
+            token: resolvedToken,
+            valueUsdt,
+            valueCelo,
+            from: tx.from,
+            to: tx.to || undefined,
+            blockNumber: Number(receipt.blockNumber),
+            celoscanUrl: `https://celoscan.io/tx/${txHash}`,
+            error: `Transaction is too old to be accepted as fresh payment proof (${blockAge} blocks ago)`,
+          };
+        }
       }
 
       const isValid = (receipt.status === 'success') && isToAgent && (hasPositiveValue || hasAttributionTag);

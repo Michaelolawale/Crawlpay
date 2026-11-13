@@ -1,11 +1,17 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { identityService } from '@/services/identityService';
 import { db } from '@/services/db';
 import { CONFIG } from '@/config';
+import { verifyAdminAuth } from '@/utils/adminAuth';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  // Protect agent wallet gas - require operator authentication
+  if (!verifyAdminAuth(req)) {
+    return NextResponse.json({ error: 'Unauthorized: Operator passkey required to broadcast transactions' }, { status: 401 });
+  }
+
   try {
     const result = await identityService.sendAttributedPing();
 

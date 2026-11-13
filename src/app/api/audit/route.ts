@@ -14,11 +14,12 @@ export async function POST(req: NextRequest) {
   let crawlMode: 'quick' | 'full' = 'quick';
 
   try {
-    // 1. Rate Limiting and Blocklist checks
-    const forwarded = req.headers.get('x-forwarded-for');
-    const realIp = req.headers.get('x-real-ip');
+    // 1. Rate Limiting and Blocklist checks (trusted reverse proxy headers prioritized over raw X-Forwarded-For)
     const cfIp = req.headers.get('cf-connecting-ip');
-    const ip = forwarded ? forwarded.split(',')[0].trim() : realIp || cfIp || '127.0.0.1';
+    const realIp = req.headers.get('x-real-ip');
+    const forwarded = req.headers.get('x-forwarded-for');
+    let ip = (cfIp || realIp || (forwarded ? forwarded.split(',')[0].trim() : '127.0.0.1')).trim();
+    if (ip.startsWith('::ffff:')) ip = ip.slice(7);
 
     if (await db.isBlocklisted('ip', ip)) {
       return NextResponse.json(
@@ -97,10 +98,21 @@ export async function POST(req: NextRequest) {
     crawlMode = mode === 'full' ? 'full' : 'quick';
     const targetPriceUsd = crawlMode === 'full' ? dynamicConfig.full_price_usd : dynamicConfig.quick_price_usd;
 
+    let isSandboxSimulation = false;
+
     if (incomingTxHash) {
       // Replay prevention & idempotent retry support
       const existingPayment = await db.getPaymentByTxHash(incomingTxHash);
       if (existingPayment) {
+        // Security check: Never accept operational gas refuels or agent pings as customer audit payment
+        const isGasOrPing = existingPayment.type === 'gas_refuel' || existingPayment.type === 'agent_sponsored' || existingPayment.type === 'ping' || (existingPayment.token === 'CELO' && existingPayment.type !== 'customer_payment');
+        if (isGasOrPing) {
+          return NextResponse.json(
+            { error: 'Invalid payment proof: Specified transaction was an operational gas transfer, not a customer audit settlement.' },
+            { status: 402 }
+          );
+        }
+
         // Check if there is already a completed report for this exact payment and URL (idempotency)
         const allJobs = await db.listJobs();
         const completedJob = allJobs.find(
@@ -121,11 +133,29 @@ export async function POST(req: NextRequest) {
         const { identityService } = await import('@/services/identityService');
         const verification = await identityService.verifyPaymentTx(incomingTxHash);
         if (verification.valid && verification.mined) {
-          isVerifiedPaid = true;
-          verifiedPaymentInfo = verification;
-
           const isUsdt = verification.token === 'USDT' || Boolean(verification.valueUsdt);
           const isCelo = !isUsdt && Boolean(verification.valueCelo && Number(verification.valueCelo) > 0);
+
+          // Security check: Validate minimum payment amount for full audits
+          const rawUsdt = parseFloat(verification.valueUsdt || '0');
+          const rawCelo = parseFloat(verification.valueCelo || '0');
+          const targetPriceNum = parseFloat(targetPriceUsd || '0.50');
+          const targetCeloNum = parseFloat(CONFIG.CELO_PRICE_FULL || '6.6');
+
+          const isUsdtSufficient = isUsdt && rawUsdt >= (targetPriceNum * 0.95);
+          const isCeloSufficient = isCelo && rawCelo >= (targetCeloNum * 0.95);
+
+          if (crawlMode === 'full' && !isUsdtSufficient && !isCeloSufficient) {
+            return NextResponse.json(
+              {
+                error: `Payment amount insufficient: required $${targetPriceUsd} USDT (or ${CONFIG.CELO_PRICE_FULL} CELO), received ${isUsdt ? `$${rawUsdt.toFixed(2)} USDT` : `${rawCelo.toFixed(4)} CELO`}`,
+              },
+              { status: 402 }
+            );
+          }
+
+          isVerifiedPaid = true;
+          verifiedPaymentInfo = verification;
 
           // Log payment in database using dynamic pricing
           paymentId = `pay_${Date.now()}`;
@@ -137,6 +167,8 @@ export async function POST(req: NextRequest) {
             chain_id: CONFIG.CELO_CHAIN_ID,
             tx_hash: incomingTxHash,
             status: 'confirmed',
+            type: 'customer_payment',
+            is_test: false,
             created_at: new Date().toISOString(),
           });
         } else {
@@ -149,6 +181,7 @@ export async function POST(req: NextRequest) {
     } else if (process.env.ENABLE_SANDBOX === 'true' && paymentProof === 'sandbox_simulator_proof') {
       // Internal developer sandbox only
       isVerifiedPaid = true;
+      isSandboxSimulation = true;
     }
 
     // 3. Paid vs Free Quick Tier Policy:
@@ -243,7 +276,7 @@ export async function POST(req: NextRequest) {
       depth: crawlMode,
       status: 'running',
       started_at: new Date().toISOString(),
-      is_test: false,
+      is_test: isSandboxSimulation,
       wallet: effectiveWallet,
       ip,
     });
@@ -273,7 +306,7 @@ export async function POST(req: NextRequest) {
           tx_hash: incomingTxHash,
           status: 'confirmed',
           type: 'customer_payment',
-          is_test: false,
+          is_test: isSandboxSimulation,
           created_at: new Date().toISOString(),
         }).catch(() => {});
       } else {
@@ -286,7 +319,7 @@ export async function POST(req: NextRequest) {
           tx_hash: executionTxHash,
           status: 'confirmed',
           type: 'agent_sponsored',
-          is_test: false,
+          is_test: isSandboxSimulation,
           created_at: new Date().toISOString(),
         }).catch(() => {});
       }
