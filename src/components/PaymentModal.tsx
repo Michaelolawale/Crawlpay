@@ -100,7 +100,7 @@ export function PaymentModal({
   onAuditReady,
   onPaymentConfirmed,
 }: PaymentModalProps) {
-  const router = useRouter();
+   const router = useRouter();
   const [step, setStep] = useState<ModalStep>('review');
   const [statusPhase, setStatusPhase] = useState<AuditStatusPhase>('wallet_confirm');
   const [statusMessage, setStatusMessage] = useState<string>('Please approve the transaction in your wallet...');
@@ -109,6 +109,7 @@ export function PaymentModal({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isWrongNetwork, setIsWrongNetwork] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
+  const [hasVerifiedPayment, setHasVerifiedPayment] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
 
   // Expandable sections
@@ -123,30 +124,54 @@ export function PaymentModal({
   const celoAmount = mode === 'quick' ? CELO_PRICE_QUICK : CELO_PRICE_FULL;
   const payToAddress = PUBLIC_AGENT_ADDRESS;
 
-  // Restore active job if refreshed (auto-expires stale jobs after 3 minutes)
+  const resetModalState = () => {
+    localStorage.removeItem('crawlpay_active_job');
+    setStep('review');
+    setStatusPhase('wallet_confirm');
+    setStatusMessage('Please approve the transaction in your wallet...');
+    setTxHash(null);
+    setCreatedReportId(null);
+    setErrorMessage(null);
+    setIsWrongNetwork(false);
+    setIsPaying(false);
+    setHasVerifiedPayment(false);
+  };
+
+  // Restore active job if refreshed or opened (auto-expires stale jobs after 3 minutes)
   useEffect(() => {
+    if (!isOpen) return;
+
     try {
       const activeJobRaw = localStorage.getItem('crawlpay_active_job');
       if (activeJobRaw) {
         const active = JSON.parse(activeJobRaw);
         const ageMs = Date.now() - (active.timestamp || 0);
-        // If older than 3 minutes, discard stale session
-        if (ageMs > 3 * 60 * 1000) {
+        // If older than 3 minutes or was failed, discard stale session
+        if (ageMs > 3 * 60 * 1000 || active.statusPhase === 'failed') {
           localStorage.removeItem('crawlpay_active_job');
+          resetModalState();
           return;
         }
 
-        if (active.targetUrl === targetUrl && active.statusPhase !== 'ready') {
+        // Only restore if active audit was genuinely running for this URL
+        if (active.targetUrl === targetUrl && active.statusPhase === 'running_audit') {
           setStep('status');
           setStatusPhase(active.statusPhase);
-          setStatusMessage(active.statusMessage || 'Processing your audit request...');
+          setStatusMessage(active.statusMessage || 'Processing your audit request in background...');
           setTxHash(active.txHash || null);
           setCreatedReportId(active.reportId || null);
+          setHasVerifiedPayment(true);
           if (active.userWallet) setConnectedWallet(active.userWallet);
+          return;
         }
       }
     } catch {}
-  }, [targetUrl]);
+
+    // If modal opens and we are stuck in a failed or ready phase without an active job, reset to review
+    if (statusPhase === 'failed' || statusPhase === 'ready') {
+      resetModalState();
+    }
+  }, [isOpen, targetUrl]);
 
   const [mounted, setMounted] = useState(false);
 
@@ -189,6 +214,7 @@ export function PaymentModal({
   const executeAuditPipeline = async (proofTxHash: string, userWalletAddr?: string) => {
     setIsPaying(true);
     setStatusPhase('running_audit');
+    setHasVerifiedPayment(true);
     const runningMsg = 'Payment confirmed! Running multi-page crawler and SEO checks...';
     setStatusMessage(runningMsg);
     setErrorMessage(null);
@@ -281,6 +307,7 @@ export function PaymentModal({
       }
     } catch (err: any) {
       console.error('[Audit Pipeline Error]', err);
+      localStorage.removeItem('crawlpay_active_job');
       setStatusPhase('failed');
       setErrorMessage(err?.message || 'Audit execution encountered an error.');
     } finally {
@@ -392,14 +419,66 @@ export function PaymentModal({
         }
       }
 
-      // 4. Switch to Status Stepper
+      // 4. Pre-flight Balance Checks (CELO gas + USDT balance) BEFORE broadcasting transaction!
+      const usdtUnits = BigInt(Math.round(Number(priceUsd) * Math.pow(10, USDT_DECIMALS)));
+
+      // Check native CELO balance for gas
+      try {
+        const celoBalanceHex = await provider.request({
+          method: 'eth_getBalance',
+          params: [userWallet, 'latest'],
+        });
+        const celoBal = BigInt(celoBalanceHex || '0x0');
+        if (celoBal === 0n) {
+          setStep('review');
+          setStatusPhase('wallet_confirm');
+          setIsPaying(false);
+          setErrorMessage(
+            'Insufficient CELO for gas. You need a fraction of a cent of CELO (< $0.001) in your wallet to cover transaction fees on Celo Mainnet. Please add a small amount of CELO to your wallet or use Manual Transfer below.'
+          );
+          return;
+        }
+      } catch (gasErr) {
+        console.warn('[Gas Balance Check Warning]', gasErr);
+      }
+
+      // Check ERC-20 USDT balance on Celo
+      try {
+        const cleanWallet = userWallet.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+        const usdtBalanceHex = await provider.request({
+          method: 'eth_call',
+          params: [
+            {
+              to: CELO_USDT_ADDRESS,
+              data: `0x70a08231${cleanWallet}`,
+            },
+            'latest',
+          ],
+        });
+        if (usdtBalanceHex && usdtBalanceHex !== '0x') {
+          const usdtBal = BigInt(usdtBalanceHex);
+          if (usdtBal < usdtUnits) {
+            const userUsdt = (Number(usdtBal) / Math.pow(10, USDT_DECIMALS)).toFixed(2);
+            setStep('review');
+            setStatusPhase('wallet_confirm');
+            setIsPaying(false);
+            setErrorMessage(
+              `Insufficient USDT balance. Your wallet currently has $${userUsdt} USDT on Celo Mainnet, but $${priceUsd} USDT is required for this audit. Please top up your wallet with USDT on Celo (or use Manual Transfer below).`
+            );
+            return;
+          }
+        }
+      } catch (usdtErr) {
+        console.warn('[USDT Balance Check Warning]', usdtErr);
+      }
+
+      // 5. Switch to Status Stepper
       setStep('status');
       setStatusPhase('wallet_confirm');
       setStatusMessage('Please confirm the transaction in your wallet...');
 
-      // 5. Send transaction on Celo Mainnet with 45-second timeout guard
+      // 6. Send transaction on Celo Mainnet with 45-second timeout guard
       let submittedTxHash: string;
-      const usdtUnits = BigInt(Math.round(Number(priceUsd) * Math.pow(10, USDT_DECIMALS)));
       const transferData = encodeErc20Transfer(payToAddress, usdtUnits, DATA_SUFFIX);
 
       try {
@@ -461,7 +540,10 @@ export function PaymentModal({
       setStatusPhase('onchain_confirm');
       setStatusMessage(`Transaction broadcast (${submittedTxHash.slice(0, 10)}...). Confirming on Celo Mainnet...`);
 
-      // 6. Poll for on-chain block mining confirmation
+      // 7. Poll for on-chain block mining confirmation
+      let isPaymentConfirmed = false;
+      let verifyError: string | null = null;
+
       for (let attempt = 1; attempt <= 15; attempt++) {
         try {
           const verifyRes = await fetch('/api/payment/verify', {
@@ -471,6 +553,13 @@ export function PaymentModal({
           });
           const vData = await verifyRes.json();
           if (vData.valid && vData.mined) {
+            isPaymentConfirmed = true;
+            setHasVerifiedPayment(true);
+            break;
+          }
+          // If transaction reverted or failed on-chain, stop polling immediately!
+          if (vData.reverted || vData.error?.toLowerCase().includes('revert')) {
+            verifyError = vData.error || 'Transaction was reverted on Celo Mainnet. No funds were transferred.';
             break;
           }
         } catch {}
@@ -480,10 +569,15 @@ export function PaymentModal({
         }
       }
 
-      // 7. Execute audit pipeline with verified payment proof
+      if (!isPaymentConfirmed) {
+        throw new Error(verifyError || 'Payment verification failed: Transaction was reverted or not found on Celo Mainnet.');
+      }
+
+      // 8. Execute audit pipeline ONLY with verified payment proof
       await executeAuditPipeline(submittedTxHash, userWallet);
     } catch (err: any) {
       console.error('[Payment Flow Error]', err);
+      localStorage.removeItem('crawlpay_active_job');
       if (hasBroadcastTx) {
         setStatusPhase('failed');
         setErrorMessage(err?.message || 'Audit execution encountered an error.');
@@ -519,6 +613,7 @@ export function PaymentModal({
 
       if (verifyData.valid && verifyData.mined) {
         setTxHash(manualTxInput.trim());
+        setHasVerifiedPayment(true);
         setStep('status');
         await executeAuditPipeline(manualTxInput.trim(), 'Manual');
       } else {
@@ -565,6 +660,9 @@ export function PaymentModal({
   };
 
   const handleClose = () => {
+    if (statusPhase === 'failed' || statusPhase === 'ready' || statusPhase === 'wallet_confirm') {
+      resetModalState();
+    }
     onClose();
   };
 
@@ -929,12 +1027,7 @@ export function PaymentModal({
               <div className="flex flex-col items-center gap-2 pt-2 text-center">
                 <button
                   type="button"
-                  onClick={() => {
-                    setStep('review');
-                    setStatusPhase('wallet_confirm');
-                    setErrorMessage(null);
-                    setIsPaying(false);
-                  }}
+                  onClick={resetModalState}
                   className="rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-4 py-1.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors cursor-pointer"
                 >
                   Cancel and return to review
@@ -945,23 +1038,36 @@ export function PaymentModal({
               </div>
             )}
 
-            {/* After payment deduction: Run in background reassurance */}
-            {(statusPhase === 'onchain_confirm' || statusPhase === 'running_audit') && (
-              <div className="rounded-[16px] border border-emerald-200 bg-emerald-50 p-3.5 text-xs space-y-1.5 animate-in fade-in">
+            {/* During onchain confirm: Awaiting block receipt indicator */}
+            {statusPhase === 'onchain_confirm' && (
+              <div className="rounded-[16px] border border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/40 p-3.5 text-xs space-y-1.5 animate-in fade-in">
+                <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300 text-[11px]">
+                  <Loader2 className="size-3.5 animate-spin text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span>Confirming on Celo Mainnet</span>
+                </div>
+                <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                  Transaction broadcasted. Awaiting block receipt and verification from Celo network nodes (usually ~2-5 seconds)...
+                </p>
+              </div>
+            )}
+
+            {/* After payment verified & audit is executing: Run in background reassurance */}
+            {statusPhase === 'running_audit' && (
+              <div className="rounded-[16px] border border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/40 p-3.5 text-xs space-y-1.5 animate-in fade-in">
                 <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 font-bold text-emerald-800 text-[11px]">
-                    <ShieldCheck className="size-3.5 text-emerald-600 shrink-0" />
+                  <span className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300 text-[11px]">
+                    <ShieldCheck className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>Payment Verified on Celo</span>
                   </span>
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="text-emerald-800 hover:underline text-[11px] font-bold cursor-pointer"
+                    className="text-emerald-800 dark:text-emerald-300 hover:underline text-[11px] font-bold cursor-pointer"
                   >
                     Run in background
                   </button>
                 </div>
-                <p className="text-[11px] text-emerald-700 leading-relaxed">
+                <p className="text-[11px] text-emerald-700 dark:text-emerald-400 leading-relaxed">
                   Your audit is executing. You can keep this dialog open or close it—your report will be saved to your Reports history automatically upon completion.
                 </p>
               </div>
@@ -986,45 +1092,72 @@ export function PaymentModal({
               </div>
             )}
 
-            {/* Action when Failed: Never charge twice, offer free retry using txHash */}
+            {/* Action when Failed: Never trap the user, always provide a clear path forward */}
             {statusPhase === 'failed' && (
               <div className="space-y-3">
-                <div className="rounded-[14px] border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
-                  <p className="font-bold">Audit crawl failed</p>
-                  <p className="mt-1">{errorMessage}</p>
+                <div className="rounded-[14px] border border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/40 p-3.5 text-xs text-rose-700 dark:text-rose-300">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="size-4 shrink-0 text-rose-600 dark:text-rose-400" />
+                    <p className="font-bold">
+                      {hasVerifiedPayment ? 'Audit crawl failed' : 'Payment not completed / reverted'}
+                    </p>
+                  </div>
+                  <p className="mt-1.5 leading-relaxed">{errorMessage}</p>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <button
                     type="button"
                     onClick={handleClose}
-                    className="flex-1 rounded-[48px] border border-graphite-100 bg-white px-3 py-2 text-xs font-semibold text-ink hover:bg-graphite-100/50 transition-colors"
+                    className="flex-1 rounded-[48px] border border-graphite-200 dark:border-graphite-700 bg-white dark:bg-[#1a1b22] px-3.5 py-2.5 text-xs font-semibold text-ink dark:text-white hover:bg-graphite-100 dark:hover:bg-[#252631] transition-colors"
                   >
                     Close
                   </button>
-                  {txHash ? (
+
+                  {!hasVerifiedPayment ? (
+                    <button
+                      type="button"
+                      onClick={resetModalState}
+                      className="flex-1 rounded-[48px] bg-ink dark:bg-white px-3.5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 transition-colors shadow-sm flex items-center justify-center gap-1.5"
+                    >
+                      <RefreshCw className="size-3.5" />
+                      <span>Try Payment Again</span>
+                    </button>
+                  ) : txHash ? (
                     <button
                       type="button"
                       onClick={() => executeAuditPipeline(txHash, connectedWallet || undefined)}
                       disabled={isPaying}
-                      className="flex-1 rounded-[48px] bg-ink px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition-colors disabled:opacity-50"
+                      className="flex-1 rounded-[48px] bg-ink dark:bg-white px-3.5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
                     >
-                      {isPaying ? 'Retrying...' : 'Retry Audit (No Extra Fee)'}
+                      {isPaying ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                      <span>{isPaying ? 'Retrying...' : 'Retry Audit (No Extra Fee)'}</span>
                     </button>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => {
-                        setStep('review');
-                        setStatusPhase('wallet_confirm');
-                        setErrorMessage(null);
-                      }}
-                      className="flex-1 rounded-[48px] bg-ink px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition-colors"
+                      onClick={resetModalState}
+                      className="flex-1 rounded-[48px] bg-ink dark:bg-white px-3.5 py-2.5 text-xs font-semibold text-white dark:text-ink hover:opacity-90 transition-colors"
                     >
                       Return to Review
                     </button>
                   )}
                 </div>
+
+                {!hasVerifiedPayment && (
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetModalState();
+                        setShowManualPay(true);
+                      }}
+                      className="text-xs text-graphite-600 dark:text-graphite-400 hover:text-ink dark:hover:text-white underline transition-colors cursor-pointer"
+                    >
+                      Already sent another transaction? Enter hash manually
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

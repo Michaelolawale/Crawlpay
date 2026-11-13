@@ -391,6 +391,7 @@ export class IdentityService {
   public async verifyPaymentTx(txHash: string): Promise<{
     valid: boolean;
     mined: boolean;
+    reverted?: boolean;
     hasAttributionTag: boolean;
     isToAgent?: boolean;
     token?: 'USDT' | 'CELO';
@@ -406,6 +407,7 @@ export class IdentityService {
       return {
         valid: false,
         mined: false,
+        reverted: false,
         hasAttributionTag: false,
         celoscanUrl: `https://celoscan.io/address/${CONFIG.AGENT_WALLET_ADDRESS}`,
         error: 'Invalid transaction hash format',
@@ -426,13 +428,25 @@ export class IdentityService {
         }).catch(() => null);
       }
 
+      if (receipt && receipt.status === 'reverted') {
+        return {
+          valid: false,
+          mined: true,
+          reverted: true,
+          hasAttributionTag: false,
+          celoscanUrl: `https://celoscan.io/tx/${txHash}`,
+          error: 'Transaction was reverted on Celo Mainnet (e.g. insufficient USDT balance). No funds were transferred.',
+        };
+      }
+
       if (!receipt || receipt.status !== 'success') {
         return {
           valid: false,
           mined: false,
+          reverted: false,
           hasAttributionTag: false,
           celoscanUrl: `https://celoscan.io/tx/${txHash}`,
-          error: 'Transaction was reverted or not found on Celo Mainnet',
+          error: 'Transaction was not found or has not been confirmed on Celo Mainnet',
         };
       }
 
