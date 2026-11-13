@@ -250,7 +250,7 @@ export default function LandingPage() {
                 </button>
               </div>
               <p className="mt-3 text-[14px] text-graphite-700 dark:text-graphite-300">
-                Free quick audit (up to 5 per hour, 20 per day cap). No account, wallet or email needed.
+                No account, wallet or email needed.
               </p>
             </form>
           </div>
